@@ -1,0 +1,111 @@
+
+# TitaniumKernel
+
+TitaniumKernel is a core set of modules for **Titanium products**, designed specifically for **IoT** and **data collection** applications. It serves as the foundational firmware, enabling essential services such as networking, logging, MQTT communication, HTTP server capabilities, and system watchdogs. These services ensure that Titanium devices can collect, process, and transmit data effectively.
+
+The `TitaniumKernel` works together with the **App** directory, which is specific to each Titanium project, to create a customized firmware for your IoT device.
+
+## Features
+
+- **Global Configuration**: Provides system-wide configuration and event handling.
+- **HTTP Server**: Manages HTTP requests for remote communication and management.
+- **Logger**: Implements logging functionality to monitor system behavior.
+- **MQTT Client**: Enables IoT communication with MQTT brokers.
+- **Network**: Manages networking tasks, including Wi-Fi setup and communication.
+- **SNTP**: Handles time synchronization across devices using SNTP.
+- **Watchdog**: Monitors the system's health and automatically performs recovery actions in case of failures.
+- **Utilities**: Includes various helper functions like JSON parsing and utility methods for efficient IoT development.
+
+## Getting Started
+
+### Prerequisites
+
+To work with **TitaniumKernel** in **PlatformIO**, ensure that you have the following installed:
+
+- [PlatformIO IDE](https://platformio.org/)
+- [ESP32 Development Board](https://platformio.org/boards/espressif32/esp32)
+
+### Installation
+
+1. Clone the repository to your local machine:
+   ```bash
+   git clone https://github.com/LucasDFranchi/TitaniumKernel.git
+   ```
+
+2. Open PlatformIO and navigate to the `TitaniumKernel` folder.
+   
+3. In PlatformIO, the `platformio.ini` file handles the build configuration. You can customize this file if necessary to match your project's setup.
+
+4. Build the project using PlatformIO:
+
+   - Open the **PlatformIO IDE**.
+   - Navigate to the `TitaniumKernel` project folder and open it.
+   - Click on the **Build** button in the PlatformIO toolbar, or use the command:
+     ```bash
+     pio run
+     ```
+
+5. Flash the firmware to your ESP32 device using PlatformIO:
+
+   - Click the **Upload** button in PlatformIO, or run the following command:
+     ```bash
+     pio run --target upload
+     ```
+
+## Architecture
+
+The `TitaniumKernel` is structured to be modular and extendable:
+
+- **TitaniumKernel/GlobalConfig**: Contains global configuration settings and event definitions.
+- **TitaniumKernel/HTTPServer**: Implements an HTTP server for device communication.
+- **TitaniumKernel/Logger**: Handles logging functionality for debugging and monitoring.
+- **TitaniumKernel/MQTT**: Provides MQTT client functionality for communication with IoT platforms.
+- **TitaniumKernel/Network**: Manages network connectivity, including Wi-Fi configuration.
+- **TitaniumKernel/SNTP**: Synchronizes the device's time with an SNTP server.
+- **TitaniumKernel/Watchdog**: Monitors the system health and performs recovery when needed.
+
+## Configuration
+
+TitaniumKernel can be customized through configuration files, which are located in the `GlobalConfig` directory. These files define the behavior of various services, such as network settings, MQTT broker details, and logging preferences.
+
+Example configuration for setting up the MQTT client:
+
+```c
+#include "global_config.h"
+#include "mqtt_client_task.h"
+
+void app_main() {
+    mqtt_client_task_init();
+}
+```
+
+## Usage
+
+To integrate `TitaniumKernel` into your project, simply include the necessary headers and use the modules as needed. For example, to set up an HTTP server:
+
+```c
+#include "http_server_task.h"
+
+void app_main() {
+    http_server_task_init();
+}
+```
+
+The **App directory** is where you can implement project-specific logic and integrate the TitaniumKernel modules to create a custom IoT application.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+```
+
+---
+
+### Key Sections:
+1. **TitaniumKernel Overview**: Describes the kernel’s role and features for Titanium products in IoT and data collection.
+2. **Getting Started**: Detailed steps for setting up and installing the project using **PlatformIO**.
+3. **Architecture**: A modular breakdown of the `TitaniumKernel` and its components.
+4. **Configuration**: Explains how to configure and customize the kernel through the `GlobalConfig` directory.
+5. **Usage**: Provides examples of how to use specific modules (e.g., HTTP server) in the project.
+6. **License**: Mentions the MIT License for the repository.
+
+---
