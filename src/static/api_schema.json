@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Application External Types",
+  "type": "object",
+  "definitions": {
+    "app_data_type_e": {
+      "type": "integer",
+      "enum": [0, 1],
+      "description": "Enumerates the types of application data. 0=DATA_TYPE_REPORT, 1=DATA_TYPE_COMMAND"
+    },
+    "command_index_et": {
+      "type": "integer",
+      "enum": [0, 1],
+      "description": "Enumerates supported command types. 0=CMD_GET_TIME, 1=CMD_SET_CALIBRATION"
+    },
+    "command_status_et": {
+      "type": "integer",
+      "enum": [0, -1, -2],
+      "description": "Status/result of command execution."
+    },
+    "cmd_set_calibration_st": {
+      "type": "object",
+      "properties": {
+        "sensor_index": { "type": "integer", "minimum": 0 },
+        "gain": { "type": "number" },
+        "offset": { "type": "number" }
+      },
+      "required": ["sensor_index", "gain", "offset"],
+      "additionalProperties": false,
+      "description": "Payload structure for the calibration command."
+    },
+    "command_st": {
+      "type": "object",
+      "properties": {
+        "command_index": { "$ref": "#/definitions/command_index_et" },
+        "command_u": {
+          "type": "object",
+          "properties": {
+            "set_calibration": { "$ref": "#/definitions/cmd_set_calibration_st" }
+          },
+          "required": ["set_calibration"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["command_index", "command_u"],
+      "additionalProperties": false,
+      "description": "Generic command structure with type-discriminated payload."
+    },
+    "command_response_st": {
+      "type": "object",
+      "properties": {
+        "command_index": { "$ref": "#/definitions/command_index_et" },
+        "command_status": { "$ref": "#/definitions/command_status_et" },
+        "sensor_index": { "type": "integer", "minimum": 0 }
+      },
+      "required": ["command_index", "command_status", "sensor_index"],
+      "additionalProperties": false,
+      "description": "Response to a command sent to the device."
+    },
+    "sensor_report_st": {
+      "type": "object",
+      "description": "Placeholder for sensor_report_st structure from app/sensor/sensor.h",
+      "properties": {},
+      "additionalProperties": true
+    },
+    "device_report_st": {
+      "type": "object",
+      "properties": {
+        "timestamp": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+          "description": "Timestamp in ISO 8601 format e.g., '2025-06-29T15:20:00'"
+        },
+        "sensors": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/sensor_report_st" },
+          "description": "Array of sensor reports for each channel",
+          "maxItems": 16
+        },
+        "num_of_channels": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16,
+          "description": "Number of valid sensor channels in the report"
+        }
+      },
+      "required": ["timestamp", "sensors", "num_of_channels"],
+      "additionalProperties": false,
+      "description": "Represents a device report containing sensor readings."
+    }
+  }
+}

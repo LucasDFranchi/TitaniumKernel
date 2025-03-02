@@ -33,7 +33,6 @@
       top: 16px;
       right: 16px;
       border: 1px solid #aaa;
-      background-color: #ccc; /* Default gray */
     }
 
     .led-green {
@@ -42,6 +41,10 @@
 
     .led-red {
       background-color: #dc3545;
+    }
+
+    .led-gray {
+      background-color: #ccc;
     }
 
     h2 {
@@ -108,18 +111,11 @@
     button:hover {
       background-color: #005fa3;
     }
-
-    #uploadStatus {
-      margin-top: 1rem;
-      font-size: 0.9rem;
-      color: #333;
-      min-height: 1.2em;
-    }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="status-led" id="connection-led" title="Wi-Fi status"></div>
+    <div class="status-led {{led_class}}"></div>
     <h2>IoCloud</h2>
 
     <div class="tabs">
@@ -140,10 +136,11 @@
     </div>
 
     <div id="ota" class="form-section">
-      <label for="firmware">Firmware (.bin)</label>
-      <input type="file" id="firmware" accept=".bin" required />
-      <button id="uploadBtn">Upload & Flash</button>
-      <div id="uploadStatus"></div>
+      <form action="/upload" method="POST" enctype="multipart/form-data">
+        <label for="firmware">Firmware (.bin)</label>
+        <input type="file" id="firmware" name="firmware" accept=".bin" required />
+        <button type="submit">Upload & Flash</button>
+      </form>
     </div>
   </div>
 
@@ -157,65 +154,6 @@
       document.querySelector('.tab[onclick*="' + id + '"]').classList.add('active');
       document.getElementById(id).classList.add('active');
     }
-
-    function updateLed() {
-      fetch('/status')
-        .then(res => res.json())
-        .then(data => {
-          const led = document.getElementById('connection-led');
-          if (data.connected) {
-            led.classList.remove('led-red');
-            led.classList.add('led-green');
-          } else {
-            led.classList.remove('led-green');
-            led.classList.add('led-red');
-          }
-        })
-        .catch(() => {
-          const led = document.getElementById('connection-led');
-          led.classList.remove('led-green');
-          led.classList.add('led-red');
-        });
-    }
-
-    setInterval(updateLed, 2000);
-    window.onload = updateLed;
-
-    document.getElementById('uploadBtn').addEventListener('click', async (e) => {
-      e.preventDefault();
-
-      const fileInput = document.getElementById('firmware');
-      const file = fileInput.files[0];
-      const statusEl = document.getElementById('uploadStatus');
-
-      if (!file) {
-        statusEl.textContent = 'Please select a firmware file.';
-        return;
-      }
-
-      statusEl.textContent = 'Uploading...';
-
-      try {
-        const arrayBuffer = await file.arrayBuffer();
-
-        const response = await fetch('/upload', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/octet-stream'
-          },
-          body: arrayBuffer
-        });
-
-        if (response.ok) {
-          const text = await response.text();
-          statusEl.textContent = 'Upload successful: ' + text;
-        } else {
-          statusEl.textContent = 'Upload failed: ' + response.statusText;
-        }
-      } catch (err) {
-        statusEl.textContent = 'Upload error: ' + err.message;
-      }
-    });
   </script>
 </body>
 </html>
