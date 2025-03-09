@@ -1,8 +1,8 @@
-#include "../Logger/logger.h"
-
-#include "../GlobalConfig/global_config.h"
 #include "http_server_task.h"
-#include "../Network/network_task.h"
+
+#include "global_config/global_config.h"
+#include "logger/logger.h"
+#include "tasks/core/network/network_task.h"
 
 /**
  * @brief Pointer to the global configuration structure.

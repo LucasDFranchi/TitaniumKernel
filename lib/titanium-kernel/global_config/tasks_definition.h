@@ -37,12 +37,6 @@
 #define HTTP_SERVER_TASK_NAME "HTTP Server Task"
 #define HTTP_SERVER_TASK_DELAY 1000  // Delay in milliseconds
 
-// Temperature Monitoring Task configuration
-#define APPLICATION_TASK_PRIORITY 1
-#define APPLICATION_TASK_STACK_SIZE (2048 * 10)
-#define APPLICATION_TASK_NAME "Temperature Task"
-#define APPLICATION_TASK_DELAY 1000  // Delay in milliseconds
-
 // MQTT Client Task configuration
 #define MQTT_CLIENT_TASK_PRIORITY 3
 #define MQTT_CLIENT_TASK_STACK_SIZE (2048 * 10)

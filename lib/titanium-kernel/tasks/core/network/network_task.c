@@ -6,14 +6,14 @@
  * Access Point (AP) and Station (STA) modes. It supports setting up an AP,
  * connecting to an external network as a STA, and handling network events.
  */
-#include "network_task.h"
+#include "tasks/core/network/network_task.h"
 #include "esp_event.h"
 #include "esp_system.h"
 #include "esp_wifi.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "../GlobalConfig/global_config.h"
-#include "../Logger/logger.h"
+#include "global_config/global_config.h"
+#include "logger/logger.h"
 #include "lwip/err.h"
 #include "lwip/sockets.h"
 #include "lwip/sys.h"

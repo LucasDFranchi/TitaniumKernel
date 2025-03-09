@@ -9,9 +9,11 @@
  * prevent unwanted resets while the system is functioning correctly.
  */
 #include "watchdog_task.h"
-#include "../Logger/logger.h"
+
+#include "logger/logger.h"
+#include "global_config/global_config.h"
+
 #include "esp_task_wdt.h"
-#include "../GlobalConfig/global_config.h"
 
 static const char *TAG                          = "Watchdog Task";  ///< Tag for logging
 static const uint32_t WATCHDOG_TIMEOUT_MILI_SEC = 15000;            ///< Watchdog timeout in miliseconds

@@ -1,5 +1,5 @@
 #include "logger.h"
-#include "../GlobalConfig/global_config.h"
+#include "global_config/global_config.h"
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>

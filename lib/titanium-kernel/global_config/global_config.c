@@ -1,6 +1,5 @@
 #include "global_config.h"
-#include "application_external_types.h"
-#include "esp_err.h"
+#include "error/error_num.h"
 #include "nvs_flash.h"
 #include "string.h"
 

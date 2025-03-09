@@ -10,8 +10,10 @@
  */
 
 #include "sntp_task.h"
-#include "../Logger/logger.h"
-#include "../GlobalConfig/global_config.h"
+
+#include "logger/logger.h"
+#include "global_config/global_config.h"
+
 #include "lwip/apps/sntp.h"
 
 /**
