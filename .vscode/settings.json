@@ -2,11 +2,17 @@
     "files.associations": {
         "stdio.h": "c",
         "gpio.h": "c",
-        "global_config.h": "c",
+        "global_events.h": "c",
         "freertos.h": "c",
         "esp_log.h": "c",
         "array": "c",
         "string": "c",
-        "string_view": "c"
+        "string_view": "c",
+        "network_task.h": "c",
+        "string.h": "c",
+        "executor": "c",
+        "functional": "c",
+        "sntp_task.h": "c",
+        "random": "cpp"
     }
 }
