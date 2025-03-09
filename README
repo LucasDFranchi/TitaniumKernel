@@ -71,7 +71,7 @@ TitaniumKernel can be customized through configuration files, which are located 
 Example configuration for setting up the MQTT client:
 
 ```c
-#include "global_config.h"
+#include "global_events.h"
 #include "mqtt_client_task.h"
 
 void app_main() {
