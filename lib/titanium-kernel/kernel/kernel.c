@@ -82,6 +82,8 @@ kernel_error_st kernel_global_events_initialize(global_events_st *global_events)
     return KERNEL_ERROR_NONE;
 }
 
+kernel_error_st kernel_global_queues_initialize(global)
+
 /**
  * @brief Initializes the kernel by creating essential tasks.
  *
@@ -179,4 +181,12 @@ kernel_error_st kernel_enable_mqtt(global_events_st *global_events) {
 
 kernel_error_st kernel_start_tasks(void) {
     return task_manager_start_queued_tasks();
+}
+
+kernel_error_st kernel_enqueue_task(task_interface_st *task) {
+    if (task == NULL) {
+        return KERNEL_ERROR_NULL;
+    }
+
+    return task_manager_enqueue_task(task);
 }
