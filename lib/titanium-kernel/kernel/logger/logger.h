@@ -2,7 +2,7 @@
 #define LOGGER_H
 
 #include "kernel/error/error_num.h"
-#include "kernel/inter_task_communication/events/events_definition.h"
+#include "kernel/inter_task_communication/inter_task_communication.h"
 
 /**
  * @file logger.h
@@ -14,7 +14,6 @@
  * ensures that the appropriate logging method is used based on network status.
  */
 
-
 /**
  * @enum log_output_e
  * @brief Enumeration of log output channels.
@@ -24,8 +23,8 @@
  * - UDP: Logs transmitted over the network to a PaperTrail server.
  */
 typedef enum log_output_e {
-    SERIAL = 0,  /**< Output log messages to the serial console. */
-    UDP,         /**< Output log messages to a UDP server. */
+    SERIAL = 0, /**< Output log messages to the serial console. */
+    UDP,        /**< Output log messages to a UDP server. */
 } log_output_et;
 
 /**
@@ -39,14 +38,13 @@ typedef enum log_output_e {
  * - DEBUG: Detailed debug messages for troubleshooting.
  */
 typedef enum log_level_e {
-    INFO = 0,   /**< Informational messages */
-    WARN,       /**< Warning messages */
-    ERR,        /**< Error messages */
-    DEBUG,      /**< Debug messages */
+    INFO = 0, /**< Informational messages */
+    WARN,     /**< Warning messages */
+    ERR,      /**< Error messages */
+    DEBUG,    /**< Debug messages */
 } log_level_et;
 
-
-kernel_error_st logger_initialize(log_output_et log_output, global_events_st* global_events);
+kernel_error_st logger_initialize(log_output_et log_output, global_structures_st* global_structures);
 
 /**
  * @brief Prints a log message with a specified log level.
@@ -65,6 +63,6 @@ kernel_error_st logger_initialize(log_output_et log_output, global_events_st* gl
  *         ESP_ERR_INVALID_SIZE if the log message exceeds the size limit, or
  *         other error codes based on the underlying send function.
  */
-esp_err_t logger_print(log_level_et log_level, const char* tag, const char* format, ...);
+kernel_error_st logger_print(log_level_et log_level, const char* tag, const char* format, ...);
 
 #endif  // LOGGER_H

@@ -53,7 +53,7 @@ static wifi_config_t sta_config         = {0};    ///< Configuration structure f
  * across the system. It provides a centralized configuration and state management
  * for consistent and efficient event handling. Ensure proper initialization before use.
  */
-static global_events_st *global_events = NULL;
+static global_structures_st* _global_structures = NULL;    ///< Pointer to the global configuration structure.
 
 /**
  * @brief Event handler for Wi-Fi-related events.
@@ -71,12 +71,12 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base,
         switch (event_id) {
             case WIFI_EVENT_AP_STACONNECTED:
                 logger_print(INFO, TAG, "WIFI_EVENT_AP_STACONNECTED");
-                xEventGroupSetBits(global_events->firmware_event_group, WIFI_CONNECTED_AP);
+                xEventGroupSetBits(_global_structures->global_events.firmware_event_group, WIFI_CONNECTED_AP);
                 network_status.is_connect_ap = true;
                 break;
             case WIFI_EVENT_AP_STADISCONNECTED:
                 logger_print(INFO, TAG, "WIFI_EVENT_AP_STADISCONNECTED");
-                xEventGroupClearBits(global_events->firmware_event_group, WIFI_CONNECTED_AP);
+                xEventGroupClearBits(_global_structures->global_events.firmware_event_group, WIFI_CONNECTED_AP);
                 network_status.is_connect_ap = false;
                 break;
             case WIFI_EVENT_STA_START:
@@ -84,7 +84,7 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base,
                 break;
             case WIFI_EVENT_STA_DISCONNECTED:
                 logger_print(INFO, TAG, "WIFI_EVENT_STA_DISCONNECTED");
-                xEventGroupClearBits(global_events->firmware_event_group, WIFI_CONNECTED_STA);
+                xEventGroupClearBits(_global_structures->global_events.firmware_event_group, WIFI_CONNECTED_STA);
                 network_status.is_connect_sta = false;
                 break;
             case WIFI_EVENT_STA_CONNECTED:
@@ -97,7 +97,7 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base,
                 ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
                 logger_print(INFO, TAG, "Got IP:" IPSTR, IP2STR(&event->ip_info.ip));
 
-                xEventGroupSetBits(global_events->firmware_event_group, WIFI_CONNECTED_STA);
+                xEventGroupSetBits(_global_structures->global_events.firmware_event_group, WIFI_CONNECTED_STA);
                 network_status.is_connect_sta = true;
                 break;
         }
@@ -262,10 +262,10 @@ esp_err_t network_set_credentials(const char *ssid, const char *password) {
  * @param[in] pvParameters Pointer to task parameters (TaskHandle_t).
  */
 void network_task_execute(void *pvParameters) {
-    global_events = (global_events_st *)pvParameters;
+    _global_structures = (global_structures_st *)pvParameters;
     if ((network_task_initialize() != ESP_OK) ||
-        (global_events == NULL) ||
-        (global_events->firmware_event_group == NULL)) {
+        (_global_structures == NULL) ||
+        (_global_structures->global_events.firmware_event_group == NULL)) {
         logger_print(ERR, TAG, "Failed to initialize network task");
         vTaskDelete(NULL);
     }

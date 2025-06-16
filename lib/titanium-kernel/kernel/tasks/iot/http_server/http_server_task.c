@@ -11,7 +11,7 @@
  * across the system. It provides a centralized configuration and state management
  * for consistent and efficient event handling. Ensure proper initialization before use.
  */
-static global_events_st* global_events = NULL;
+static global_structures_st* _global_structures = NULL;    ///< Pointer to the global configuration structure.
 
 static const char* TAG            = "HTTP Server Task"; /**< Logging tag for HTTPServerProcess class. */
 static httpd_config_t config      = HTTPD_DEFAULT_CONFIG();
@@ -20,14 +20,14 @@ static bool is_server_connected   = false;
 
 extern const uint8_t bin_data_index_html_start[] asm("_binary_index_html_start");          /**< Start of index.html binary data. */
 extern const uint8_t bin_data_index_html_end[] asm("_binary_index_html_end");              /**< End of index.html binary data. */
-extern const uint8_t bin_data_styles_css_start[] asm("_binary_styles_css_start");          /**< Start of styles.css binary data. */
-extern const uint8_t bin_data_styles_css_end[] asm("_binary_styles_css_end");              /**< End of styles.css binary data. */
-extern const uint8_t bin_data_app_js_start[] asm("_binary_app_js_start");                  /**< Start of app.js binary data. */
-extern const uint8_t bin_data_app_js_end[] asm("_binary_app_js_end");                      /**< End of app.js binary data. */
-extern const uint8_t bin_data_jquery3_js_start[] asm("_binary_jquery_3_3_1_min_js_start"); /**< Start of jquery-3.3.1.min.js binary data. */
-extern const uint8_t bin_data_jquery3_js_end[] asm("_binary_jquery_3_3_1_min_js_end");     /**< End of jquery-3.3.1.min.js binary data. */
-extern const uint8_t bin_data_favicon_ico_start[] asm("_binary_favicon_ico_start");        /**< Start of favicon.ico binary data. */
-extern const uint8_t bin_data_favicon_ico_end[] asm("_binary_favicon_ico_end");            /**< End of favicon.ico binary data. */
+// extern const uint8_t bin_data_styles_css_start[] asm("_binary_styles_css_start");          /**< Start of styles.css binary data. */
+// extern const uint8_t bin_data_styles_css_end[] asm("_binary_styles_css_end");              /**< End of styles.css binary data. */
+// extern const uint8_t bin_data_app_js_start[] asm("_binary_app_js_start");                  /**< Start of app.js binary data. */
+// extern const uint8_t bin_data_app_js_end[] asm("_binary_app_js_end");                      /**< End of app.js binary data. */
+// extern const uint8_t bin_data_jquery3_js_start[] asm("_binary_jquery_3_3_1_min_js_start"); /**< Start of jquery-3.3.1.min.js binary data. */
+// extern const uint8_t bin_data_jquery3_js_end[] asm("_binary_jquery_3_3_1_min_js_end");     /**< End of jquery-3.3.1.min.js binary data. */
+// extern const uint8_t bin_data_favicon_ico_start[] asm("_binary_favicon_ico_start");        /**< Start of favicon.ico binary data. */
+// extern const uint8_t bin_data_favicon_ico_end[] asm("_binary_favicon_ico_end");            /**< End of favicon.ico binary data. */
 
 /**
  * @brief HTTP GET handler for serving index.html.
@@ -44,65 +44,65 @@ static esp_err_t get_uri_index_html(httpd_req_t* req) {
     return ESP_OK;
 }
 
-/**
- * @brief HTTP GET handler for serving styles.css.
- *
- * @param[in] req HTTP request object.
- * @return ESP_OK on success, or an error code on failure.
- */
-static esp_err_t get_uri_get_app_css(httpd_req_t* req) {
-    httpd_resp_set_type(req, "text/css");
-    httpd_resp_send(req,
-                    (const char*)(bin_data_styles_css_start),
-                    bin_data_styles_css_end - bin_data_styles_css_start);
+// /**
+//  * @brief HTTP GET handler for serving styles.css.
+//  *
+//  * @param[in] req HTTP request object.
+//  * @return ESP_OK on success, or an error code on failure.
+//  */
+// static esp_err_t get_uri_get_app_css(httpd_req_t* req) {
+//     httpd_resp_set_type(req, "text/css");
+//     httpd_resp_send(req,
+//                     (const char*)(bin_data_styles_css_start),
+//                     bin_data_styles_css_end - bin_data_styles_css_start);
 
-    return ESP_OK;
-}
+//     return ESP_OK;
+// }
 
-/**
- * @brief HTTP GET handler for serving app.js.
- *
- * @param[in] req HTTP request object.
- * @return ESP_OK on success, or an error code on failure.
- */
-static esp_err_t get_uri_get_app_js(httpd_req_t* req) {
-    httpd_resp_set_type(req, "text/javascript");
-    httpd_resp_send(req,
-                    (const char*)(bin_data_app_js_start),
-                    bin_data_app_js_end - bin_data_app_js_start - 1);
+// /**
+//  * @brief HTTP GET handler for serving app.js.
+//  *
+//  * @param[in] req HTTP request object.
+//  * @return ESP_OK on success, or an error code on failure.
+//  */
+// static esp_err_t get_uri_get_app_js(httpd_req_t* req) {
+//     httpd_resp_set_type(req, "text/javascript");
+//     httpd_resp_send(req,
+//                     (const char*)(bin_data_app_js_start),
+//                     bin_data_app_js_end - bin_data_app_js_start - 1);
 
-    return ESP_OK;
-}
+//     return ESP_OK;
+// }
 
-/**
- * @brief HTTP GET handler for serving jquery-3.3.1.min.js.
- *
- * @param[in] req HTTP request object.
- * @return ESP_OK on success, or an error code on failure.
- */
-static esp_err_t get_uri_get_jquery_js(httpd_req_t* req) {
-    httpd_resp_set_type(req, "text/javascript");
-    httpd_resp_send(
-        req, (const char*)(bin_data_jquery3_js_start),
-        bin_data_jquery3_js_end - bin_data_jquery3_js_start - 1);
+// /**
+//  * @brief HTTP GET handler for serving jquery-3.3.1.min.js.
+//  *
+//  * @param[in] req HTTP request object.
+//  * @return ESP_OK on success, or an error code on failure.
+//  */
+// static esp_err_t get_uri_get_jquery_js(httpd_req_t* req) {
+//     httpd_resp_set_type(req, "text/javascript");
+//     httpd_resp_send(
+//         req, (const char*)(bin_data_jquery3_js_start),
+//         bin_data_jquery3_js_end - bin_data_jquery3_js_start - 1);
 
-    return ESP_OK;
-}
+//     return ESP_OK;
+// }
 
-/**
- * @brief HTTP GET handler for serving favicon.ico.
- *
- * @param[in] req HTTP request object.
- * @return ESP_OK on success, or an error code on failure.
- */
-static esp_err_t get_uri_favicon_icon(httpd_req_t* req) {
-    httpd_resp_set_type(req, "image/x-icon");
-    httpd_resp_send(
-        req, (const char*)(bin_data_favicon_ico_start),
-        bin_data_favicon_ico_end - bin_data_favicon_ico_start);
+// /**
+//  * @brief HTTP GET handler for serving favicon.ico.
+//  *
+//  * @param[in] req HTTP request object.
+//  * @return ESP_OK on success, or an error code on failure.
+//  */
+// static esp_err_t get_uri_favicon_icon(httpd_req_t* req) {
+//     httpd_resp_set_type(req, "image/x-icon");
+//     httpd_resp_send(
+//         req, (const char*)(bin_data_favicon_ico_start),
+//         bin_data_favicon_ico_end - bin_data_favicon_ico_start);
 
-    return ESP_OK;
-}
+//     return ESP_OK;
+// }
 
 /**
  * @brief HTTP POST handler for processing WiFi credentials.
@@ -165,33 +165,33 @@ esp_err_t initialize_request_list(void) {
         .user_ctx = NULL,
     };
 
-    static const httpd_uri_t uri_get_styles_css = {
-        .uri      = "/styles.css",
-        .method   = HTTP_GET,
-        .handler  = get_uri_get_app_css,
-        .user_ctx = NULL,
-    };
+    // static const httpd_uri_t uri_get_styles_css = {
+    //     .uri      = "/styles.css",
+    //     .method   = HTTP_GET,
+    //     .handler  = get_uri_get_app_css,
+    //     .user_ctx = NULL,
+    // };
 
-    static const httpd_uri_t uri_get_app_js = {
-        .uri      = "/app.js",
-        .method   = HTTP_GET,
-        .handler  = get_uri_get_app_js,
-        .user_ctx = NULL,
-    };
+    // static const httpd_uri_t uri_get_app_js = {
+    //     .uri      = "/app.js",
+    //     .method   = HTTP_GET,
+    //     .handler  = get_uri_get_app_js,
+    //     .user_ctx = NULL,
+    // };
 
-    static const httpd_uri_t uri_get_jquery_js = {
-        .uri      = "/jquery-3.3.1.min.js",
-        .method   = HTTP_GET,
-        .handler  = get_uri_get_jquery_js,
-        .user_ctx = NULL,
-    };
+    // static const httpd_uri_t uri_get_jquery_js = {
+    //     .uri      = "/jquery-3.3.1.min.js",
+    //     .method   = HTTP_GET,
+    //     .handler  = get_uri_get_jquery_js,
+    //     .user_ctx = NULL,
+    // };
 
-    static const httpd_uri_t uri_get_favicon_ico = {
-        .uri      = "/favicon.ico",
-        .method   = HTTP_GET,
-        .handler  = get_uri_favicon_icon,
-        .user_ctx = NULL,
-    };
+    // static const httpd_uri_t uri_get_favicon_ico = {
+    //     .uri      = "/favicon.ico",
+    //     .method   = HTTP_GET,
+    //     .handler  = get_uri_favicon_icon,
+    //     .user_ctx = NULL,
+    // };
 
     static const httpd_uri_t uri_post_credentials = {
         .uri      = "/wifiCredentials.json",
@@ -203,14 +203,14 @@ esp_err_t initialize_request_list(void) {
     esp_err_t result = ESP_OK;
     result += httpd_register_uri_handler(http_server, &uri_index_html);
     ESP_ERROR_CHECK_WITHOUT_ABORT(result);
-    result += httpd_register_uri_handler(http_server, &uri_get_styles_css);
-    ESP_ERROR_CHECK_WITHOUT_ABORT(result);
-    result += httpd_register_uri_handler(http_server, &uri_get_app_js);
-    ESP_ERROR_CHECK_WITHOUT_ABORT(result);
-    result += httpd_register_uri_handler(http_server, &uri_get_jquery_js);
-    ESP_ERROR_CHECK_WITHOUT_ABORT(result);
-    result += httpd_register_uri_handler(http_server, &uri_get_favicon_ico);
-    ESP_ERROR_CHECK_WITHOUT_ABORT(result);
+    // result += httpd_register_uri_handler(http_server, &uri_get_styles_css);
+    // ESP_ERROR_CHECK_WITHOUT_ABORT(result);
+    // result += httpd_register_uri_handler(http_server, &uri_get_app_js);
+    // ESP_ERROR_CHECK_WITHOUT_ABORT(result);
+    // result += httpd_register_uri_handler(http_server, &uri_get_jquery_js);
+    // ESP_ERROR_CHECK_WITHOUT_ABORT(result);
+    // result += httpd_register_uri_handler(http_server, &uri_get_favicon_ico);
+    // ESP_ERROR_CHECK_WITHOUT_ABORT(result);
     result += httpd_register_uri_handler(http_server, &uri_post_credentials);
     ESP_ERROR_CHECK_WITHOUT_ABORT(result);
 
@@ -273,23 +273,26 @@ static esp_err_t http_server_task_initialize(void) {
  * @param[in] pvParameters Pointer to task parameters (TaskHandle_t).
  */
 void http_server_task_execute(void* pvParameters) {
-    global_events = (global_events_st*)pvParameters;
+    _global_structures = (global_structures_st *)pvParameters;
     if ((http_server_task_initialize() != ESP_OK) ||
-        (global_events == NULL) ||
-        (global_events->firmware_event_group == NULL)) {
+        (_global_structures == NULL) ||
+        (_global_structures->global_events.firmware_event_group == NULL)) {
         logger_print(ERR, TAG, "Failed to initialize HTTP Server task");
         vTaskDelete(NULL);
     }
 
     while (1) {
-        EventBits_t firmware_event_bits = xEventGroupGetBits(global_events->firmware_event_group);
+        EventBits_t firmware_event_bits = xEventGroupGetBits(_global_structures->global_events.firmware_event_group);
+        // logger_print(INFO, TAG, "MAIN SERVER");
 
         if (is_server_connected) {
             if ((firmware_event_bits & WIFI_CONNECTED_AP) == 0) {
+                logger_print(INFO, TAG, "STOP SERVER");
                 stop_http_server();
             }
         } else {
             if (firmware_event_bits & WIFI_CONNECTED_AP) {
+                logger_print(INFO, TAG, "START SERVER");
                 start_http_server();
             }
         }

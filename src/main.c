@@ -9,7 +9,7 @@
  * across the system. It provides a centralized configuration and state management
  * for consistent and efficient event handling. Ensure proper initialization before use.
  */
-static global_events_st global_events = {0};
+static global_structures_st global_structures = {0};
 
 task_interface_st app_task = {
     .arg          = NULL,
@@ -21,12 +21,12 @@ task_interface_st app_task = {
 };
 
 void app_main() {
-    kernel_initialize(SERIAL, &global_events);
-    kernel_enable_network(&global_events);
-    kernel_enable_http_server(&global_events);
-    kernel_enable_mqtt(&global_events);
+    kernel_initialize(SERIAL, &global_structures);
+    kernel_enable_network(&global_structures);
+    kernel_enable_http_server(&global_structures);
+    // kernel_enable_mqtt(&global_structures);
 
-    kernel_enqueue_task(&app_task);
+    // kernel_enqueue_task(&app_task);
 
     kernel_start_tasks();
 }

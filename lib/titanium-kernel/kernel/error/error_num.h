@@ -50,6 +50,7 @@ typedef enum kernel_error_s {
     KERNEL_ERROR_MUTEX_INIT_FAIL     = -21, /**< Mutex initialization failure */
     KERNEL_ERROR_SOCK_CREATE_FAIL    = -22, /**< Socket creation failure */
     KERNEL_ERROR_GLOBAL_EVENTS_INIT  = -23, /**< Global events initialization failure */
+    KERNEL_ERROR_GLOBAL_QUEUES_INIT  = -24, /**< Global queues initialization failure */
 } kernel_error_st;
 
 #endif /* ERROR_ENUM_H */

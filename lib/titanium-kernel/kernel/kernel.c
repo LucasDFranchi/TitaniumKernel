@@ -69,11 +69,6 @@ static kernel_error_st kernel_initialize_nvs(void) {
 }
 
 kernel_error_st kernel_global_events_initialize(global_events_st *global_events) {
-    if (global_events == NULL) {
-        logger_print(ERR, "KERNEL", "Invalid global events pointer");
-        return KERNEL_ERROR_INVALID_ARG;
-    }
-
     if (global_events_initialize(global_events) != KERNEL_ERROR_NONE) {
         logger_print(ERR, "KERNEL", "Failed to initialize global events");
         return KERNEL_ERROR_GLOBAL_EVENTS_INIT;
@@ -82,7 +77,14 @@ kernel_error_st kernel_global_events_initialize(global_events_st *global_events)
     return KERNEL_ERROR_NONE;
 }
 
-kernel_error_st kernel_global_queues_initialize(global)
+kernel_error_st kernel_global_queues_initialize(global_queues_st *global_queue) {
+    if (global_queues_initialize(global_queue) != KERNEL_ERROR_NONE) {
+        logger_print(ERR, "KERNEL", "Failed to initialize global queues");
+        return KERNEL_ERROR_GLOBAL_QUEUES_INIT;
+    }
+
+    return KERNEL_ERROR_NONE;
+}
 
 /**
  * @brief Initializes the kernel by creating essential tasks.
@@ -92,10 +94,10 @@ kernel_error_st kernel_global_queues_initialize(global)
  * @param global_events Pointer to the global configuration structure.
  * @return KERNEL_ERROR_NONE on success, KERNEL_ERROR_TASK_CREATE if task creation fails.
  */
-kernel_error_st kernel_initialize(log_output_et log_output, global_events_st *global_events) {
+kernel_error_st kernel_initialize(log_output_et log_output, global_structures_st *global_structures) {
     kernel_error_st ret = KERNEL_ERROR_NONE;
 
-    if (global_events == NULL) {
+    if ((global_structures == NULL)) {
         return KERNEL_ERROR_INVALID_ARG;
     }
 
@@ -103,20 +105,27 @@ kernel_error_st kernel_initialize(log_output_et log_output, global_events_st *gl
         logger_print(ERR, "KERNEL", "Failed to initialize NVS");
         return KERNEL_ERROR_NVS_INIT;
     }
+    logger_initialize(log_output, global_structures);
 
-    kernel_global_events_initialize(global_events);
+    if (kernel_global_events_initialize(&global_structures->global_events) != KERNEL_ERROR_NONE) {
+        logger_print(ERR, "KERNEL", "Failed to initialize global events");
+        return KERNEL_ERROR_GLOBAL_EVENTS_INIT;
+    }
+    if (kernel_global_queues_initialize(&global_structures->global_queues) != KERNEL_ERROR_NONE) {
+        logger_print(ERR, "KERNEL", "Failed to initialize global queues");
+        return KERNEL_ERROR_GLOBAL_QUEUES_INIT;
+    }
 
-    logger_initialize(log_output, global_events);
 
-    sntp_task.arg = (void *)global_events;
+    sntp_task.arg = (void *)global_structures;
     ret           = task_manager_enqueue_task(&sntp_task);
 
     if (ret != KERNEL_ERROR_NONE) {
         return ret;
     }
 
-    watchdog_task.arg = (void *)global_events;
-    ret               = task_manager_enqueue_task(&watchdog_task);
+    // watchdog_task.arg = (void *)&global_structures;
+    // ret               = task_manager_enqueue_task(&watchdog_task);
 
     if (ret != KERNEL_ERROR_NONE) {
         return ret;
@@ -134,12 +143,12 @@ kernel_error_st kernel_initialize(log_output_et log_output, global_events_st *gl
  * @return KERNEL_ERROR_NONE on success, KERNEL_ERROR_TASK_CREATE if task creation fails,
  *         or KERNEL_ERROR_NULL if global_events is NULL.
  */
-kernel_error_st kernel_enable_network(global_events_st *global_events) {
-    if (global_events == NULL) {
+kernel_error_st kernel_enable_network(global_structures_st *global_structures) {
+    if (global_structures == NULL) {
         return KERNEL_ERROR_INVALID_ARG;
     }
 
-    network_task.arg = (void *)global_events;
+    network_task.arg = (void *)global_structures;
     return task_manager_enqueue_task(&network_task);
 }
 
@@ -152,12 +161,12 @@ kernel_error_st kernel_enable_network(global_events_st *global_events) {
  * @return KERNEL_ERROR_NONE on success, KERNEL_ERROR_TASK_CREATE if task creation fails,
  *         or KERNEL_ERROR_NULL if global_events is NULL.
  */
-kernel_error_st kernel_enable_http_server(global_events_st *global_events) {
-    if (global_events == NULL) {
+kernel_error_st kernel_enable_http_server(global_structures_st *global_structures) {
+    if (global_structures == NULL) {
         return KERNEL_ERROR_INVALID_ARG;
     }
 
-    http_server_task.arg = (void *)global_events;
+    http_server_task.arg = (void *)global_structures;
     return task_manager_enqueue_task(&http_server_task);
 }
 
@@ -170,12 +179,12 @@ kernel_error_st kernel_enable_http_server(global_events_st *global_events) {
  * @return KERNEL_ERROR_NONE on success, KERNEL_ERROR_TASK_CREATE if task creation fails,
  *         or KERNEL_ERROR_NULL if global_events is NULL.
  */
-kernel_error_st kernel_enable_mqtt(global_events_st *global_events) {
-    if (global_events == NULL) {
+kernel_error_st kernel_enable_mqtt(global_structures_st *global_structures) {
+    if (global_structures == NULL) {
         return KERNEL_ERROR_INVALID_ARG;
     }
 
-    mqtt_task.arg = (void *)global_events;
+    mqtt_task.arg = (void *)global_structures;
     return task_manager_enqueue_task(&mqtt_task);
 }
 

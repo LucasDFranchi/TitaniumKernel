@@ -11,11 +11,11 @@
 #define LOGGER_UDP_HOST "logs5.papertrailapp.com"                                    ///< Papertrail hostname
 #define LOGGER_UDP_PORT (20770)                                                      ///< Papertrail port
 
-static log_output_et _log_output        = SERIAL;  ///< Log output channel (serial or UDP).
-static global_events_st* _global_events = NULL;    ///< Pointer to the global configuration structure.
-static SemaphoreHandle_t logger_mutex   = NULL;    ///< Mutex used for ensuring thread safety during UDP packet send operations.
-static struct sockaddr_in dest_addr     = {0};     ///< Destination address structure for the UDP server.
-static int sock                         = -1;      ///< UDP socket descriptor used for sending data.
+static log_output_et _log_output                = SERIAL;  ///< Log output channel (serial or UDP).
+static global_structures_st* _global_structures = NULL;    ///< Pointer to the global configuration structure.
+static SemaphoreHandle_t logger_mutex           = NULL;    ///< Mutex used for ensuring thread safety during UDP packet send operations.
+static struct sockaddr_in dest_addr             = {0};     ///< Destination address structure for the UDP server.
+static int sock                                 = -1;      ///< UDP socket descriptor used for sending data.
 
 /**
  * @brief Sends a UDP packet to the specified destination.
@@ -75,11 +75,11 @@ static kernel_error_st send_serial_packet(const char* packet) {
  * @return True if connected, false otherwise.
  */
 static bool is_station_connected(void) {
-    if (!_global_events || !_global_events->firmware_event_group) {
+    if (!_global_structures || !_global_structures->global_events.firmware_event_group) {
         return false;
     }
 
-    EventBits_t firmware_event_bits = xEventGroupGetBits(_global_events->firmware_event_group);
+    EventBits_t firmware_event_bits = xEventGroupGetBits(_global_structures->global_events.firmware_event_group);
 
     return (firmware_event_bits & WIFI_CONNECTED_STA) == 1;
 }
@@ -170,14 +170,14 @@ static kernel_error_st logger_send_message(const char* level, const char* tag, c
  * @param pvParameters Pointer to the global configuration.
  * @return ESP_OK on success, ESP_FAIL if initialization fails.
  */
-kernel_error_st logger_initialize(log_output_et log_output, global_events_st* global_events) {
+kernel_error_st logger_initialize(log_output_et log_output, global_structures_st* global_structures) {
     _log_output = log_output;
 
-    if (global_events == NULL) {
+    if (global_structures == NULL) {
         return KERNEL_ERROR_INVALID_ARG;
     }
 
-    _global_events = global_events;
+    _global_structures = global_structures;
 
     if (logger_mutex == NULL) {
         logger_mutex = xSemaphoreCreateMutex();
@@ -207,7 +207,7 @@ kernel_error_st logger_initialize(log_output_et log_output, global_events_st* gl
  *         ESP_ERR_INVALID_ARG if an invalid log level is provided.
  */
 kernel_error_st logger_print(log_level_et log_level, const char* tag, const char* format, ...) {
-    if ((!tag) || (!_global_events) || !_global_events->firmware_event_group) {
+    if ((!tag) || (!_global_structures) || !_global_structures->global_events.firmware_event_group) {
         return ESP_FAIL;
     }
 

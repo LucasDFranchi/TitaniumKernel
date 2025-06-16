@@ -4,6 +4,8 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
 
+#include "kernel/error/error_num.h"
+
 /**
  * @brief FreeRTOS event group for signaling system events.
  *
@@ -37,6 +39,6 @@ typedef struct global_events_s {
  *         - ESP_ERR_INVALID_ARG if the config pointer is NULL.
  *         - ESP_ERR_NO_MEM if memory allocation fails at any step.
  */
-esp_err_t global_events_initialize(global_events_st *config);
+kernel_error_st global_events_initialize(global_events_st *config);
 
 #endif /* EVENTS_DEFINITION_H */

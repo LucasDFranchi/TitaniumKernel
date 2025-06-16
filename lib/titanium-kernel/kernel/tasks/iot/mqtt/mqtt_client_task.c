@@ -51,10 +51,8 @@ typedef struct mqtt_topic_internal_s {
  * across the system. It provides a centralized configuration and state management
  * for consistent and efficient event handling. Ensure proper initialization before use.
  */
-static global_events_st* global_events = NULL;  ///< Pointer to the global configuration structure.
-
-static esp_mqtt_client_handle_t mqtt_client = {0};  ///< MQTT client handle.
-
+static global_structures_st* _global_structures                        = NULL;         ///< Pointer to the global configuration structure.
+static esp_mqtt_client_handle_t mqtt_client                            = {0};          ///< MQTT client handle.
 static const char* TAG                                                 = "MQTT Task";  ///< Log tag for MQTT task.
 static bool is_mqtt_connected                                          = false;        ///< MQTT connection status.
 static mqtt_topic_internal_st* mqtt_topics[MQTT_CLIEN_MAX_TOPIC_COUNT] = {0};          ///< Array of MQTT topics.
@@ -134,7 +132,7 @@ static void mqtt_event_handler(void* arg, esp_event_base_t base, int32_t event_i
  * This function deletes the semaphore, queue, and frees the memory allocated for
  * the provided MQTT topic structure. It is intended to be called when an MQTT topic
  * is no longer needed, ensuring proper resource cleanup and preventing memory leaks.
- * 
+ *
  * The function checks if the semaphore and queue are valid before attempting to delete
  * them. The memory allocated for the `mqtt_topic_internal_st` structure is freed after
  * all resources have been cleaned up.
@@ -210,9 +208,9 @@ static kernel_error_st mqtt_client_topic_enqueue(mqtt_topic_st* mqtt_topic) {
     }
 
     size_t mqtt_topic_size = snprintf(mqtt_topic_internal->topic,
-                                       sizeof(mqtt_topic_internal->topic),
-                                       "%s",
-                                       mqtt_topic->topic);
+                                      sizeof(mqtt_topic_internal->topic),
+                                      "%s",
+                                      mqtt_topic->topic);
     if (mqtt_topic_size >= sizeof(mqtt_topic_internal->topic)) {
         cleanup_mqtt_topic(mqtt_topic_internal);
         return KERNEL_ERROR_SNPRINTF;
@@ -498,16 +496,22 @@ static void mqtt_subscribe_topic_callback(const char* topic, const char* event_d
  * @param[in] pvParameters User-defined parameters (not used).
  */
 void mqtt_client_task_execute(void* pvParameters) {
-    global_events = (global_events_st*)pvParameters;
+    _global_structures = (global_structures_st*)pvParameters;
     if ((mqtt_client_task_initialize() != ESP_OK) ||
-        (global_events->firmware_event_group == NULL) ||
-        (global_events == NULL)) {
+        (_global_structures == NULL) ||
+        (_global_structures->global_queues.mqtt_topic_queue == NULL) ||
+        (_global_structures->global_events.firmware_event_group == NULL)) {
         logger_print(ERR, TAG, "Failed to initialize MQTT task");
         vTaskDelete(NULL);
     }
 
     while (1) {
-        EventBits_t firmware_event_bits = xEventGroupGetBits(global_events->firmware_event_group);
+        EventBits_t firmware_event_bits = xEventGroupGetBits(_global_structures->global_events.firmware_event_group);
+
+        mqtt_topic_st* mqtt_topic = NULL;
+        if (xQueueReceive(_global_structures->global_queues.mqtt_topic_queue, mqtt_topic, portMAX_DELAY) == pdTRUE) {
+            mqtt_client_topic_enqueue(mqtt_topic);
+        }
 
         if (is_mqtt_connected) {
             if ((firmware_event_bits & WIFI_CONNECTED_STA) == 0) {

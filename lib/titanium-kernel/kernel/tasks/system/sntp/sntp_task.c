@@ -11,8 +11,8 @@
 
 #include "sntp_task.h"
 
-#include "kernel/logger/logger.h"
 #include "kernel/inter_task_communication/events/events_definition.h"
+#include "kernel/logger/logger.h"
 
 #include "lwip/apps/sntp.h"
 
@@ -23,7 +23,7 @@
  * across the system. It provides a centralized configuration and state management
  * for consistent and efficient event handling. Ensure proper initialization before use.
  */
-static global_events_st *global_events = NULL;
+static global_structures_st *_global_structures = NULL;  ///< Pointer to the global configuration structure.
 
 static const char *TAG          = "SNTP Task";  ///< Tag for logging
 static bool is_sntp_initialized = false;        ///< Tracks if SNTP has been initialized
@@ -54,9 +54,9 @@ static void sntp_task_sync_time_obtain_time(void) {
     }
 
     if (timeinfo.tm_year < (2020 - 1900)) {
-        xEventGroupClearBits(global_events->firmware_event_group, TIME_SYNCED);
+        xEventGroupClearBits(_global_structures->global_events.firmware_event_group, TIME_SYNCED);
     } else {
-        xEventGroupSetBits(global_events->firmware_event_group, TIME_SYNCED);
+        xEventGroupSetBits(_global_structures->global_events.firmware_event_group, TIME_SYNCED);
         is_sntp_synced = true;
     }
 }
@@ -73,32 +73,32 @@ static void sntp_task_sync_time_obtain_time(void) {
 void sntp_task_execute(void *pvParameters) {
     logger_print(INFO, TAG, "Starting SNTP task execution...");
 
-    global_events = (global_events_st *)pvParameters;
-    if (global_events == NULL || global_events->firmware_event_group == NULL) {
+    _global_structures = (global_structures_st *)pvParameters;
+    if (_global_structures == NULL || _global_structures->global_events.firmware_event_group == NULL) {
         logger_print(ERR, TAG, "Failed to initialize SNTP task");
         vTaskDelete(NULL);
     }
 
     logger_print(DEBUG, TAG, "Waiting for Wi-Fi connection...");
-    EventBits_t firmware_event_bits = xEventGroupWaitBits(global_events->firmware_event_group,
+    EventBits_t firmware_event_bits = xEventGroupWaitBits(_global_structures->global_events.firmware_event_group,
                                                           WIFI_CONNECTED_STA,
                                                           pdFALSE,
                                                           pdFALSE,
                                                           portMAX_DELAY);
 
-    while (1) {
-        if (firmware_event_bits & WIFI_CONNECTED_STA) {
-            logger_print(DEBUG, TAG, "Trying to synchronize time...");
-            sntp_task_sync_time_obtain_time();
-        }
+    // while (1) {
+    //     if (firmware_event_bits & WIFI_CONNECTED_STA) {
+    //         logger_print(DEBUG, TAG, "Trying to synchronize time...");
+    //         sntp_task_sync_time_obtain_time();
+    //     }
 
-        vTaskDelay(pdMS_TO_TICKS(SNTP_TASK_DELAY));
+    //     vTaskDelay(pdMS_TO_TICKS(SNTP_TASK_DELAY));
 
-        if (is_sntp_synced) {
-            logger_print(INFO, TAG, "Time synchronization successful. Exiting SNTP task.");
-            break;
-        }
-    }
+    //     if (is_sntp_synced) {
+    //         logger_print(INFO, TAG, "Time synchronization successful. Exiting SNTP task.");
+    //         break;
+    //     }
+    // }
 
     logger_print(INFO, TAG, "SNTP task completed. Deleting task...");
     vTaskDelete(NULL);
