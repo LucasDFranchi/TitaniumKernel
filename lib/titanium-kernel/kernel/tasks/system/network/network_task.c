@@ -16,6 +16,7 @@
 #include "kernel/inter_task_communication/events/events_definition.h"
 #include "kernel/logger/logger.h"
 #include "kernel/tasks/system/network/network_task.h"
+#include "kernel/utils/nvs_util.h"
 
 static const char *TAG                      = "Network Task";     ///< Tag for logging.
 static const char AP_SSID[]                 = "Titanium\0";       ///< Access Point SSID.
@@ -45,6 +46,7 @@ static esp_netif_t *esp_netif_sta       = {0};    ///< Pointer to the Station ne
 static esp_netif_t *esp_netif_ap        = {0};    ///< Pointer to the Access Point network interface.
 static wifi_config_t ap_config          = {0};    ///< Configuration structure for the Access Point.
 static wifi_config_t sta_config         = {0};    ///< Configuration structure for the Station.
+static credentials_st cred              = {0};    ///< Credentials structure for storing Wi-Fi credentials.
 
 /**
  * @brief Pointer to the global configuration structure.
@@ -98,6 +100,10 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base,
                 logger_print(INFO, TAG, "Got IP:" IPSTR, IP2STR(&event->ip_info.ip));
 
                 xEventGroupSetBits(_global_structures->global_events.firmware_event_group, WIFI_CONNECTED_STA);
+
+                nvs_util_save_str("wifi", "ssid", cred.ssid);
+                nvs_util_save_str("wifi", "pwd", cred.password);
+
                 network_status.is_connect_sta = true;
                 break;
         }
@@ -262,7 +268,7 @@ esp_err_t network_set_credentials(const char *ssid, const char *password) {
  * @param[in] pvParameters Pointer to task parameters (TaskHandle_t).
  */
 void network_task_execute(void *pvParameters) {
-    credentials_st cred = {0};
+    kernel_error_st result = KERNEL_ERROR_NONE;
 
     _global_structures = (global_structures_st *)pvParameters;
     if ((network_task_initialize() != ESP_OK) ||
@@ -272,7 +278,13 @@ void network_task_execute(void *pvParameters) {
         vTaskDelete(NULL);
     }
 
-    network_set_credentials("NETPARQUE_PAOLA", "NPQ196253");
+    result = nvs_util_load_str("wifi", "ssid", cred.ssid, sizeof(cred.ssid));
+    result += nvs_util_load_str("wifi", "pwd", cred.password, sizeof(cred.password));
+
+    if (result == KERNEL_ERROR_NONE) {
+        logger_print(INFO, TAG, "Setting the credentials from NVS");
+        network_set_credentials(cred.ssid, cred.password);
+    }
 
     while (1) {
         if (network_status.is_connect_sta) {

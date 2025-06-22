@@ -1,6 +1,6 @@
 #include "kernel.h"
 
-#include "nvs_flash.h"
+#include "kernel/utils/nvs_util.h"
 
 task_interface_st sntp_task = {
     .arg          = NULL,
@@ -60,12 +60,7 @@ task_interface_st mqtt_task = {
  * - Other error codes from `nvs_flash_init()` in case of failure.
  */
 static kernel_error_st kernel_initialize_nvs(void) {
-    esp_err_t result = nvs_flash_init();
-    if (result == ESP_ERR_NVS_NO_FREE_PAGES || result == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        ESP_ERROR_CHECK(nvs_flash_erase());
-        result = nvs_flash_init();
-    }
-    return result == ESP_OK ? KERNEL_ERROR_NONE : KERNEL_ERROR_NVS_INIT;
+    return nvs_util_init();
 }
 
 kernel_error_st kernel_global_events_initialize(global_events_st *global_events) {

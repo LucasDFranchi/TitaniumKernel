@@ -60,6 +60,12 @@ typedef enum kernel_error_s {
     KERNEL_ERROR_RECEIVING_FORM_DATA    = -31, /**< Error receiving form data */
     KERNEL_ERROR_NO_OTA_PARTITION_FOUND = -32, /**< No OTA partition found */
     KERNEL_ERROR_OTA_BEGIN_FAILED       = -33, /**< OTA begin failed */
+    KERNEL_ERROR_NVS_OPEN               = -34, /**< NVS open failed */
+    KERNEL_ERROR_NVS_SAVE               = -35, /**< NVS save failed */
+    KERNEL_ERROR_NVS_LOAD               = -36, /**< NVS load failed */
+    KERNEL_ERROR_NVS_ERASE_KEY          = -37, /**< NVS erase key failed */
+    KERNEL_ERROR_NVS_ERASE_ALL          = -38, /**< NVS erase all failed */
+    KERNEL_ERROR_NVS_NOT_INITIALIZED    = -39, /**< NVS not initialized */
 } kernel_error_st;
 
 #endif /* ERROR_ENUM_H */

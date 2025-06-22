@@ -44,6 +44,22 @@ static esp_err_t get_uri_index_html(httpd_req_t* req) {
     return ESP_OK;
 }
 
+/**
+ * @brief HTTP GET handler that returns Wi-Fi connection status in JSON format.
+ *
+ * This function reads the firmware event group to check if the device is 
+ * connected to Wi-Fi (via the WIFI_CONNECTED_STA event bit). It responds to 
+ * the client with a simple JSON object indicating the connection status.
+ *
+ * The expected output is:
+ *   - `{"connected": true}` if connected to Wi-Fi
+ *   - `{"connected": false}` otherwise
+ *
+ * The response is sent with the `application/json` content type.
+ *
+ * @param req Pointer to the HTTP request.
+ * @return esp_err_t ESP_OK on success, or an appropriate error code on failure.
+ */
 esp_err_t status_get_handler(httpd_req_t* req) {
     EventBits_t firmware_event_bits = xEventGroupGetBits(_global_structures->global_events.firmware_event_group);
 
@@ -123,6 +139,25 @@ static kernel_error_st post_uri_wifi_credentials(httpd_req_t* req) {
     return result;
 }
 
+/**
+ * @brief Handles OTA firmware upload via HTTP POST request.
+ *
+ * This function receives a firmware image through a POST request and writes it
+ * to the next available OTA partition. It expects the firmware to be wrapped in
+ * a multipart/form-data request, and it skips the HTTP header by searching for
+ * the "\r\n\r\n" sequence before starting the OTA write.
+ *
+ * After successfully writing the firmware, it finalizes the OTA process,
+ * sets the new partition as bootable, and triggers a device restart.
+ *
+ * @param req Pointer to the HTTP request containing the firmware image.
+ * @return esp_err_t ESP_OK on success, or an appropriate error code on failure.
+ *
+ * @note This implementation assumes the firmware is uploaded using multipart
+ *       encoding and skips the header manually. This logic is tightly coupled
+ *       to the transfer format and should be refactored into smaller helper 
+ *       functions for improved readability and maintainability.
+ */
 static esp_err_t ota_post_handler(httpd_req_t* req) {
     const esp_partition_t* ota_partition = esp_ota_get_next_update_partition(NULL);
     if (!ota_partition) {
@@ -210,34 +245,6 @@ void initialize_request_list(void) {
         .handler  = get_uri_index_html,
         .user_ctx = NULL,
     };
-
-    // static const httpd_uri_t uri_get_styles_css = {
-    //     .uri      = "/styles.css",
-    //     .method   = HTTP_GET,
-    //     .handler  = get_uri_get_app_css,
-    //     .user_ctx = NULL,
-    // };
-
-    // static const httpd_uri_t uri_get_app_js = {
-    //     .uri      = "/app.js",
-    //     .method   = HTTP_GET,
-    //     .handler  = get_uri_get_app_js,
-    //     .user_ctx = NULL,
-    // };
-
-    // static const httpd_uri_t uri_get_jquery_js = {
-    //     .uri      = "/jquery-3.3.1.min.js",
-    //     .method   = HTTP_GET,
-    //     .handler  = get_uri_get_jquery_js,
-    //     .user_ctx = NULL,
-    // };
-
-    // static const httpd_uri_t uri_get_favicon_ico = {
-    //     .uri      = "/favicon.ico",
-    //     .method   = HTTP_GET,
-    //     .handler  = get_uri_favicon_icon,
-    //     .user_ctx = NULL,
-    // };
 
     static const httpd_uri_t uri_post_credentials = {
         .uri      = "/save",
