@@ -13,6 +13,20 @@
         "executor": "c",
         "functional": "c",
         "sntp_task.h": "c",
-        "random": "cpp"
+        "random": "cpp",
+        "error_num.h": "c",
+        "events_definition.h": "c",
+        "logger.h": "c",
+        "sntp.h": "c",
+        "esp_task_wdt.h": "c",
+        "mqtt_client_external_types.h": "c",
+        "watchdog_task.h": "c",
+        "http_server_task.h": "c",
+        "task_interface.h": "c",
+        "initializer_list": "c",
+        "inter_task_communication.h": "c",
+        "kernel.h": "c",
+        "queues_definition.h": "c",
+        "network_external_types.h": "c"
     }
 }

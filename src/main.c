@@ -29,4 +29,5 @@ void app_main() {
     // kernel_enqueue_task(&app_task);
 
     kernel_start_tasks();
+    printf("Application started successfully");
 }

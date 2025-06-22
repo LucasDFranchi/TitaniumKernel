@@ -1,9 +1,11 @@
 #include "queues_definition.h"
 
-#include "kernel/inter_task_communication/iot/mqtt/mqtt_client_external_types.h"
 #include "kernel/error/error_num.h"
+#include "kernel/inter_task_communication/iot/mqtt/mqtt_client_external_types.h"
+#include "kernel/inter_task_communication/iot/network/network_external_types.h"
 
-#define MQTT_QUEUE_SIZE 10  ///< Size of the MQTT queue for handling messages.
+#define MQTT_QUEUE_SIZE 10        ///< Size of the MQTT queue for handling messages.
+#define CREDENTIALS_QUEUE_SIZE 1  ///< Size of the credentials queue for handling WiFi or other service credentials.
 
 /**
  * @brief Initializes the global configuration structure.
@@ -25,8 +27,13 @@ kernel_error_st global_queues_initialize(global_queues_st *config) {
         return KERNEL_ERROR_INVALID_ARG;
     }
 
-    config->mqtt_topic_queue = xQueueCreate(MQTT_QUEUE_SIZE, sizeof(mqtt_topic_st *));
+    config->mqtt_topic_queue = xQueueCreate(MQTT_QUEUE_SIZE, sizeof(mqtt_topic_st));
     if (config->mqtt_topic_queue == NULL) {
+        return KERNEL_ERROR_NO_MEM;
+    }
+
+    config->credentials_queue = xQueueCreate(CREDENTIALS_QUEUE_SIZE, sizeof(credentials_st));
+    if (config->credentials_queue == NULL) {
         return KERNEL_ERROR_NO_MEM;
     }
 

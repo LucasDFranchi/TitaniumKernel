@@ -6,7 +6,8 @@
 #include "kernel/error/error_num.h"
 
 typedef struct global_queues_s {
-    QueueHandle_t mqtt_topic_queue;  ///< Queue for handling MQTT topics and messages.
+    QueueHandle_t mqtt_topic_queue;   ///< Queue for handling MQTT topics and messages.
+    QueueHandle_t credentials_queue;  ///< Queue for handling Credentials for WiFi or other services.
 } global_queues_st;
 
 /**

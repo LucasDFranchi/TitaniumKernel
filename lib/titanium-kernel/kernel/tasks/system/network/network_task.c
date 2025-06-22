@@ -13,9 +13,9 @@
 #include "lwip/sockets.h"
 #include "lwip/sys.h"
 
-#include "kernel/tasks/system/network/network_task.h"
 #include "kernel/inter_task_communication/events/events_definition.h"
 #include "kernel/logger/logger.h"
+#include "kernel/tasks/system/network/network_task.h"
 
 static const char *TAG                      = "Network Task";     ///< Tag for logging.
 static const char AP_SSID[]                 = "Titanium\0";       ///< Access Point SSID.
@@ -53,7 +53,7 @@ static wifi_config_t sta_config         = {0};    ///< Configuration structure f
  * across the system. It provides a centralized configuration and state management
  * for consistent and efficient event handling. Ensure proper initialization before use.
  */
-static global_structures_st* _global_structures = NULL;    ///< Pointer to the global configuration structure.
+static global_structures_st *_global_structures = NULL;  ///< Pointer to the global configuration structure.
 
 /**
  * @brief Event handler for Wi-Fi-related events.
@@ -262,6 +262,8 @@ esp_err_t network_set_credentials(const char *ssid, const char *password) {
  * @param[in] pvParameters Pointer to task parameters (TaskHandle_t).
  */
 void network_task_execute(void *pvParameters) {
+    credentials_st cred = {0};
+
     _global_structures = (global_structures_st *)pvParameters;
     if ((network_task_initialize() != ESP_OK) ||
         (_global_structures == NULL) ||
@@ -273,40 +275,43 @@ void network_task_execute(void *pvParameters) {
     network_set_credentials("NETPARQUE_PAOLA", "NPQ196253");
 
     while (1) {
-        do {
-            if (network_status.is_connect_sta) {
-                // Network Already Connect
-                connection_retry_counter = 0;
-                break;
+        if (network_status.is_connect_sta) {
+            connection_retry_counter = 0;
+            vTaskDelay(pdMS_TO_TICKS(NETWORK_TASK_DELAY));
+            continue;
+        }
+        if (!is_credential_set) {
+            if (xQueueReceive(_global_structures->global_queues.credentials_queue, &cred, pdMS_TO_TICKS(100)) == pdPASS) {
+                logger_print(INFO, TAG, "SSID: %s, Password: %s", cred.ssid, cred.password);
+                network_set_credentials(cred.ssid, cred.password);
             }
-            if (is_retry_limit_exceeded) {
-                // The retry limit was exceeded
-                break;
-            }
-            if (!is_credential_set) {
-                // No credential was passed trough the webserver
-                break;
-            }
+            vTaskDelay(pdMS_TO_TICKS(NETWORK_TASK_DELAY));
+            continue;
+        }
+        if (is_retry_limit_exceeded) {
+            vTaskDelay(pdMS_TO_TICKS(NETWORK_TASK_DELAY));
+            continue;
+        }
 
-            if (connection_retry_counter < MAX_RECONNECT_ATTEMPTS) {
-                logger_print(DEBUG, TAG, "Reconnecting to the STA (Attempt %d of %d)...",
-                             connection_retry_counter + 1,
-                             MAX_RECONNECT_ATTEMPTS);
+        if (connection_retry_counter < MAX_RECONNECT_ATTEMPTS) {
+            logger_print(DEBUG, TAG, "Reconnecting to the STA (Attempt %d of %d)...",
+                         connection_retry_counter + 1,
+                         MAX_RECONNECT_ATTEMPTS);
 
-                esp_err_t err = ESP_ERROR_CHECK_WITHOUT_ABORT(esp_wifi_connect());
-                if (err == ESP_OK) {
-                    logger_print(DEBUG, TAG, "Connection attempt initiated.");
-                    connection_retry_counter++;
-                } else {
-                    logger_print(ERR, TAG, "Reconnect attempt failed: %s", esp_err_to_name(err));
-                }
-
-                vTaskDelay(pdMS_TO_TICKS(RECONNECTION_DELAY_MS));
+            esp_err_t err = ESP_ERROR_CHECK_WITHOUT_ABORT(esp_wifi_connect());
+            if (err == ESP_OK) {
+                logger_print(DEBUG, TAG, "Connection attempt initiated.");
+                connection_retry_counter++;
             } else {
-                logger_print(ERR, TAG, "Max reconnect attempts reached. Stopping further attempts.");
-                is_retry_limit_exceeded = true;
+                logger_print(ERR, TAG, "Reconnect attempt failed: %s", esp_err_to_name(err));
             }
-        } while (0);
+
+            vTaskDelay(pdMS_TO_TICKS(RECONNECTION_DELAY_MS));
+        } else {
+            logger_print(ERR, TAG, "Max reconnect attempts reached. Stopping further attempts.");
+            is_credential_set       = false;
+            is_retry_limit_exceeded = true;
+        }
 
         vTaskDelay(pdMS_TO_TICKS(NETWORK_TASK_DELAY));
     }
