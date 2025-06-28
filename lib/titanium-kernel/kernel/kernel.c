@@ -119,8 +119,8 @@ kernel_error_st kernel_initialize(log_output_et log_output, global_structures_st
         return ret;
     }
 
-    // watchdog_task.arg = (void *)&global_structures;
-    // ret               = task_manager_enqueue_task(&watchdog_task);
+    watchdog_task.arg = (void *)&global_structures;
+    ret               = task_manager_enqueue_task(&watchdog_task);
 
     if (ret != KERNEL_ERROR_NONE) {
         return ret;

@@ -80,25 +80,22 @@ void sntp_task_execute(void *pvParameters) {
     }
 
     logger_print(DEBUG, TAG, "Waiting for Wi-Fi connection...");
-    EventBits_t firmware_event_bits = xEventGroupWaitBits(_global_structures->global_events.firmware_event_group,
-                                                          WIFI_CONNECTED_STA,
-                                                          pdFALSE,
-                                                          pdFALSE,
-                                                          portMAX_DELAY);
+    
+    
+    while (1) {
+        EventBits_t firmware_event_bits = xEventGroupGetBits(_global_structures->global_events.firmware_event_group);
+        if ((firmware_event_bits & WIFI_CONNECTED_STA) == 1) {
+            logger_print(DEBUG, TAG, "Trying to synchronize time...");
+            sntp_task_sync_time_obtain_time();
+        }
 
-    // while (1) {
-    //     if (firmware_event_bits & WIFI_CONNECTED_STA) {
-    //         logger_print(DEBUG, TAG, "Trying to synchronize time...");
-    //         sntp_task_sync_time_obtain_time();
-    //     }
+        vTaskDelay(pdMS_TO_TICKS(SNTP_TASK_DELAY));
 
-    //     vTaskDelay(pdMS_TO_TICKS(SNTP_TASK_DELAY));
-
-    //     if (is_sntp_synced) {
-    //         logger_print(INFO, TAG, "Time synchronization successful. Exiting SNTP task.");
-    //         break;
-    //     }
-    // }
+        if (is_sntp_synced) {
+            logger_print(INFO, TAG, "Time synchronization successful. Exiting SNTP task.");
+            break;
+        }
+    }
 
     logger_print(INFO, TAG, "SNTP task completed. Deleting task...");
     vTaskDelete(NULL);

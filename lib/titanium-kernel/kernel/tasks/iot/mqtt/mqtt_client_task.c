@@ -508,9 +508,9 @@ void mqtt_client_task_execute(void* pvParameters) {
     while (1) {
         EventBits_t firmware_event_bits = xEventGroupGetBits(_global_structures->global_events.firmware_event_group);
 
-        mqtt_topic_st* mqtt_topic = NULL;
-        if (xQueueReceive(_global_structures->global_queues.mqtt_topic_queue, mqtt_topic, portMAX_DELAY) == pdTRUE) {
-            mqtt_client_topic_enqueue(mqtt_topic);
+        mqtt_topic_st mqtt_topic = {0};
+        if (xQueueReceive(_global_structures->global_queues.mqtt_topic_queue, &mqtt_topic, portMAX_DELAY) == pdTRUE) {
+            mqtt_client_topic_enqueue(&mqtt_topic);
         }
 
         if (is_mqtt_connected) {
