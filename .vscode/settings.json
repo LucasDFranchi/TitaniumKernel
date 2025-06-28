@@ -27,6 +27,8 @@
         "inter_task_communication.h": "c",
         "kernel.h": "c",
         "queues_definition.h": "c",
-        "network_external_types.h": "c"
+        "network_external_types.h": "c",
+        "max6675.h": "c",
+        "tca9548a.h": "c"
     }
 }
