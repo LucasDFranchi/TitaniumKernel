@@ -1,11 +1,10 @@
 #ifndef MQTT_CLIENT_EXTERNAL_TYPES_H
 #define MQTT_CLIENT_EXTERNAL_TYPES_H
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/semphr.h"  // Include FreeRTOS semaphore header
+#include <stdint.h>
+
 #include "kernel/error/error_num.h"
 #include "kernel/inter_task_communication/inter_task_communication.h"
-#include <stdint.h>
 
 #define MQTT_MAXIMUM_TOPIC_LENGTH 64  ///< Defines the maximum length of an MQTT topic string.
 #define MQTT_MAXIMUM_TOPIC_COUNT 10   ///< Defines the maximum number of MQTT topics that can be subscribed to.
@@ -26,8 +25,7 @@ typedef struct mqtt_topic_s {
     char topic[MQTT_MAXIMUM_TOPIC_LENGTH];       ///< MQTT topic string.
     qos_et qos;                                  ///< Quality of Service (QoS) level for the topic.
     mqtt_data_direction_et mqtt_data_direction;  ///< Data structure type for the topic.
-    size_t data_size;                            ///< Size of the data to be sent over MQTT.
-    size_t queue_size;                           ///< Size of the queue for the topic.
+    QueueHandle_t queue;                         ///< External handle for the sensor data queue.
 
     /**
      * @brief Parses a JSON string and stores the MQTT topic data.
@@ -39,18 +37,21 @@ typedef struct mqtt_topic_s {
      * @param json_str The JSON string containing the topic data.
      * @return kernel_error_st Returns KERNEL_ERROR_NONE on success or a specific error code on failure.
      */
-    kernel_error_st (*parse_store_json)(const char *json_str);
+    kernel_error_st (*deserialize_data)(const char *json_str);
 
     /**
-     * @brief Function pointer to publish data to an MQTT topic.
+     * @brief Serialize data from a queue into a JSON string for MQTT publishing.
      *
-     * This function should handle the publishing of data to the corresponding MQTT topic.
-     * It should return an appropriate kernel_error_st code to indicate success or failure.
+     * This function reads data from the specified queue and serializes it into a JSON-formatted
+     * string placed in the provided output buffer.
      *
-     * @param json_str The data to be sent to the MQTT topic.
-     * @return kernel_error_st Returns KERNEL_ERROR_NONE on success or a specific error code on failure.
+     * @param queue Handle to the queue from which data will be received.
+     * @param out_buffer Pointer to the buffer where the JSON string will be written.
+     * @param buffer_size Size of the output buffer in bytes.
+     * @return app_error_st Returns APP_ERROR_NONE on success, or an appropriate error code on failure.
      */
-    kernel_error_st (*encode_json)(const char *json_str);
+    kernel_error_st (*serialize_data)(QueueHandle_t queue, char *out_buffer, size_t buffer_size);
+
 } mqtt_topic_st;
 
 #endif /* MQTT_CLIENT_EXTERNAL_TYPES_H */

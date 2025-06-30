@@ -1,9 +1,10 @@
 #include "sensor.h"
 
+#include "kernel/logger/logger.h"
+
 #include "app/driver/ads1115.h"
 #include "app/driver/tca9548a.h"
-
-#include "kernel/logger/logger.h"
+#include "app/error/error_num.h"
 
 /**
  * @brief Configuration array for ADS1115 ADC devices.
@@ -177,40 +178,28 @@ typedef struct sensor_info_s {
 
 static const sensor_info_st sensor_info[] = {
     // --- MUX_ADDRESS_0: Channels 0-7, Temp Sensors ---
-    {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_0_A0A1], 1.0f, 0.0f},
-    {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_0_A2A3], 1.0f, 0.0f},
-
-    {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_1_A0A1], 1.0f, 0.0f},
-    {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_1_A2A3], 1.0f, 0.0f},
-
-    {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_2_A0A1], 1.0f, 0.0f},
-    {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_2_A2A3], 1.0f, 0.0f},
-
-    {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_3_A0A1], 1.0f, 0.0f},
-    {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_3_A2A3], 1.0f, 0.0f},
-
-    {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_4_A0A1], 1.0f, 0.0f},
-    {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_4_A2A3], 1.0f, 0.0f},
-
-    {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_5_A0A1], 1.0f, 0.0f},
-    {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_5_A2A3], 1.0f, 0.0f},
-
-    {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_6_A0A1], 1.0f, 0.0f},
-    {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_6_A2A3], 1.0f, 0.0f},
-
-    {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_7_A0A1], 1.0f, 0.0f},
-    {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_7_A2A3], 1.0f, 0.0f},
-
-    // --- MUX_ADDRESS_1: Additional Temp sensors ---
-    {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_8_A0A1], 1.0f, 0.0f},
-    {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_8_A2A3], 1.0f, 0.0f},
-
-    {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_9_A0A1], 1.0f, 0.0f},
-    {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_9_A2A3], 1.0f, 0.0f},
-
-    // --- MUX_ADDRESS_1: Pressure sensors on channel 0 ---
-    {SENSOR_TYPE_PRESSURE, &sensor_hw[SENSOR_PRESSURE_0_A0], 1.0f, 0.0f},
-    {SENSOR_TYPE_PRESSURE, &sensor_hw[SENSOR_PRESSURE_0_A1], 1.0f, 0.0f},
+    [SENSOR_TEMP_0_A0A1]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_0_A0A1], 1.0f, 0.0f},
+    [SENSOR_TEMP_0_A2A3]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_0_A2A3], 1.0f, 0.0f},
+    [SENSOR_TEMP_1_A0A1]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_1_A0A1], 1.0f, 0.0f},
+    [SENSOR_TEMP_1_A2A3]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_1_A2A3], 1.0f, 0.0f},
+    [SENSOR_TEMP_2_A0A1]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_2_A0A1], 1.0f, 0.0f},
+    [SENSOR_TEMP_2_A2A3]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_2_A2A3], 1.0f, 0.0f},
+    [SENSOR_TEMP_3_A0A1]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_3_A0A1], 1.0f, 0.0f},
+    [SENSOR_TEMP_3_A2A3]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_3_A2A3], 1.0f, 0.0f},
+    [SENSOR_TEMP_4_A0A1]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_4_A0A1], 1.0f, 0.0f},
+    [SENSOR_TEMP_4_A2A3]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_4_A2A3], 1.0f, 0.0f},
+    [SENSOR_TEMP_5_A0A1]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_5_A0A1], 1.0f, 0.0f},
+    [SENSOR_TEMP_5_A2A3]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_5_A2A3], 1.0f, 0.0f},
+    [SENSOR_TEMP_6_A0A1]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_6_A0A1], 1.0f, 0.0f},
+    [SENSOR_TEMP_6_A2A3]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_6_A2A3], 1.0f, 0.0f},
+    [SENSOR_TEMP_7_A0A1]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_7_A0A1], 1.0f, 0.0f},
+    [SENSOR_TEMP_7_A2A3]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_7_A2A3], 1.0f, 0.0f},
+    [SENSOR_TEMP_8_A0A1]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_8_A0A1], 1.0f, 0.0f},
+    [SENSOR_TEMP_8_A2A3]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_8_A2A3], 1.0f, 0.0f},
+    [SENSOR_TEMP_9_A0A1]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_9_A0A1], 1.0f, 0.0f},
+    [SENSOR_TEMP_9_A2A3]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_9_A2A3], 1.0f, 0.0f},
+    [SENSOR_PRESSURE_0_A0] = {SENSOR_TYPE_PRESSURE, &sensor_hw[SENSOR_PRESSURE_0_A0], 1.0f, 0.0f},
+    [SENSOR_PRESSURE_0_A1] = {SENSOR_TYPE_PRESSURE, &sensor_hw[SENSOR_PRESSURE_0_A1], 1.0f, 0.0f},
 
 };
 
@@ -259,7 +248,7 @@ kernel_error_st sensor_configure(uint8_t sensor_index) {
                      "Failed to set MUX channel %d for sensor %d\n",
                      sensor_info[sensor_index].hw->mux->channel,
                      sensor_index);
-        return KERNEL_ERROR_MUX_CHANNEL_ERROR;
+        return APP_ERROR_MUX_CHANNEL_ERROR;
     }
     vTaskDelay(pdMS_TO_TICKS(100));
 
@@ -267,7 +256,7 @@ kernel_error_st sensor_configure(uint8_t sensor_index) {
         logger_print(ERR, TAG,
                      "Failed to update ADS1115 configuration for sensor %d\n",
                      sensor_index);
-        return KERNEL_ERROR_ADC_UPDATE_ERROR;
+        return APP_ERROR_ADC_UPDATE_ERROR;
     }
 
     return KERNEL_ERROR_NONE;
@@ -326,7 +315,7 @@ kernel_error_st sensor_get_voltage(uint8_t sensor_index, float *voltage) {
 
     if (sensor_configure(sensor_index) != KERNEL_ERROR_NONE) {
         logger_print(ERR, TAG, "Failed to configure sensor %d\n", sensor_index);
-        return KERNEL_ERROR_ADC_CONFIGURE_ERROR;
+        return APP_ERROR_ADC_CONFIGURE_ERROR;
     }
     vTaskDelay(pdMS_TO_TICKS(10));
 
@@ -337,7 +326,7 @@ kernel_error_st sensor_get_voltage(uint8_t sensor_index, float *voltage) {
     }
     if (retries <= 0) {
         logger_print(ERR, TAG, "ADC conversion timed out for sensor %d\n", sensor_index);
-        return KERNEL_ERROR_ADC_CONVERSION_ERROR;
+        return APP_ERROR_ADC_CONVERSION_ERROR;
     }
 
     int16_t raw_value      = ads1115_get_raw_value(sensor_info[sensor_index].hw->adc);

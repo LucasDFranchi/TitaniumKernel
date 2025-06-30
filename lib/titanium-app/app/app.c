@@ -7,22 +7,29 @@
  * It provides functions to initialize the sensor, execute continuous readings,
  * and log the results.
  */
-
 #include "app.h"
+
+#include "string.h"
 
 #include "driver/gpio.h"
 #include "driver/i2c.h"
 #include "math.h"
 
-#include "app/error/error_num.h"
-
 #include "kernel/inter_task_communication/inter_task_communication.h"
 #include "kernel/logger/logger.h"
 #include "kernel/tasks/interface/task_interface.h"
+#include "kernel/utils/utils.h"
 
-#include "app/application_external_types.h"
-#include "app/driver/ads1115.h"
-#include "app/driver/tca9548a.h"
+#include "app/app_extern_types.h"
+#include "app/error/error_num.h"
+#include "app/iot/mqtt_topic_defs.h"
+#include "app/sensor/sensor.h"
+#include "app/translation/report_serializer.h"
+
+/* Application Global Variables */
+static mqtt_topic_st mqtt_topics[TOPIC_COUNT] = {0};  ///< Array of MQTT topics for sensor data.
+static size_t mqtt_topics_count               = 0;    ///< Number of MQTT topics initialized.
+static device_report_st device_report         = {0};
 
 /**
  * @brief Pointer to the global configuration structure.
@@ -31,23 +38,23 @@
  * across the system. It provides a centralized configuration and state management
  * for consistent and efficient event handling. Ensure proper initialization before use.
  */
-static global_structures_st *_global_structures = NULL;  ///< Pointer to the global configuration structure.
-
-sensor_response_st sensor_response = {0};  ///< Sensor response structure to hold sensor data.
-
-static const char *TAG = "Application Task";  ///< Tag used for logging.
-
-mqtt_topic_st mqtt_topic = {
-    .topic               = "temperature",
-    .data_size           = sizeof(uint32_t),
-    .qos                 = QOS_1,
-    .mqtt_data_direction = PUBLISH,
-    .parse_store_json    = NULL,
-    .encode_json         = NULL,
-};
+static global_structures_st *_global_structures = NULL;                ///< Pointer to the global configuration structure.
+static const char *TAG                          = "Application Task";  ///< Tag used for logging.
 
 static esp_err_t app_task_initialize() {
     sensor_manager_initialize();
+
+    mqtt_topics_init(mqtt_topics, &mqtt_topics_count, TOPIC_COUNT);
+    mqtt_topics[0].queue          = _global_structures->global_queues.sensor_report_queue;
+    mqtt_topics[0].serialize_data = serialize_device_report;
+
+    for (size_t i = 0; i < mqtt_topics_count; i++) {
+        if (xQueueSend(_global_structures->global_queues.mqtt_topic_queue,
+                       &mqtt_topics[i],
+                       pdMS_TO_TICKS(100)) != pdPASS) {
+            logger_print(ERR, TAG, "Failed to send MQTT topic %s to queue", mqtt_topics[i].topic);
+        }
+    }
 
     gpio_config_t io_conf = {
         .pin_bit_mask = (1ULL << GPIO_NUM_32),
@@ -69,7 +76,12 @@ void app_task_execute(void *pvParameters) {
         vTaskDelete(NULL);
     }
     static bool led_on = false;
+
     while (1) {
+        memset(&device_report, 0, sizeof(device_report_st));
+
+        get_timestamp_in_iso_format(device_report.timestamp, sizeof(device_report.timestamp));
+
         for (int i = 0; i < NUM_OF_CHANNELS; i++) {
             float voltage = 0.0f;
             if (sensor_get_voltage(i, &voltage) != KERNEL_ERROR_NONE) {
@@ -77,18 +89,17 @@ void app_task_execute(void *pvParameters) {
                 vTaskDelay(pdMS_TO_TICKS(100));
                 continue;
             }
-
-            sensor_response.sensor_array[i].type      = sensor_get_type(i);  // Set the sensor type
-            sensor_response.sensor_array[i].raw_value = voltage;             // Set the raw value from the sensor
-            sensor_response.num_of_active_sensors     = (i + 1);             // Set the number of active sensors
-            logger_print(INFO, TAG, "Sensor %d: Type: %d, Voltage: %.2f",
-                         i,
-                         sensor_response.sensor_array[i].type,
-                         voltage);  // Print the sensor data
+            device_report.sensors[i].value  = voltage;
+            device_report.sensors[i].active = true;
+        }
+        if (xQueueSend(_global_structures->global_queues.sensor_report_queue,
+                       &device_report,
+                       pdMS_TO_TICKS(100)) != pdPASS) {
+            logger_print(ERR, TAG, "Failed to send sensor report to queue");
         }
 
         led_on = !led_on;
         gpio_set_level(GPIO_NUM_32, led_on);
-        vTaskDelay(pdMS_TO_TICKS(10000));  // Wait for the specified time interval
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }

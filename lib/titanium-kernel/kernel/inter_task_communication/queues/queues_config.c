@@ -4,8 +4,11 @@
 #include "kernel/inter_task_communication/iot/mqtt/mqtt_client_external_types.h"
 #include "kernel/inter_task_communication/iot/network/network_external_types.h"
 
-#define MQTT_QUEUE_SIZE 10        ///< Size of the MQTT queue for handling messages.
-#define CREDENTIALS_QUEUE_SIZE 1  ///< Size of the credentials queue for handling WiFi or other service credentials.
+#include "app/app_extern_types.h"
+
+#define MQTT_QUEUE_SIZE 10           ///< Size of the MQTT queue for handling messages.
+#define CREDENTIALS_QUEUE_SIZE 1     ///< Size of the credentials queue for handling WiFi or other service credentials.
+#define DEVICE_REPORT_QUEUE_SIZE 10  ///< Size of the sensor report queue for handling sensor data.
 
 /**
  * @brief Initializes the global configuration structure.
@@ -34,6 +37,11 @@ kernel_error_st global_queues_initialize(global_queues_st *config) {
 
     config->credentials_queue = xQueueCreate(CREDENTIALS_QUEUE_SIZE, sizeof(credentials_st));
     if (config->credentials_queue == NULL) {
+        return KERNEL_ERROR_NO_MEM;
+    }
+
+    config->sensor_report_queue = xQueueCreate(DEVICE_REPORT_QUEUE_SIZE, sizeof(device_report_st));
+    if (config->sensor_report_queue == NULL) {
         return KERNEL_ERROR_NO_MEM;
     }
 

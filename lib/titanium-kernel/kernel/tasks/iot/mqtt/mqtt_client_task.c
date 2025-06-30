@@ -2,47 +2,45 @@
  * @file
  * @brief MQTT client task implementation for managing MQTT connection and publishing sensor data.
  */
-#include "esp_heap_caps.h"
 #include "mqtt_client.h"
 
-#include "kernel/inter_task_communication/events/events_definition.h"
+#include "kernel/inter_task_communication/inter_task_communication.h"
 #include "kernel/logger/logger.h"
 #include "kernel/tasks/iot/mqtt/mqtt_client_task.h"
 #include "kernel/tasks/system/network/network_task.h"
-#include "kernel/utils/utils.h"
+// #include "kernel/utils/utils.h"
 
-#define MQTT_CLIEN_MAX_TOPIC_COUNT 10  ///< Maximum number of MQTT topics that can be subscribed to.
+#define MAX_MQTT_TOPICS 10  ///< Maximum number of MQTT topics that can be subscribed to.
 
-typedef struct mqtt_topic_internal_s {
-    char topic[MQTT_MAXIMUM_TOPIC_LENGTH];       ///< MQTT topic string.
-    QueueHandle_t queue;                         ///< External handle for the sensor data queue.
-    qos_et qos;                                  ///< Quality of Service (QoS) level for the topic.
-    mqtt_data_direction_et mqtt_data_direction;  ///< Data structure type for the topic.
-    SemaphoreHandle_t semaphore;                 ///< Semaphore for thread-safe access.
+// typedef struct mqtt_topic_internal_s {
+//     char topic[MQTT_MAXIMUM_TOPIC_LENGTH];       ///< MQTT topic string.
+//     QueueHandle_t queue;                         ///< External handle for the sensor data queue.
+//     qos_et qos;                                  ///< Quality of Service (QoS) level for the topic.
+//     mqtt_data_direction_et mqtt_data_direction;  ///< Data structure type for the topic.
 
-    /**
-     * @brief Parses a JSON string and stores the MQTT topic data.
-     *
-     * This function should extract relevant data from the provided JSON string
-     * and store it in the corresponding mqtt_topic_internal_st structure.
-     * It should return an appropriate kernel_error_st code to indicate success or failure.
-     *
-     * @param json_str The JSON string containing the topic data.
-     * @return kernel_error_st Returns KERNEL_ERROR_NONE on success or a specific error code on failure.
-     */
-    kernel_error_st (*parse_store_json)(const char* json_str);
+//     /**
+//      * @brief Parses a JSON string and stores the MQTT topic data.
+//      *
+//      * This function should extract relevant data from the provided JSON string
+//      * and store it in the corresponding mqtt_topic_internal_st structure.
+//      * It should return an appropriate kernel_error_st code to indicate success or failure.
+//      *
+//      * @param json_str The JSON string containing the topic data.
+//      * @return kernel_error_st Returns KERNEL_ERROR_NONE on success or a specific error code on failure.
+//      */
+//     kernel_error_st (*parse_store_json)(const char* json_str);
 
-    /**
-     * @brief Function pointer to publish data to an MQTT topic.
-     *
-     * This function should handle the publishing of data to the corresponding MQTT topic.
-     * It should return an appropriate kernel_error_st code to indicate success or failure.
-     *
-     * @param json_str The data to be sent to the MQTT topic.
-     * @return kernel_error_st Returns KERNEL_ERROR_NONE on success or a specific error code on failure.
-     */
-    kernel_error_st (*encode_json)(const char* json_str);
-} mqtt_topic_internal_st;
+//     /**
+//      * @brief Function pointer to publish data to an MQTT topic.
+//      *
+//      * This function should handle the publishing of data to the corresponding MQTT topic.
+//      * It should return an appropriate kernel_error_st code to indicate success or failure.
+//      *
+//      * @param json_str The data to be sent to the MQTT topic.
+//      * @return kernel_error_st Returns KERNEL_ERROR_NONE on success or a specific error code on failure.
+//      */
+//     kernel_error_st (*encode_json)(const char* json_str);
+// } mqtt_topic_internal_st;
 
 /**
  * @brief Pointer to the global configuration structure.
@@ -51,13 +49,13 @@ typedef struct mqtt_topic_internal_s {
  * across the system. It provides a centralized configuration and state management
  * for consistent and efficient event handling. Ensure proper initialization before use.
  */
-static global_structures_st* _global_structures                        = NULL;         ///< Pointer to the global configuration structure.
-static esp_mqtt_client_handle_t mqtt_client                            = {0};          ///< MQTT client handle.
-static const char* TAG                                                 = "MQTT Task";  ///< Log tag for MQTT task.
-static bool is_mqtt_connected                                          = false;        ///< MQTT connection status.
-static mqtt_topic_internal_st* mqtt_topics[MQTT_CLIEN_MAX_TOPIC_COUNT] = {0};          ///< Array of MQTT topics.
-static int initialized_mqtt_topics_count                               = 0;            ///< Number of initialized MQTT topics.
-static char unique_id[13]                                              = {0};          ///< Device unique ID (12 chars + null terminator).
+static global_structures_st* _global_structures  = NULL;         ///< Pointer to the global configuration structure.
+static esp_mqtt_client_handle_t mqtt_client      = {0};          ///< MQTT client handle.
+static const char* TAG                           = "MQTT Task";  ///< Log tag for MQTT task.
+static bool is_mqtt_connected                    = false;        ///< MQTT connection status.
+static mqtt_topic_st topic_pool[MAX_MQTT_TOPICS] = {0};          ///< Pool of MQTT topics.;
+static uint8_t initialized_mqtt_topics_count     = 0;            ///< Number of initialized MQTT topics.
+static char unique_id[13]                        = {0};          ///< Device unique ID (12 chars + null terminator).
 
 /**
  * @brief Subscribes to all configured MQTT topics based on their direction.
@@ -126,31 +124,28 @@ static void mqtt_event_handler(void* arg, esp_event_base_t base, int32_t event_i
     }
 }
 
-/**
- * @brief Cleans up the resources associated with an MQTT topic.
- *
- * This function deletes the semaphore, queue, and frees the memory allocated for
- * the provided MQTT topic structure. It is intended to be called when an MQTT topic
- * is no longer needed, ensuring proper resource cleanup and preventing memory leaks.
- *
- * The function checks if the semaphore and queue are valid before attempting to delete
- * them. The memory allocated for the `mqtt_topic_internal_st` structure is freed after
- * all resources have been cleaned up.
- *
- * @param mqtt_topic_internal A pointer to the mqtt_topic_internal_st structure representing
- *                            the MQTT topic whose resources need to be cleaned up.
- *                            This structure should have valid semaphore and queue handles
- *                            if they were created.
- */
-static void cleanup_mqtt_topic(mqtt_topic_internal_st* mqtt_topic_internal) {
-    if (mqtt_topic_internal->semaphore != NULL) {
-        vSemaphoreDelete(mqtt_topic_internal->semaphore);
-    }
-    if (mqtt_topic_internal->queue != NULL) {
-        vQueueDelete(mqtt_topic_internal->queue);
-    }
-    heap_caps_free(mqtt_topic_internal);
-}
+// /**
+//  * @brief Cleans up the resources associated with an MQTT topic.
+//  *
+//  * This function deletes the semaphore, queue, and frees the memory allocated for
+//  * the provided MQTT topic structure. It is intended to be called when an MQTT topic
+//  * is no longer needed, ensuring proper resource cleanup and preventing memory leaks.
+//  *
+//  * The function checks if the semaphore and queue are valid before attempting to delete
+//  * them. The memory allocated for the `mqtt_topic_internal_st` structure is freed after
+//  * all resources have been cleaned up.
+//  *
+//  * @param mqtt_topic_internal A pointer to the mqtt_topic_internal_st structure representing
+//  *                            the MQTT topic whose resources need to be cleaned up.
+//  *                            This structure should have valid semaphore and queue handles
+//  *                            if they were created.
+//  */
+// static void cleanup_mqtt_topic(mqtt_topic_internal_st* mqtt_topic_internal) {
+//     if (mqtt_topic_internal->queue != NULL) {
+//         vQueueDelete(mqtt_topic_internal->queue);
+//     }
+//     heap_caps_free(mqtt_topic_internal);
+// }
 
 /**
  * @brief Enqueues an MQTT topic for processing.
@@ -176,52 +171,31 @@ static void cleanup_mqtt_topic(mqtt_topic_internal_st* mqtt_topic_internal) {
  *         - KERNEL_ERROR_SNPRINTF if topic name formatting exceeds buffer size.
  *         - KERNEL_ERROR_NO_MEM if memory allocation for internal resources (queue, semaphore) fails.
  */
-static kernel_error_st mqtt_client_topic_enqueue(mqtt_topic_st* mqtt_topic) {
-    if (mqtt_topic == NULL) {
-        return KERNEL_ERROR_INVALID_ARG;
+static kernel_error_st mqtt_client_topic_enqueue() {
+    if (initialized_mqtt_topics_count >= MAX_MQTT_TOPICS) {
+        return KERNEL_ERROR_MQTT_ENQUEUE_FAIL;
     }
 
-    if (mqtt_topic->data_size == 0) {
-        return KERNEL_ERROR_INVALID_SIZE;
+    mqtt_topic_st mqtt_topic = {0};
+    if (xQueueReceive(_global_structures->global_queues.mqtt_topic_queue, &mqtt_topic, pdMS_TO_TICKS(100)) != pdTRUE) {
+        return KERNEL_ERROR_NONE;
     }
 
-    if ((mqtt_topic->mqtt_data_direction == PUBLISH && mqtt_topic->encode_json == NULL) ||
-        (mqtt_topic->mqtt_data_direction == SUBSCRIBE && mqtt_topic->parse_store_json == NULL)) {
+    if ((mqtt_topic.mqtt_data_direction == PUBLISH && mqtt_topic.serialize_data == NULL) ||
+        (mqtt_topic.mqtt_data_direction == SUBSCRIBE && mqtt_topic.deserialize_data == NULL)) {
         return KERNEL_ERROR_INVALID_INTERFACE;
     }
 
-    mqtt_topic_internal_st* mqtt_topic_internal = heap_caps_calloc(1, sizeof(mqtt_topic_internal_st), MALLOC_CAP_8BIT);
-    if (!mqtt_topic_internal) {
-        return KERNEL_ERROR_NO_MEM;
+    if (mqtt_topic.topic[0] == '\0') {
+        return KERNEL_ERROR_EMPTY_MQTT_TOPIC;
     }
 
-    mqtt_topic_internal->semaphore = xSemaphoreCreateMutex();
-    if (mqtt_topic_internal->semaphore == NULL) {
-        cleanup_mqtt_topic(mqtt_topic_internal);
-        return KERNEL_ERROR_NO_MEM;
+    if (mqtt_topic.queue == NULL) {
+        return KERNEL_ERROR_NULL_MQTT_QUEUE;
     }
 
-    mqtt_topic_internal->queue = xQueueCreate(mqtt_topic->queue_size, mqtt_topic->data_size);
-    if (mqtt_topic_internal->queue == NULL) {
-        cleanup_mqtt_topic(mqtt_topic_internal);
-        return KERNEL_ERROR_NO_MEM;
-    }
-
-    size_t mqtt_topic_size = snprintf(mqtt_topic_internal->topic,
-                                      sizeof(mqtt_topic_internal->topic),
-                                      "%s",
-                                      mqtt_topic->topic);
-    if (mqtt_topic_size >= sizeof(mqtt_topic_internal->topic)) {
-        cleanup_mqtt_topic(mqtt_topic_internal);
-        return KERNEL_ERROR_SNPRINTF;
-    }
-
-    mqtt_topic_internal->qos                 = mqtt_topic->qos;
-    mqtt_topic_internal->mqtt_data_direction = mqtt_topic->mqtt_data_direction;
-    mqtt_topic_internal->parse_store_json    = mqtt_topic->parse_store_json;
-    mqtt_topic_internal->encode_json         = mqtt_topic->encode_json;
-
-    mqtt_topics[initialized_mqtt_topics_count++] = mqtt_topic_internal;
+    memcpy(&topic_pool[initialized_mqtt_topics_count++], &mqtt_topic, sizeof(mqtt_topic_st));
+    logger_print(DEBUG, TAG, "Enqueued MQTT topic: %s", mqtt_topic.topic);
 
     return KERNEL_ERROR_NONE;
 }
@@ -258,7 +232,7 @@ static kernel_error_st mqtt_client_task_initialize(void) {
         return KERNEL_ERROR_MQTT_CONFIG_FAIL;
     }
 
-    get_unique_id(unique_id, sizeof(unique_id));
+    // get_unique_id(unique_id, sizeof(unique_id));
 
     return KERNEL_ERROR_NONE;
 }
@@ -289,41 +263,30 @@ static void stop_mqtt_client(void) {
     }
 }
 
-/**
- * @brief Publish the humidity data to the MQTT broker.
- *
- * This function formats the humidity value as a JSON string with a timestamp
- * and publishes it to the MQTT topic "/titanium/1/humidity". It logs the result
- * of the publish operation.
- *
- * @param[in] humidity The humidity value to be published (in percentage).
- */
-static kernel_error_st mqtt_publish_topic(const mqtt_topic_internal_st* mqtt_internal_topic) {
-    char message_buffer[512] = {0};
+static kernel_error_st mqtt_publish_topic(uint8_t topic_index) {
+    char message_buffer[1024] = {0};
     char channel[64]         = {0};
 
-    if (mqtt_internal_topic == NULL) {
-        logger_print(ERR, TAG, "MQTT topic is NULL");
-        return KERNEL_ERROR_INVALID_ARG;
+    kernel_error_st err = topic_pool[topic_index].serialize_data(topic_pool[topic_index].queue,
+                                                                 message_buffer,
+                                                                 sizeof(message_buffer));
+
+    if ((err != KERNEL_ERROR_NONE) || (err == KERNEL_ERROR_QUEUE_EMPTY)) {
+        logger_print(ERR, TAG, "Failed to publish to topic %s", topic_pool[topic_index].topic);
+        return err;
     }
 
-    if (xSemaphoreTake(mqtt_internal_topic->semaphore, portMAX_DELAY)) {
-        kernel_error_st err = mqtt_internal_topic->encode_json(message_buffer);
-        xSemaphoreGive(mqtt_internal_topic->semaphore);
+    size_t channel_size = snprintf(channel, sizeof(channel),
+                                   "/titanium/%s/%s",
+                                   unique_id,
+                                   topic_pool[topic_index].topic);
 
-        if (err != KERNEL_ERROR_NONE) {
-            logger_print(ERR, TAG, "Failed to publish to topic %s", mqtt_internal_topic->topic);
-            return err;
-        }
-    }
-
-    size_t channel_size = snprintf(channel, sizeof(channel), "/titanium/%s/%s", unique_id, mqtt_internal_topic->topic);
     if (channel_size >= sizeof(channel)) {
         logger_print(WARN, TAG, "Channel buffer too small");
         return KERNEL_ERROR_SNPRINTF;
     }
 
-    int msg_id = esp_mqtt_client_publish(mqtt_client, channel, message_buffer, 0, mqtt_internal_topic->qos, 0);
+    int msg_id = esp_mqtt_client_publish(mqtt_client, channel, message_buffer, 0, topic_pool[topic_index].qos, 0);
     if (msg_id < 0) {
         logger_print(ERR, TAG, "Message published successfully, msg_id=%d", msg_id);
         return KERNEL_ERROR_MQTT_PUBLISH;
@@ -348,18 +311,14 @@ static kernel_error_st mqtt_publish_topic(const mqtt_topic_internal_st* mqtt_int
  */
 static kernel_error_st mqtt_publish(void) {
     for (uint8_t i = 0; i < initialized_mqtt_topics_count; i++) {
-        if (mqtt_topics[i] == NULL) {
-            logger_print(ERR, TAG, "MQTT topic %s is NULL", mqtt_topics[i]->topic);
-            return KERNEL_ERROR_INVALID_ARG;
-        }
-        if (mqtt_topics[i]->queue == NULL) {
-            logger_print(ERR, TAG, "Queue for topic %s is NULL", mqtt_topics[i]->topic);
+        if (topic_pool[i].queue == NULL) {
+            logger_print(ERR, TAG, "Queue for topic %s is NULL", topic_pool[i].topic);
             return KERNEL_ERROR_QUEUE_NULL;
         }
-        if (mqtt_topics[i]->mqtt_data_direction == PUBLISH) {
-            kernel_error_st err = mqtt_publish_topic(mqtt_topics[i]);
+        if (topic_pool[i].mqtt_data_direction == PUBLISH) {
+            kernel_error_st err = mqtt_publish_topic(i);
             if (err != KERNEL_ERROR_NONE) {
-                logger_print(ERR, TAG, "Failed to publish to topic %s", mqtt_topics[i]->topic);
+                logger_print(ERR, TAG, "Failed to publish to topic %s", topic_pool[i].topic);
                 return err;
             }
         }
@@ -367,49 +326,49 @@ static kernel_error_st mqtt_publish(void) {
     return KERNEL_ERROR_NONE;
 }
 
-/**
- * @brief Subscribes to an MQTT topic and processes the subscription.
- *
- * This function constructs the full MQTT topic channel string and attempts to
- * subscribe to the topic using the `esp_mqtt_client_subscribe` API. It handles
- * errors such as invalid input parameters, buffer size issues, and subscription failures.
- * Upon a successful subscription, it logs the result.
- *
- * @param mqtt_internal_topic A pointer to the mqtt_topic_internal_st structure representing the topic to subscribe to.
- * @return kernel_error_st Returns KERNEL_ERROR_NONE on success, or an appropriate error code:
- *         - KERNEL_ERROR_NULL if the mqtt_internal_topic pointer is NULL.
- *         - KERNEL_ERROR_INVALID_ARG if the topic is empty.
- *         - KERNEL_ERROR_SNPRINTF if the channel buffer size is insufficient.
- *         - KERNEL_ERROR_MQTT_SUBSCRIBE if subscribing to the topic fails.
- */
-static kernel_error_st mqtt_subscribe_topic(mqtt_topic_internal_st* mqtt_topic_internal) {
-    char channel[64] = {0};
+// /**
+//  * @brief Subscribes to an MQTT topic and processes the subscription.
+//  *
+//  * This function constructs the full MQTT topic channel string and attempts to
+//  * subscribe to the topic using the `esp_mqtt_client_subscribe` API. It handles
+//  * errors such as invalid input parameters, buffer size issues, and subscription failures.
+//  * Upon a successful subscription, it logs the result.
+//  *
+//  * @param mqtt_internal_topic A pointer to the mqtt_topic_internal_st structure representing the topic to subscribe to.
+//  * @return kernel_error_st Returns KERNEL_ERROR_NONE on success, or an appropriate error code:
+//  *         - KERNEL_ERROR_NULL if the mqtt_internal_topic pointer is NULL.
+//  *         - KERNEL_ERROR_INVALID_ARG if the topic is empty.
+//  *         - KERNEL_ERROR_SNPRINTF if the channel buffer size is insufficient.
+//  *         - KERNEL_ERROR_MQTT_SUBSCRIBE if subscribing to the topic fails.
+//  */
+// static kernel_error_st mqtt_subscribe_topic(mqtt_topic_internal_st* mqtt_topic_internal) {
+//     char channel[64] = {0};
 
-    if (mqtt_topic_internal == NULL) {
-        return KERNEL_ERROR_INVALID_ARG;
-    }
+//     if (mqtt_topic_internal == NULL) {
+//         return KERNEL_ERROR_INVALID_ARG;
+//     }
 
-    size_t channel_size = snprintf(channel,
-                                   sizeof(channel),
-                                   "/titanium/%s/%s",
-                                   unique_id,
-                                   mqtt_topic_internal->topic);
+//     size_t channel_size = snprintf(channel,
+//                                    sizeof(channel),
+//                                    "/titanium/%s/%s",
+//                                    unique_id,
+//                                    mqtt_topic_internal->topic);
 
-    if (channel_size >= sizeof(channel)) {
-        logger_print(ERR, TAG, "Channel buffer too small");
-        return KERNEL_ERROR_SNPRINTF;
-    }
+//     if (channel_size >= sizeof(channel)) {
+//         logger_print(ERR, TAG, "Channel buffer too small");
+//         return KERNEL_ERROR_SNPRINTF;
+//     }
 
-    int msg_id = esp_mqtt_client_subscribe(mqtt_client, channel, 1);
-    if (msg_id < 0) {
-        logger_print(ERR, TAG, "Failed to subscribe to topic %s", channel);
-        return KERNEL_ERROR_MQTT_SUBSCRIBE;
-    }
+//     int msg_id = esp_mqtt_client_subscribe(mqtt_client, channel, 1);
+//     if (msg_id < 0) {
+//         logger_print(ERR, TAG, "Failed to subscribe to topic %s", channel);
+//         return KERNEL_ERROR_MQTT_SUBSCRIBE;
+//     }
 
-    logger_print(DEBUG, TAG, "Subscribed to topic %s, msg_id=%d", channel, msg_id);
+//     logger_print(DEBUG, TAG, "Subscribed to topic %s, msg_id=%d", channel, msg_id);
 
-    return KERNEL_ERROR_NONE;
-}
+//     return KERNEL_ERROR_NONE;
+// }
 
 /**
  * @brief Subscribes to all configured MQTT topics based on their direction.
@@ -422,27 +381,23 @@ static kernel_error_st mqtt_subscribe_topic(mqtt_topic_internal_st* mqtt_topic_i
  * @return KERNEL_ERROR_NONE if successful, or an appropriate error code if not.
  */
 static kernel_error_st mqtt_subscribe(void) {
-    if (!mqtt_client) {
-        return KERNEL_ERROR_NULL;
-    }
+    // if (!mqtt_client) {
+    //     return KERNEL_ERROR_NULL;
+    // }
 
-    for (uint8_t i = 0; i < initialized_mqtt_topics_count; i++) {
-        if (mqtt_topics[i] == NULL) {
-            logger_print(ERR, TAG, "MQTT topic %s is NULL", mqtt_topics[i]->topic);
-            return KERNEL_ERROR_NULL;
-        }
-        if (mqtt_topics[i]->queue == NULL) {
-            logger_print(ERR, TAG, "Queue for topic %s is NULL", mqtt_topics[i]->topic);
-            return KERNEL_ERROR_QUEUE_NULL;
-        }
-        if (mqtt_topics[i]->mqtt_data_direction == SUBSCRIBE) {
-            kernel_error_st err = mqtt_subscribe_topic(mqtt_topics[i]);
-            if (err != KERNEL_ERROR_NONE) {
-                logger_print(ERR, TAG, "Failed to subscribe to topic %s", mqtt_topics[i]->topic);
-                return err;
-            }
-        }
-    }
+    // for (uint8_t i = 0; i < initialized_mqtt_topics_count; i++) {
+    //     if (topic_pool[i].queue == NULL) {
+    //         logger_print(ERR, TAG, "Queue for topic %s is NULL", topic_pool[i].topic);
+    //         return KERNEL_ERROR_QUEUE_NULL;
+    //     }
+    //     if (topic_pool[i].mqtt_data_direction == SUBSCRIBE) {
+    //         kernel_error_st err = mqtt_subscribe_topic(topic_pool[i]);
+    //         if (err != KERNEL_ERROR_NONE) {
+    //             logger_print(ERR, TAG, "Failed to subscribe to topic %s", topic_pool[i].topic);
+    //             return err;
+    //         }
+    //     }
+    // }
 
     return KERNEL_ERROR_NONE;
 }
@@ -464,24 +419,22 @@ static void mqtt_subscribe_topic_callback(const char* topic, const char* event_d
     }
 
     for (int i = 0; i < initialized_mqtt_topics_count; i++) {
-        if (mqtt_topics[i]->queue == NULL) {
-            logger_print(ERR, TAG, "Queue for topic %s is NULL", mqtt_topics[i]->topic);
+        if (topic_pool[i].queue == NULL) {
+            logger_print(ERR, TAG, "Queue for topic %s is NULL", topic_pool[i].topic);
             continue;
         }
-        if (mqtt_topics[i]->mqtt_data_direction == PUBLISH) {
+        if (topic_pool[i].mqtt_data_direction == PUBLISH) {
             continue;
         }
 
-        if (strstr(topic, mqtt_topics[i]->topic) == NULL) {
+        if (strstr(topic, topic_pool[i].topic) == NULL) {
             continue;
         }
-        if (xSemaphoreTake(mqtt_topics[i]->semaphore, portMAX_DELAY)) {
-            kernel_error_st err = mqtt_topics[i]->parse_store_json(event_data);
-            xSemaphoreGive(mqtt_topics[i]->semaphore);
 
-            if (err != KERNEL_ERROR_NONE) {
-                logger_print(ERR, TAG, "Failed to parse the received json from topic %s", mqtt_topics[i]->topic);
-            }
+        kernel_error_st err = topic_pool[i].deserialize_data(event_data);
+
+        if (err != KERNEL_ERROR_NONE) {
+            logger_print(ERR, TAG, "Failed to parse the received json from topic %s", topic_pool[i].topic);
         }
     }
 }
@@ -508,19 +461,21 @@ void mqtt_client_task_execute(void* pvParameters) {
     while (1) {
         EventBits_t firmware_event_bits = xEventGroupGetBits(_global_structures->global_events.firmware_event_group);
 
-        mqtt_topic_st mqtt_topic = {0};
-        if (xQueueReceive(_global_structures->global_queues.mqtt_topic_queue, &mqtt_topic, portMAX_DELAY) == pdTRUE) {
-            mqtt_client_topic_enqueue(&mqtt_topic);
+        if (mqtt_client_topic_enqueue() != KERNEL_ERROR_NONE) {
+            logger_print(ERR, TAG, "Failed to enqueue MQTT topic");
         }
 
         if (is_mqtt_connected) {
             if ((firmware_event_bits & WIFI_CONNECTED_STA) == 0) {
+                logger_print(DEBUG, TAG, "Stopping MQTT client due to Wi-Fi disconnection...\n");
                 stop_mqtt_client();
             } else if (firmware_event_bits & TIME_SYNCED) {
+                logger_print(DEBUG, TAG, "Publishing MQTT topics...\n");
                 mqtt_publish();
             }
         } else {
-            if (firmware_event_bits & WIFI_CONNECTED_STA) {
+            if ((firmware_event_bits & WIFI_CONNECTED_STA) == 1) {
+                logger_print(DEBUG, TAG, "Starting MQTT client due to Wi-Fi connection...\n");
                 start_mqtt_client();
             }
         }

@@ -47,6 +47,32 @@ task_interface_st mqtt_task = {
     .handle       = NULL,
 };
 
+static const char *TAG = "KERNEL";  ///< Tag for logging
+
+
+/**
+ * @brief Perform a system restart on the ESP32.
+ *
+ * This function triggers a software reset using the ESP-IDF `esp_restart()` API.
+ * It should be used in critical error handling paths where recovery from the
+ * current state is not possible or safe.
+ *
+ * @note This function does not return. The ESP32 will reboot immediately.
+ * 
+ * Example usage:
+ * ```c
+ * if (critical_fault_detected) {
+ *     kernel_restart(); // Recover system by restarting
+ * }
+ * ```
+ */
+void kernel_restart(void) {
+#ifndef DEBUG
+    logger_print(INFO, TAG, "Restarting system due to critical error");
+    esp_restart();
+#endif
+}
+
 /*
  * @brief Initialize the Non-Volatile Storage (NVS) for the device.
  *
@@ -65,7 +91,7 @@ static kernel_error_st kernel_initialize_nvs(void) {
 
 kernel_error_st kernel_global_events_initialize(global_events_st *global_events) {
     if (global_events_initialize(global_events) != KERNEL_ERROR_NONE) {
-        logger_print(ERR, "KERNEL", "Failed to initialize global events");
+        logger_print(ERR, TAG, "Failed to initialize global events");
         return KERNEL_ERROR_GLOBAL_EVENTS_INIT;
     }
 
@@ -74,7 +100,7 @@ kernel_error_st kernel_global_events_initialize(global_events_st *global_events)
 
 kernel_error_st kernel_global_queues_initialize(global_queues_st *global_queue) {
     if (global_queues_initialize(global_queue) != KERNEL_ERROR_NONE) {
-        logger_print(ERR, "KERNEL", "Failed to initialize global queues");
+        logger_print(ERR, TAG, "Failed to initialize global queues");
         return KERNEL_ERROR_GLOBAL_QUEUES_INIT;
     }
 
@@ -97,20 +123,22 @@ kernel_error_st kernel_initialize(log_output_et log_output, global_structures_st
     }
 
     if (kernel_initialize_nvs() != KERNEL_ERROR_NONE) {
-        logger_print(ERR, "KERNEL", "Failed to initialize NVS");
+        logger_print(ERR, TAG, "Failed to initialize NVS");
+        kernel_restart();
         return KERNEL_ERROR_NVS_INIT;
     }
     logger_initialize(log_output, global_structures);
 
     if (kernel_global_events_initialize(&global_structures->global_events) != KERNEL_ERROR_NONE) {
-        logger_print(ERR, "KERNEL", "Failed to initialize global events");
+        logger_print(ERR, TAG, "Failed to initialize global events");
+        kernel_restart();
         return KERNEL_ERROR_GLOBAL_EVENTS_INIT;
     }
     if (kernel_global_queues_initialize(&global_structures->global_queues) != KERNEL_ERROR_NONE) {
-        logger_print(ERR, "KERNEL", "Failed to initialize global queues");
+        logger_print(ERR, TAG, "Failed to initialize global queues");
+        kernel_restart();
         return KERNEL_ERROR_GLOBAL_QUEUES_INIT;
     }
-
 
     sntp_task.arg = (void *)global_structures;
     ret           = task_manager_enqueue_task(&sntp_task);

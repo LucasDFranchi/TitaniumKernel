@@ -66,10 +66,11 @@ typedef enum kernel_error_s {
     KERNEL_ERROR_NVS_ERASE_KEY          = -37, /**< NVS erase key failed */
     KERNEL_ERROR_NVS_ERASE_ALL          = -38, /**< NVS erase all failed */
     KERNEL_ERROR_NVS_NOT_INITIALIZED    = -39, /**< NVS not initialized */
-    KERNEL_ERROR_ADC_CONVERSION_ERROR   = -40, /**< ADC conversion error */
-    KERNEL_ERROR_ADC_UPDATE_ERROR       = -41, /**< ADC update error */
-    KERNEL_ERROR_ADC_CONFIGURE_ERROR    = -42, /**< ADC update error */
-    KERNEL_ERROR_MUX_CHANNEL_ERROR      = -43, /**< MUX channel error */
+    KERNEL_ERROR_TIMESTAMP_FORMAT       = -40, /**< Timestamp format error */
+    KERNEL_ERROR_EMPTY_MQTT_TOPIC       = -41, /**< Empty MQTT topic error */
+    KERNEL_ERROR_NULL_MQTT_QUEUE        = -42, /**< Null MQTT queue error */
+    KERNEL_ERROR_MQTT_ENQUEUE_FAIL      = -43, /**< MQTT enqueue failure */
+    KERNEL_ERROR_QUEUE_EMPTY            = -44, /**< Queue is empty */
 } kernel_error_st;
 
 #endif /* ERROR_ENUM_H */

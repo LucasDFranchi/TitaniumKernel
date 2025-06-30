@@ -26,9 +26,15 @@
  * @brief Standard error codes for the kernel.
  */
 typedef enum app_error_s {
-    APP_ERROR_NONE          = 0,  /**< No error, operation successful */
-    APP_ERROR_NULL          = -1, /**< Null pointer error */
-    APP_ERROR_TAKS_CREATION = -2, /**< Null pointer error */
+    APP_ERROR_NONE                    = 0,     /**< No error, operation successful */
+    APP_ERROR_NULL                    = 0x101, /**< Null pointer error */
+    APP_ERROR_TAKS_CREATION           = 0x102, /**< Null pointer error */
+    APP_ERROR_ADC_CONVERSION_ERROR    = 0x103, /**< ADC conversion error */
+    APP_ERROR_ADC_UPDATE_ERROR        = 0x104, /**< ADC update error */
+    APP_ERROR_ADC_CONFIGURE_ERROR     = 0x105, /**< ADC update error */
+    APP_ERROR_MUX_CHANNEL_ERROR       = 0x106, /**< MUX channel error */
+    APP_ERROR_INVALID_MQTT_TOPIC_SIZE = 0x107, /**< Invalid MQTT topic size */
+    APP_ERROR_SNPRINTF                = 0x108, /**< Error in snprintf function */
 } app_error_st;
 
 #endif /* APPLICATION_ERROR_ENUM_H */

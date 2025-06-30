@@ -21,7 +21,6 @@
 
 typedef struct global_events_s {
     EventGroupHandle_t firmware_event_group;  ///< Event group for signaling system status and events.
-    QueueHandle_t mqtt_topic_queue;         ///< Queue for handling MQTT topics and messages.
 } global_events_st;
 
 /**

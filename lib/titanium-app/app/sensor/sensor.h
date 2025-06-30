@@ -1,6 +1,7 @@
 #pragma once
 
 #include "stdint.h"
+#include "stdbool.h"
 
 #include "kernel/error/error_num.h"
 
@@ -29,6 +30,14 @@ typedef enum sensor_type_e {
     SENSOR_TYPE_CURRENT,         /**< Current sensor */
     SENSOR_TYPE_UNDEFINED,       /**< Unknown or invalid sensor type */
 } sensor_type_et;
+
+/**
+ * @brief Structure representing a single sensor's report.
+ */
+typedef struct sensor_report_s {
+    float value; /**< Measured value from the sensor */
+    bool active; /**< Indicates whether the sensor is currently active */
+} sensor_report_st;
 
 /**
  * @brief Initializes the I2C interface, GPIOs, and ADS1115 ADC.
