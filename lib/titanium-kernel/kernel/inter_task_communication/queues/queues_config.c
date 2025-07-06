@@ -6,9 +6,8 @@
 
 #include "app/app_extern_types.h"
 
-#define MQTT_QUEUE_SIZE 10           ///< Size of the MQTT queue for handling messages.
-#define CREDENTIALS_QUEUE_SIZE 1     ///< Size of the credentials queue for handling WiFi or other service credentials.
-#define DEVICE_REPORT_QUEUE_SIZE 10  ///< Size of the sensor report queue for handling sensor data.
+#define MQTT_QUEUE_SIZE 10        ///< Size of the MQTT queue for handling messages.
+#define CREDENTIALS_QUEUE_SIZE 1  ///< Size of the credentials queue for handling WiFi or other service credentials.
 
 /**
  * @brief Initializes the global configuration structure.
@@ -30,18 +29,13 @@ kernel_error_st global_queues_initialize(global_queues_st *config) {
         return KERNEL_ERROR_INVALID_ARG;
     }
 
-    config->mqtt_topic_queue = xQueueCreate(MQTT_QUEUE_SIZE, sizeof(mqtt_topic_st));
-    if (config->mqtt_topic_queue == NULL) {
+    config->mqtt_bridge_queue = xQueueCreate(MQTT_QUEUE_SIZE, sizeof(mqtt_bridge_st));
+    if (config->mqtt_bridge_queue == NULL) {
         return KERNEL_ERROR_NO_MEM;
     }
 
     config->credentials_queue = xQueueCreate(CREDENTIALS_QUEUE_SIZE, sizeof(credentials_st));
     if (config->credentials_queue == NULL) {
-        return KERNEL_ERROR_NO_MEM;
-    }
-
-    config->sensor_report_queue = xQueueCreate(DEVICE_REPORT_QUEUE_SIZE, sizeof(device_report_st));
-    if (config->sensor_report_queue == NULL) {
         return KERNEL_ERROR_NO_MEM;
     }
 

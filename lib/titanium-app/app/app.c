@@ -22,14 +22,84 @@
 
 #include "app/app_extern_types.h"
 #include "app/error/error_num.h"
-#include "app/iot/mqtt_topic_defs.h"
+#include "app/iot/mqtt_bridge.h"
 #include "app/sensor/sensor.h"
-#include "app/translation/report_serializer.h"
+
+/* MQTT Topics Definition */
+/**
+ * @brief Enum listing the MQTT topic indexes.
+ */
+typedef enum mqtt_topic_index_e {
+    DEVICE_REPORT = 0, /**< Sensor data reports */
+    COMMAND,           /**< System status updates */
+    TOPIC_COUNT,       /**< Total number of defined topics */
+} mqtt_topic_index_et;
+
+/**
+ * @brief Array of constant MQTT topic info structures.
+ *
+ * Each element defines topic string, QoS, direction, and queue parameters.
+ */
+static const mqtt_topic_info_st mqtt_topic_infos[] = {
+    [DEVICE_REPORT] = {
+        .topic               = "sensor/report",
+        .qos                 = QOS_1,
+        .mqtt_data_direction = PUBLISH,
+        .queue_length        = 10,
+        .queue_item_size     = sizeof(device_report_st),
+        .data_type           = DATA_TYPE_REPORT,
+    },
+    [COMMAND] = {
+        .topic               = "command",
+        .qos                 = QOS_1,
+        .mqtt_data_direction = SUBSCRIBE,
+        .queue_length        = 10,
+        .queue_item_size     = sizeof(command_st),
+        .data_type           = DATA_TYPE_COMMAND,
+    },
+};
+
+/**
+ * @brief Runtime array of MQTT topics with associated queues.
+ *
+ * Initialized with pointers to constant topic info and queue handles (NULL initially).
+ */
+mqtt_topic_st mqtt_topics[MAX_MQTT_TOPICS] = {
+    [DEVICE_REPORT] = {
+        .info  = &mqtt_topic_infos[DEVICE_REPORT],
+        .queue = NULL,
+    },
+    [COMMAND] = {
+        .info  = &mqtt_topic_infos[COMMAND],
+        .queue = NULL,
+    },
+};
+
+/**
+ * @brief MQTT bridge instance containing function pointers for MQTT operations.
+ *
+ * Function pointers are set to NULL initially and assigned during bridge initialization.
+ */
+mqtt_bridge_st mqtt_bridge = {
+    .fetch_publish_data = NULL, /**< Function pointer to fetch publish data */
+    .subscribe          = NULL, /**< Function pointer to subscribe to topics */
+    .handle_event_data  = NULL, /**< Function pointer to handle incoming MQTT data */
+    .get_topics_count   = NULL, /**< Function pointer to get the number of registered topics */
+};
+
+/**
+ * @brief Initialization struct for the MQTT bridge.
+ *
+ * Holds a pointer to the MQTT bridge instance, the array of runtime topics, and the topic count.
+ */
+mqtt_bridge_init_struct_st mqtt_bridge_init_struct = {
+    .mqtt_bridge = &mqtt_bridge, /**< Pointer to the mqtt_bridge instance */
+    .topic_count = TOPIC_COUNT,  /**< Number of topics in the topics array */
+    .topics      = mqtt_topics,  /**< Pointer to the mqtt_topics array */
+};
 
 /* Application Global Variables */
-static mqtt_topic_st mqtt_topics[TOPIC_COUNT] = {0};  ///< Array of MQTT topics for sensor data.
-static size_t mqtt_topics_count               = 0;    ///< Number of MQTT topics initialized.
-static device_report_st device_report         = {0};
+static device_report_st device_report = {0};
 
 /**
  * @brief Pointer to the global configuration structure.
@@ -44,17 +114,13 @@ static const char *TAG                          = "Application Task";  ///< Tag 
 static esp_err_t app_task_initialize() {
     sensor_manager_initialize();
 
-    mqtt_topics_init(mqtt_topics, &mqtt_topics_count, TOPIC_COUNT);
-    mqtt_topics[0].queue          = _global_structures->global_queues.sensor_report_queue;
-    mqtt_topics[0].serialize_data = serialize_device_report;
-
-    for (size_t i = 0; i < mqtt_topics_count; i++) {
-        if (xQueueSend(_global_structures->global_queues.mqtt_topic_queue,
-                       &mqtt_topics[i],
-                       pdMS_TO_TICKS(100)) != pdPASS) {
-            logger_print(ERR, TAG, "Failed to send MQTT topic %s to queue", mqtt_topics[i].topic);
-        }
+    if (mqtt_bridge_initialize(&mqtt_bridge_init_struct) != KERNEL_ERROR_NONE) {
+        logger_print(INFO, TAG, "MQTT bridge installed successfully!");
+        return ESP_FAIL;
     }
+    xQueueSend(_global_structures->global_queues.mqtt_bridge_queue,
+               mqtt_bridge_init_struct.mqtt_bridge,
+               pdMS_TO_TICKS(100));
 
     gpio_config_t io_conf = {
         .pin_bit_mask = (1ULL << GPIO_NUM_32),
@@ -76,6 +142,7 @@ void app_task_execute(void *pvParameters) {
         vTaskDelete(NULL);
     }
     static bool led_on = false;
+    logger_print(ERR, TAG, "Failed to inifasdfasdfasdfasdfasdfasdfztialize app task");
 
     while (1) {
         memset(&device_report, 0, sizeof(device_report_st));
@@ -92,9 +159,11 @@ void app_task_execute(void *pvParameters) {
             device_report.sensors[i].value  = voltage;
             device_report.sensors[i].active = true;
         }
-        if (xQueueSend(_global_structures->global_queues.sensor_report_queue,
-                       &device_report,
-                       pdMS_TO_TICKS(100)) != pdPASS) {
+        if (mqtt_topics[DEVICE_REPORT].queue == NULL) {
+            logger_print(ERR, TAG, "NULL QUEUE");
+            continue;
+        }
+        if (xQueueSend(mqtt_topics[DEVICE_REPORT].queue, &device_report, pdMS_TO_TICKS(100)) != pdPASS) {
             logger_print(ERR, TAG, "Failed to send sensor report to queue");
         }
 

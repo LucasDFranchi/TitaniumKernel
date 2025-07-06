@@ -8,39 +8,6 @@
 #include "kernel/logger/logger.h"
 #include "kernel/tasks/iot/mqtt/mqtt_client_task.h"
 #include "kernel/tasks/system/network/network_task.h"
-// #include "kernel/utils/utils.h"
-
-#define MAX_MQTT_TOPICS 10  ///< Maximum number of MQTT topics that can be subscribed to.
-
-// typedef struct mqtt_topic_internal_s {
-//     char topic[MQTT_MAXIMUM_TOPIC_LENGTH];       ///< MQTT topic string.
-//     QueueHandle_t queue;                         ///< External handle for the sensor data queue.
-//     qos_et qos;                                  ///< Quality of Service (QoS) level for the topic.
-//     mqtt_data_direction_et mqtt_data_direction;  ///< Data structure type for the topic.
-
-//     /**
-//      * @brief Parses a JSON string and stores the MQTT topic data.
-//      *
-//      * This function should extract relevant data from the provided JSON string
-//      * and store it in the corresponding mqtt_topic_internal_st structure.
-//      * It should return an appropriate kernel_error_st code to indicate success or failure.
-//      *
-//      * @param json_str The JSON string containing the topic data.
-//      * @return kernel_error_st Returns KERNEL_ERROR_NONE on success or a specific error code on failure.
-//      */
-//     kernel_error_st (*parse_store_json)(const char* json_str);
-
-//     /**
-//      * @brief Function pointer to publish data to an MQTT topic.
-//      *
-//      * This function should handle the publishing of data to the corresponding MQTT topic.
-//      * It should return an appropriate kernel_error_st code to indicate success or failure.
-//      *
-//      * @param json_str The data to be sent to the MQTT topic.
-//      * @return kernel_error_st Returns KERNEL_ERROR_NONE on success or a specific error code on failure.
-//      */
-//     kernel_error_st (*encode_json)(const char* json_str);
-// } mqtt_topic_internal_st;
 
 /**
  * @brief Pointer to the global configuration structure.
@@ -49,13 +16,12 @@
  * across the system. It provides a centralized configuration and state management
  * for consistent and efficient event handling. Ensure proper initialization before use.
  */
-static global_structures_st* _global_structures  = NULL;         ///< Pointer to the global configuration structure.
-static esp_mqtt_client_handle_t mqtt_client      = {0};          ///< MQTT client handle.
-static const char* TAG                           = "MQTT Task";  ///< Log tag for MQTT task.
-static bool is_mqtt_connected                    = false;        ///< MQTT connection status.
-static mqtt_topic_st topic_pool[MAX_MQTT_TOPICS] = {0};          ///< Pool of MQTT topics.;
-static uint8_t initialized_mqtt_topics_count     = 0;            ///< Number of initialized MQTT topics.
-static char unique_id[13]                        = {0};          ///< Device unique ID (12 chars + null terminator).
+static global_structures_st* _global_structures = NULL;         ///< Pointer to the global configuration structure.
+static esp_mqtt_client_handle_t mqtt_client     = {0};          ///< MQTT client handle.
+static const char* TAG                          = "MQTT Task";  ///< Log tag for MQTT task.
+static bool is_mqtt_connected                   = false;        ///< MQTT connection status.
+static bool is_waiting_for_connection           = false;        ///<
+static mqtt_bridge_st mqtt_bridge               = {0};          ///< Pointer to the MQTT bridge structure.
 
 /**
  * @brief Subscribes to all configured MQTT topics based on their direction.
@@ -68,18 +34,6 @@ static char unique_id[13]                        = {0};          ///< Device uni
  * @return KERNEL_ERROR_NONE if successful, or an appropriate error code if not.
  */
 static kernel_error_st mqtt_subscribe(void);
-
-/**
- * @brief Callback function for handling incoming MQTT messages.
- *
- * This function is called when an MQTT message is received on a subscribed topic.
- * It processes the incoming message and triggers the corresponding action.
- *
- * @param[in] topic       The topic on which the message was received.
- * @param[in] event_data  The message data received.
- * @param[in] event_data_len The length of the message data.
- */
-static void mqtt_subscribe_topic_callback(const char* topic, const char* event_data, size_t event_data_len);
 
 /**
  * @brief Handles MQTT events triggered by the client.
@@ -96,26 +50,35 @@ static void mqtt_event_handler(void* arg, esp_event_base_t base, int32_t event_i
     esp_mqtt_event_handle_t event = (esp_mqtt_event_handle_t)event_data;
 
     switch (event_id) {
+        case MQTT_EVENT_BEFORE_CONNECT:
+            logger_print(INFO, TAG, "MQTT_EVENT_BEFORE_CONNECT");
+            is_waiting_for_connection = true;
+            break;
+
         case MQTT_EVENT_CONNECTED:
             logger_print(INFO, TAG, "MQTT_EVENT_CONNECTED");
-            is_mqtt_connected = true;
+            is_mqtt_connected         = true;
+            is_waiting_for_connection = false;
             mqtt_subscribe();
             break;
 
         case MQTT_EVENT_DISCONNECTED:
             logger_print(INFO, TAG, "MQTT_EVENT_DISCONNECTED");
-            is_mqtt_connected = false;
+            is_mqtt_connected         = false;
+            is_waiting_for_connection = false;
             break;
 
         case MQTT_EVENT_DATA:
             logger_print(DEBUG, TAG, "MQTT_EVENT_DATA: Topic=%.*s, Data=%.*s",
                          event->topic_len, event->topic,
                          event->data_len, event->data);
-            mqtt_subscribe_topic_callback(event->topic, event->data, event->data_len);
+            // mqtt_bridge->handle_event_data();
+            // (event->topic, event->data, event->data_len);
             break;
 
         case MQTT_EVENT_ERROR:
-            logger_print(ERR, TAG, "MQTT_EVENT_ERROR");
+            logger_print(ERR, TAG, "Last error code reported from esp-tls: 0x%x", event->error_handle->esp_tls_last_esp_err);
+            logger_print(ERR, TAG, "Last tls stack error number: 0x%x", event->error_handle->esp_tls_stack_err);
             break;
 
         default:
@@ -124,78 +87,141 @@ static void mqtt_event_handler(void* arg, esp_event_base_t base, int32_t event_i
     }
 }
 
-// /**
-//  * @brief Cleans up the resources associated with an MQTT topic.
-//  *
-//  * This function deletes the semaphore, queue, and frees the memory allocated for
-//  * the provided MQTT topic structure. It is intended to be called when an MQTT topic
-//  * is no longer needed, ensuring proper resource cleanup and preventing memory leaks.
-//  *
-//  * The function checks if the semaphore and queue are valid before attempting to delete
-//  * them. The memory allocated for the `mqtt_topic_internal_st` structure is freed after
-//  * all resources have been cleaned up.
-//  *
-//  * @param mqtt_topic_internal A pointer to the mqtt_topic_internal_st structure representing
-//  *                            the MQTT topic whose resources need to be cleaned up.
-//  *                            This structure should have valid semaphore and queue handles
-//  *                            if they were created.
-//  */
-// static void cleanup_mqtt_topic(mqtt_topic_internal_st* mqtt_topic_internal) {
-//     if (mqtt_topic_internal->queue != NULL) {
-//         vQueueDelete(mqtt_topic_internal->queue);
-//     }
-//     heap_caps_free(mqtt_topic_internal);
-// }
+/**
+ * @brief Starts the MQTT client if it is initialized.
+ *
+ * This function starts the MQTT client and logs the status of the operation.
+ */
+static void start_mqtt_client(void) {
+    if (mqtt_client) {
+        esp_err_t err = esp_mqtt_client_start(mqtt_client);
+        if (err != ESP_OK) {
+            logger_print(ERR, TAG, "Failed to start MQTT client: %s", esp_err_to_name(err));
+        } else {
+            logger_print(INFO, TAG, "MQTT client started");
+        }
+    } else {
+        logger_print(ERR, TAG, "MQTT client not initialized");
+    }
+}
 
 /**
- * @brief Enqueues an MQTT topic for processing.
+ * @brief Stops the MQTT client if it is running.
  *
- * This function attempts to enqueue the provided MQTT topic into the internal topic queue.
- * It performs several checks before enqueuing:
- * - Verifies that the mqtt_topic pointer is not NULL.
- * - Ensures the data size is non-zero and within valid bounds.
- * - Checks if the encoding/decoding functions are provided, depending on the data direction (PUBLISH or SUBSCRIBE).
- * - Verifies that the data size does not exceed the maximum allowed size for the topic queue.
- *
- * The function allocates memory for an internal MQTT topic structure and its associated resources:
- * - A mutex semaphore is created for synchronization.
- * - A queue is created for holding the topic data.
- *
- * If any resource allocation fails or an invalid parameter is encountered, the function will return an error code, and the allocated memory/resources will be properly freed.
- *
- * @param mqtt_topic A pointer to the mqtt_topic_st structure representing the MQTT topic to be enqueued.
- * @return kernel_error_st Returns KERNEL_ERROR_NONE on success, or an error code indicating the failure reason:
- *         - KERNEL_ERROR_INVALID_ARG if the mqtt_topic pointer is NULL.
- *         - KERNEL_ERROR_INVALID_SIZE if the data size is zero.
- *         - KERNEL_ERROR_INVALID_INTERFACE if the necessary encoding/decoding functions are missing.
- *         - KERNEL_ERROR_SNPRINTF if topic name formatting exceeds buffer size.
- *         - KERNEL_ERROR_NO_MEM if memory allocation for internal resources (queue, semaphore) fails.
+ * This function stops the MQTT client and logs the status of the operation.
  */
-static kernel_error_st mqtt_client_topic_enqueue() {
-    if (initialized_mqtt_topics_count >= MAX_MQTT_TOPICS) {
-        return KERNEL_ERROR_MQTT_ENQUEUE_FAIL;
+static void stop_mqtt_client(void) {
+    if (mqtt_client) {
+        esp_mqtt_client_stop(mqtt_client);
+        logger_print(INFO, TAG, "MQTT client stopped");
+    }
+}
+
+/**
+ * @brief Publishes all available MQTT messages for registered topics.
+ *
+ * This function iterates through all topics registered in the MQTT bridge,
+ * and attempts to fetch and publish any available messages marked for publishing.
+ *
+ * For each topic:
+ * - If the queue is empty or direction is not `PUBLISH`, it is skipped.
+ * - If serialization or publishing fails, an error is logged, and the loop continues.
+ * - On success, the message is sent using `esp_mqtt_client_publish()`.
+ *
+ * The function does **not return early** on errors — it continues through all topics,
+ * ensuring that a failure on one topic does not block others.
+ *
+ * @note This function assumes that the payload and topic buffers are properly written
+ * and null-terminated by the bridge's fetch function and serializer.
+ *
+ * @warning No internal delays are used — if calling this rapidly, consider rate-limiting externally.
+ */
+static void publish(void) {
+    char payload[1024] = {0};
+    char topic[64]     = {0};
+    qos_et qos         = QOS_0;
+
+    mqtt_buffer_st mqtt_buffer_payload = {
+        .buffer = payload,
+        .size   = sizeof(payload)};
+    mqtt_buffer_st mqtt_buffer_topic = {
+        .buffer = topic,
+        .size   = sizeof(topic)};
+
+    for (size_t i = 0; i < mqtt_bridge.get_topics_count(); i++) {
+        kernel_error_st err = mqtt_bridge.fetch_publish_data(i, &mqtt_buffer_topic, &mqtt_buffer_payload, &qos);
+
+        if ((err != KERNEL_ERROR_NONE) && (err != KERNEL_ERROR_EMPTY_QUEUE)) {
+            logger_print(ERR, TAG, "Failed to publish to topic %s - %d", topic, err);
+            continue;
+        }
+
+        int msg_id = esp_mqtt_client_publish(mqtt_client, topic, payload, 0, qos, 0);
+        if (msg_id < 0) {
+            logger_print(ERR, TAG, "Failed to publish to topic %s, msg_id=%d", topic, msg_id);
+        }
+
+        logger_print(DEBUG, TAG, "Published to topic %s, msg_id=%d", topic, msg_id);
+    }
+}
+
+/**
+ * @brief Subscribes to all configured MQTT topics based on their direction.
+ *
+ * This function iterates through all the configured MQTT topics and subscribes
+ * to those whose direction is set to `SUBSCRIBE`. It also checks if the topic
+ * and the associated queue are valid. Any errors encountered are logged for
+ * debugging purposes.
+ *
+ * @return KERNEL_ERROR_NONE if successful, or an appropriate error code if not.
+ */
+static kernel_error_st mqtt_subscribe(void) {
+    char topic[64] = {0};
+    qos_et qos     = QOS_0;
+
+    mqtt_buffer_st mqtt_buffer_topic = {
+        .buffer = topic,
+        .size   = sizeof(topic)};
+
+    for (size_t i = 0; i < mqtt_bridge.get_topics_count(); i++) {
+        kernel_error_st err = mqtt_bridge.subscribe(i, &mqtt_buffer_topic, &qos);
+
+        if ((err != KERNEL_ERROR_NONE) && (err != KERNEL_ERROR_EMPTY_QUEUE)) {
+            logger_print(ERR, TAG, "Failed to subscribe to topic %s - %d", topic, err);
+            continue;
+        }
+
+        int msg_id = esp_mqtt_client_subscribe(mqtt_client, mqtt_buffer_topic.buffer, qos);
+        if (msg_id < 0) {
+            logger_print(ERR, TAG, "Failed to subscribe to topic %s", mqtt_buffer_topic.buffer);
+            return KERNEL_ERROR_MQTT_SUBSCRIBE;
+        }
+
+        logger_print(DEBUG, TAG, "Subscribed to topic %s, msg_id=%d", mqtt_buffer_topic.buffer, msg_id);
     }
 
-    mqtt_topic_st mqtt_topic = {0};
-    if (xQueueReceive(_global_structures->global_queues.mqtt_topic_queue, &mqtt_topic, pdMS_TO_TICKS(100)) != pdTRUE) {
-        return KERNEL_ERROR_NONE;
-    }
+    return KERNEL_ERROR_NONE;
+}
 
-    if ((mqtt_topic.mqtt_data_direction == PUBLISH && mqtt_topic.serialize_data == NULL) ||
-        (mqtt_topic.mqtt_data_direction == SUBSCRIBE && mqtt_topic.deserialize_data == NULL)) {
-        return KERNEL_ERROR_INVALID_INTERFACE;
+/**
+ * @brief Install the MQTT bridge instance from the global queue.
+ *
+ * This function retrieves a pointer to the MQTT bridge from the global queue and stores it
+ * in the `mqtt_bridge` variable. It must be called before any interaction with the bridge.
+ *
+ * @note This function expects `_global_structures->global_queues.mqtt_bridge_queue` to be
+ *       initialized and populated elsewhere in the system.
+ *
+ * @retval KERNEL_ERROR_NONE         Bridge installed successfully.
+ * @retval KERNEL_ERROR_NULL         Global structures or queue is NULL.
+ * @retval KERNEL_ERROR_EMPTY_QUEUE  Queue did not return a valid bridge within timeout.
+ */
+kernel_error_st install_bridge(void) {
+    if (xQueueReceive(_global_structures->global_queues.mqtt_bridge_queue, &mqtt_bridge, pdMS_TO_TICKS(100)) == pdTRUE) {
+        logger_print(INFO, TAG, "MQTT bridge successfully installed.");
+    } else {
+        return KERNEL_ERROR_EMPTY_QUEUE;
     }
-
-    if (mqtt_topic.topic[0] == '\0') {
-        return KERNEL_ERROR_EMPTY_MQTT_TOPIC;
-    }
-
-    if (mqtt_topic.queue == NULL) {
-        return KERNEL_ERROR_NULL_MQTT_QUEUE;
-    }
-
-    memcpy(&topic_pool[initialized_mqtt_topics_count++], &mqtt_topic, sizeof(mqtt_topic_st));
-    logger_print(DEBUG, TAG, "Enqueued MQTT topic: %s", mqtt_topic.topic);
 
     return KERNEL_ERROR_NONE;
 }
@@ -232,211 +258,7 @@ static kernel_error_st mqtt_client_task_initialize(void) {
         return KERNEL_ERROR_MQTT_CONFIG_FAIL;
     }
 
-    // get_unique_id(unique_id, sizeof(unique_id));
-
     return KERNEL_ERROR_NONE;
-}
-
-/**
- * @brief Starts the MQTT client if it is initialized.
- *
- * This function starts the MQTT client and logs the status of the operation.
- */
-static void start_mqtt_client(void) {
-    if (mqtt_client) {
-        esp_mqtt_client_start(mqtt_client);
-        logger_print(INFO, TAG, "MQTT client started");
-    } else {
-        logger_print(ERR, TAG, "MQTT client not initialized");
-    }
-}
-
-/**
- * @brief Stops the MQTT client if it is running.
- *
- * This function stops the MQTT client and logs the status of the operation.
- */
-static void stop_mqtt_client(void) {
-    if (mqtt_client) {
-        esp_mqtt_client_stop(mqtt_client);
-        logger_print(INFO, TAG, "MQTT client stopped");
-    }
-}
-
-static kernel_error_st mqtt_publish_topic(uint8_t topic_index) {
-    char message_buffer[1024] = {0};
-    char channel[64]         = {0};
-
-    kernel_error_st err = topic_pool[topic_index].serialize_data(topic_pool[topic_index].queue,
-                                                                 message_buffer,
-                                                                 sizeof(message_buffer));
-
-    if ((err != KERNEL_ERROR_NONE) || (err == KERNEL_ERROR_QUEUE_EMPTY)) {
-        logger_print(ERR, TAG, "Failed to publish to topic %s", topic_pool[topic_index].topic);
-        return err;
-    }
-
-    size_t channel_size = snprintf(channel, sizeof(channel),
-                                   "/titanium/%s/%s",
-                                   unique_id,
-                                   topic_pool[topic_index].topic);
-
-    if (channel_size >= sizeof(channel)) {
-        logger_print(WARN, TAG, "Channel buffer too small");
-        return KERNEL_ERROR_SNPRINTF;
-    }
-
-    int msg_id = esp_mqtt_client_publish(mqtt_client, channel, message_buffer, 0, topic_pool[topic_index].qos, 0);
-    if (msg_id < 0) {
-        logger_print(ERR, TAG, "Message published successfully, msg_id=%d", msg_id);
-        return KERNEL_ERROR_MQTT_PUBLISH;
-    }
-
-    logger_print(DEBUG, TAG, "Published to topic %s, msg_id=%d", channel, msg_id);
-
-    return KERNEL_ERROR_NONE;
-}
-
-/**
- * @brief Publishes sensor data to the MQTT topic.
- *
- * This function iterates through all the configured MQTT topics and publishes
- * data to those whose direction is set to `PUBLISH`. It checks if each topic
- * and its associated queue are valid. If any errors are encountered, they are
- * logged for debugging purposes. The function returns the error encountered
- * during the publishing process, or `KERNEL_ERROR_NONE` if all topics were
- * successfully published to.
- *
- * @return kernel_error_st - Returns the error status or `KERNEL_ERROR_NONE` on success.
- */
-static kernel_error_st mqtt_publish(void) {
-    for (uint8_t i = 0; i < initialized_mqtt_topics_count; i++) {
-        if (topic_pool[i].queue == NULL) {
-            logger_print(ERR, TAG, "Queue for topic %s is NULL", topic_pool[i].topic);
-            return KERNEL_ERROR_QUEUE_NULL;
-        }
-        if (topic_pool[i].mqtt_data_direction == PUBLISH) {
-            kernel_error_st err = mqtt_publish_topic(i);
-            if (err != KERNEL_ERROR_NONE) {
-                logger_print(ERR, TAG, "Failed to publish to topic %s", topic_pool[i].topic);
-                return err;
-            }
-        }
-    }
-    return KERNEL_ERROR_NONE;
-}
-
-// /**
-//  * @brief Subscribes to an MQTT topic and processes the subscription.
-//  *
-//  * This function constructs the full MQTT topic channel string and attempts to
-//  * subscribe to the topic using the `esp_mqtt_client_subscribe` API. It handles
-//  * errors such as invalid input parameters, buffer size issues, and subscription failures.
-//  * Upon a successful subscription, it logs the result.
-//  *
-//  * @param mqtt_internal_topic A pointer to the mqtt_topic_internal_st structure representing the topic to subscribe to.
-//  * @return kernel_error_st Returns KERNEL_ERROR_NONE on success, or an appropriate error code:
-//  *         - KERNEL_ERROR_NULL if the mqtt_internal_topic pointer is NULL.
-//  *         - KERNEL_ERROR_INVALID_ARG if the topic is empty.
-//  *         - KERNEL_ERROR_SNPRINTF if the channel buffer size is insufficient.
-//  *         - KERNEL_ERROR_MQTT_SUBSCRIBE if subscribing to the topic fails.
-//  */
-// static kernel_error_st mqtt_subscribe_topic(mqtt_topic_internal_st* mqtt_topic_internal) {
-//     char channel[64] = {0};
-
-//     if (mqtt_topic_internal == NULL) {
-//         return KERNEL_ERROR_INVALID_ARG;
-//     }
-
-//     size_t channel_size = snprintf(channel,
-//                                    sizeof(channel),
-//                                    "/titanium/%s/%s",
-//                                    unique_id,
-//                                    mqtt_topic_internal->topic);
-
-//     if (channel_size >= sizeof(channel)) {
-//         logger_print(ERR, TAG, "Channel buffer too small");
-//         return KERNEL_ERROR_SNPRINTF;
-//     }
-
-//     int msg_id = esp_mqtt_client_subscribe(mqtt_client, channel, 1);
-//     if (msg_id < 0) {
-//         logger_print(ERR, TAG, "Failed to subscribe to topic %s", channel);
-//         return KERNEL_ERROR_MQTT_SUBSCRIBE;
-//     }
-
-//     logger_print(DEBUG, TAG, "Subscribed to topic %s, msg_id=%d", channel, msg_id);
-
-//     return KERNEL_ERROR_NONE;
-// }
-
-/**
- * @brief Subscribes to all configured MQTT topics based on their direction.
- *
- * This function iterates through all the configured MQTT topics and subscribes
- * to those whose direction is set to `SUBSCRIBE`. It also checks if the topic
- * and the associated queue are valid. Any errors encountered are logged for
- * debugging purposes.
- *
- * @return KERNEL_ERROR_NONE if successful, or an appropriate error code if not.
- */
-static kernel_error_st mqtt_subscribe(void) {
-    // if (!mqtt_client) {
-    //     return KERNEL_ERROR_NULL;
-    // }
-
-    // for (uint8_t i = 0; i < initialized_mqtt_topics_count; i++) {
-    //     if (topic_pool[i].queue == NULL) {
-    //         logger_print(ERR, TAG, "Queue for topic %s is NULL", topic_pool[i].topic);
-    //         return KERNEL_ERROR_QUEUE_NULL;
-    //     }
-    //     if (topic_pool[i].mqtt_data_direction == SUBSCRIBE) {
-    //         kernel_error_st err = mqtt_subscribe_topic(topic_pool[i]);
-    //         if (err != KERNEL_ERROR_NONE) {
-    //             logger_print(ERR, TAG, "Failed to subscribe to topic %s", topic_pool[i].topic);
-    //             return err;
-    //         }
-    //     }
-    // }
-
-    return KERNEL_ERROR_NONE;
-}
-
-/**
- * @brief Callback function for handling incoming MQTT messages.
- *
- * This function is called when an MQTT message is received on a subscribed topic.
- * It processes the incoming message and triggers the corresponding action.
- *
- * @param[in] topic       The topic on which the message was received.
- * @param[in] event_data  The message data received.
- * @param[in] event_data_len The length of the message data.
- */
-static void mqtt_subscribe_topic_callback(const char* topic, const char* event_data, size_t event_data_len) {
-    if ((topic == NULL) || (event_data == NULL) || (event_data_len == 0)) {
-        logger_print(ERR, TAG, "Invalid arguments");
-        return;
-    }
-
-    for (int i = 0; i < initialized_mqtt_topics_count; i++) {
-        if (topic_pool[i].queue == NULL) {
-            logger_print(ERR, TAG, "Queue for topic %s is NULL", topic_pool[i].topic);
-            continue;
-        }
-        if (topic_pool[i].mqtt_data_direction == PUBLISH) {
-            continue;
-        }
-
-        if (strstr(topic, topic_pool[i].topic) == NULL) {
-            continue;
-        }
-
-        kernel_error_st err = topic_pool[i].deserialize_data(event_data);
-
-        if (err != KERNEL_ERROR_NONE) {
-            logger_print(ERR, TAG, "Failed to parse the received json from topic %s", topic_pool[i].topic);
-        }
-    }
 }
 
 /**
@@ -450,34 +272,59 @@ static void mqtt_subscribe_topic_callback(const char* topic, const char* event_d
  */
 void mqtt_client_task_execute(void* pvParameters) {
     _global_structures = (global_structures_st*)pvParameters;
+
     if ((mqtt_client_task_initialize() != ESP_OK) ||
         (_global_structures == NULL) ||
-        (_global_structures->global_queues.mqtt_topic_queue == NULL) ||
+        (_global_structures->global_queues.mqtt_bridge_queue == NULL) ||
         (_global_structures->global_events.firmware_event_group == NULL)) {
         logger_print(ERR, TAG, "Failed to initialize MQTT task");
         vTaskDelete(NULL);
     }
 
-    while (1) {
-        EventBits_t firmware_event_bits = xEventGroupGetBits(_global_structures->global_events.firmware_event_group);
+    while (install_bridge() != KERNEL_ERROR_NONE) {
+        logger_print(WARN, TAG, "Waiting for MQTT bridge to be available...");
+        vTaskDelay(pdMS_TO_TICKS(500));
+    }
 
-        if (mqtt_client_topic_enqueue() != KERNEL_ERROR_NONE) {
-            logger_print(ERR, TAG, "Failed to enqueue MQTT topic");
+    TickType_t last_connect_attempt = 0;
+    TickType_t waiting_since        = 0;
+
+    while (1) {
+        EventBits_t firmware_event_bits = xEventGroupGetBits(
+            _global_structures->global_events.firmware_event_group);
+
+        bool is_wifi_connected = firmware_event_bits & WIFI_CONNECTED_STA;
+        bool is_time_synced    = firmware_event_bits & TIME_SYNCED;
+        TickType_t now         = xTaskGetTickCount();
+
+        // Handle MQTT reconnect logic
+        if (!is_mqtt_connected && !is_waiting_for_connection) {
+            if (is_wifi_connected && (now - last_connect_attempt > pdMS_TO_TICKS(5000))) {
+                logger_print(DEBUG, TAG, "Trying to start MQTT client...");
+                start_mqtt_client();
+                last_connect_attempt      = now;
+                waiting_since             = now;
+                is_waiting_for_connection = true;
+            }
         }
 
-        if (is_mqtt_connected) {
-            if ((firmware_event_bits & WIFI_CONNECTED_STA) == 0) {
-                logger_print(DEBUG, TAG, "Stopping MQTT client due to Wi-Fi disconnection...\n");
-                stop_mqtt_client();
-            } else if (firmware_event_bits & TIME_SYNCED) {
-                logger_print(DEBUG, TAG, "Publishing MQTT topics...\n");
-                mqtt_publish();
-            }
-        } else {
-            if ((firmware_event_bits & WIFI_CONNECTED_STA) == 1) {
-                logger_print(DEBUG, TAG, "Starting MQTT client due to Wi-Fi connection...\n");
-                start_mqtt_client();
-            }
+        // Timeout if stuck waiting to connect
+        if (is_waiting_for_connection && (now - waiting_since > pdMS_TO_TICKS(15000))) {
+            logger_print(WARN, TAG, "MQTT connect timeout, restarting client...");
+            stop_mqtt_client();
+            is_waiting_for_connection = false;
+        }
+
+        // If connected and Wi-Fi is lost, stop client
+        if (is_mqtt_connected && !is_wifi_connected) {
+            logger_print(DEBUG, TAG, "Stopping MQTT client due to Wi-Fi disconnection...");
+            stop_mqtt_client();
+        }
+
+        // If connected and time is synced, publish data
+        if (is_mqtt_connected && is_wifi_connected && is_time_synced) {
+            logger_print(DEBUG, TAG, "Publishing MQTT topics...");
+            publish();
         }
 
         vTaskDelay(pdMS_TO_TICKS(1000));

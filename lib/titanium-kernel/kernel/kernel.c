@@ -1,6 +1,7 @@
 #include "kernel.h"
 
 #include "kernel/utils/nvs_util.h"
+#include "kernel/device/device_info.h"
 
 task_interface_st sntp_task = {
     .arg          = NULL,
@@ -121,6 +122,8 @@ kernel_error_st kernel_initialize(log_output_et log_output, global_structures_st
     if ((global_structures == NULL)) {
         return KERNEL_ERROR_INVALID_ARG;
     }
+
+    device_info_init();
 
     if (kernel_initialize_nvs() != KERNEL_ERROR_NONE) {
         logger_print(ERR, TAG, "Failed to initialize NVS");

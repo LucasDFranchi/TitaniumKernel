@@ -1,20 +1,11 @@
-/**
- * @file serialize_device_report.c
- * @brief Serializes a 'device_report_st' struct into a human-readable JSON string.
- *
- * This module provides a serialization function that converts device sensor data into
- * a JSON-formatted string using 'snprintf'. It avoids dynamic memory allocation or external
- * libraries like 'cJSON' to ensure compatibility with embedded systems or memory-constrained environments.
- *
- * @note This approach prioritizes readability and simplicity over compactness. It is not
- *       the most memory-efficient or scalable method for JSON serialization but is very
- *       useful when working without heap allocation.
- */
-#include "app/translation/report_serializer.h"
+#include "mqtt_serializer.h"
+
+#include "kernel/logger/logger.h"
 
 #include "app/app_extern_types.h"
 
-#include "kernel/logger/logger.h" //deletar
+/* MQTT Serializer Global Variables */
+static const char *TAG = "MQTT_Serializer";
 
 const char *json_payload =
     "{\n"
@@ -45,24 +36,13 @@ const char *json_payload =
     "  ]\n"
     "}";
 
-/**
- * @brief Serializes a 'device_report_st' structure into a JSON string.
- *
- * This function formats the contents of the device report into a human-readable JSON format
- * using 'snprintf'. It avoids dynamic memory allocation, making it suitable for embedded use.
- *
- * @param data Pointer to a 'device_report_st' structure.
- * @param out_buffer Pre-allocated buffer to write the resulting JSON string into.
- * @param buffer_size Size of the output buffer.
- * @return 'APP_ERROR_NONE' on success, or an appropriate error code if serialization fails.
- */
-kernel_error_st serialize_device_report(QueueHandle_t queue, char *out_buffer, size_t buffer_size) {
+kernel_error_st serialize_data_report(QueueHandle_t queue, char* out_buffer, const char buffer_size) {
     if (queue == NULL || out_buffer == NULL || buffer_size == 0) {
         return KERNEL_ERROR_NULL;
     }
     device_report_st device_report = {0};
     if (xQueueReceive(queue, &device_report, pdMS_TO_TICKS(100)) != pdTRUE) {
-        return KERNEL_ERROR_QUEUE_EMPTY;
+        return KERNEL_ERROR_EMPTY_QUEUE;
     }
     
     int out_json_size = snprintf(out_buffer, buffer_size, json_payload,
@@ -91,8 +71,61 @@ kernel_error_st serialize_device_report(QueueHandle_t queue, char *out_buffer, s
                                  device_report.sensors[21].value, device_report.sensors[21].active);
 
     if ((out_json_size < 0) || (size_t)out_json_size >= buffer_size) {
-        return KERNEL_ERROR_SNPRINTF;
+        return KERNEL_ERROR_FORMATTING;
     }
 
     return KERNEL_ERROR_NONE;
+}
+kernel_error_st serialize_command(QueueHandle_t queue, char* buffer, const char buffer_size) {
+    return KERNEL_ERROR_SERIALIZE_JSON;
+}
+
+/**
+ * @brief Serializes data from a topic's queue into a buffer for MQTT transmission.
+ *
+ * This function handles serialization based on the topic's data type.
+ * It reads data from the queue and formats it into the given buffer.
+ *
+ * @param[in] topic        Pointer to the MQTT topic containing the queue and metadata.
+ * @param[out] buffer      Output buffer where serialized data will be stored.
+ * @param[in] buffer_size  Size of the output buffer in bytes.
+ *
+ * @return KERNEL_ERROR_NONE on success.
+ * @return KERNEL_ERROR_NULL if any input pointer is NULL.
+ * @return KERNEL_ERROR_INVALID_SIZE if the buffer size is zero.
+ * @return KERNEL_ERROR_UNSUPPORTED_TYPE if the topic data type is not recognized.
+ * @return Other kernel_error_st values returned by specific serializer functions.
+ */
+kernel_error_st mqtt_serialize_data(mqtt_topic_st *topic, char *buffer, size_t buffer_size) {
+    if ((topic == NULL) || (buffer == NULL)) {
+        logger_print(ERR, TAG, "%s - Null pointer argument", __func__);
+        return KERNEL_ERROR_NULL;
+    }
+
+    if (buffer_size == 0) {
+        logger_print(ERR, TAG, "%s - Buffer size is zero", __func__);
+        return KERNEL_ERROR_INVALID_SIZE;
+    }
+
+    kernel_error_st err;
+
+    switch (topic->info->data_type) {
+        case DATA_TYPE_REPORT:
+            err = serialize_data_report(topic->queue, buffer, buffer_size);
+            break;
+
+        case DATA_TYPE_COMMAND:
+            err = serialize_command(topic->queue, buffer, buffer_size);
+            break;
+
+        default:
+            logger_print(ERR, TAG, "Unsupported data type: %d", topic->info->data_type);
+            return KERNEL_ERROR_UNSUPPORTED_TYPE;
+    }
+
+    if (err != KERNEL_ERROR_NONE) {
+        logger_print(ERR, TAG, "Serialization failed for topic %s", topic->info->topic);
+    }
+
+    return err;
 }
