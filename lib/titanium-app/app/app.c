@@ -142,12 +142,13 @@ void app_task_execute(void *pvParameters) {
         vTaskDelete(NULL);
     }
     static bool led_on = false;
-    logger_print(ERR, TAG, "Failed to inifasdfasdfasdfasdfasdfasdfztialize app task");
 
     while (1) {
         memset(&device_report, 0, sizeof(device_report_st));
 
         get_timestamp_in_iso_format(device_report.timestamp, sizeof(device_report.timestamp));
+
+        device_report.num_of_channels = NUM_OF_CHANNELS;
 
         for (int i = 0; i < NUM_OF_CHANNELS; i++) {
             float voltage = 0.0f;

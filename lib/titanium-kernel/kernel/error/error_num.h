@@ -6,16 +6,34 @@
  * These codes provide a standardized way to handle and report errors
  * across different kernel modules.
  *
+ * Each error is grouped into a hexadecimal range to improve traceability,
+ * organization, and debugging in large systems.
+ *
+ * ----------------------------------------------------------------------------
+ * Error Code Sections:
+ * ----------------------------------------------------------------------------
+ * 0x0000 - 0x00FF : General Errors
+ * 0x0100 - 0x01FF : Queue, Task, and Thread Errors
+ * 0x0200 - 0x02FF : MQTT-Related Errors
+ * 0x0300 - 0x03FF : JSON, Schema, and Serialization Errors
+ * 0x0400 - 0x04FF : Storage and NVS Errors
+ * 0x0500 - 0x05FF : OTA Update Errors
+ * 0x0600 - 0x06FF : Network and Wi-Fi Configuration Errors
+ * 0x0700 - 0x07FF : System and Global Initialization Errors
+ * 0x0800 - 0x08FF : Application and Command Errors
+ *
+ * ----------------------------------------------------------------------------
  * Usage Example:
+ * ----------------------------------------------------------------------------
  * @code
  * kernel_error_t err = some_function();
  * if (err != KERNEL_ERROR_NONE) {
- *     printf("Error: %d\n", err);
+ *     printf("Error code: 0x%04X\n", err);
  * }
  * @endcode
  *
  * @note Ensure that functions returning these error codes follow
- *       the convention where `KERNEL_ERROR_NONE` (0) indicates success.
+ *       the convention where `KERNEL_ERROR_NONE` (0x0000) indicates success.
  */
 
 #ifndef ERROR_ENUM_H
@@ -26,61 +44,83 @@
  * @brief Standard error codes for the kernel.
  */
 typedef enum kernel_error_s {
-    KERNEL_ERROR_NONE                        = 0,   /**< No error, operation successful */
-    KERNEL_ERROR_NULL                        = -1,  /**< Null pointer error */
-    KERNEL_ERROR_INVALID_ARG                 = -2,  /**< Invalid argument passed */
-    KERNEL_ERROR_INVALID_SIZE                = -3,  /**< Invalid size parameter */
-    KERNEL_ERROR_NOT_FOUND                   = -4,  /**< Requested item not found */
-    KERNEL_ERROR_FAIL                        = -5,  /**< General failure */
-    KERNEL_ERROR_NO_MEM                      = -6,  /**< Memory allocation failure */
-    KERNEL_ERROR_TASK_FULL                   = -7,  /**< Task queue is full */
-    KERNEL_ERROR_TASK_INIT                   = -8,  /**< Task queue is not initialized */
-    KERNEL_ERROR_QUEUE_NULL                  = -9,  /**< Queue is NULL */
-    KERNEL_ERROR_QUEUE_FULL                  = -10, /**< Queue is full */
-    KERNEL_ERROR_INVALID_INTERFACE           = -11, /**< Task queue is not initialized */
-    KERNEL_ERROR_FORMATTING                  = -12, /**< Error in snprintf function */
-    KERNEL_ERROR_MQTT_PUBLISH                = -13, /**< Error in MQTT publish */
-    KERNEL_ERROR_MQTT_SUBSCRIBE              = -14, /**< Error in MQTT subscribe */
-    KERNEL_ERROR_MQTT_REGISTER_FAIL          = -15, /**< Error in MQTT registration */
-    KERNEL_ERROR_MQTT_URI_FAIL               = -16, /**< Error in MQTT URI */
-    KERNEL_ERROR_MQTT_CONFIG_FAIL            = -17, /**< Error in MQTT configuration */
-    KERNEL_ERROR_TASK_CREATE                 = -18, /**< Error in task creation */
-    KERNEL_ERROR_NVS_INIT                    = -19, /**< Error in NVS initialization */
-    KERNEL_ERROR_INITIALIZATION_FAIL         = -20, /**< Initialization failure */
-    KERNEL_ERROR_MUTEX_INIT_FAIL             = -21, /**< Mutex initialization failure */
-    KERNEL_ERROR_SOCK_CREATE_FAIL            = -22, /**< Socket creation failure */
-    KERNEL_ERROR_GLOBAL_EVENTS_INIT          = -23, /**< Global events initialization failure */
-    KERNEL_ERROR_GLOBAL_QUEUES_INIT          = -24, /**< Global queues initialization failure */
-    KERNEL_ERROR_EMPTY_SSID                  = -25, /**< Empty SSID error */
-    KERNEL_ERROR_SSID_TOO_LONG               = -26, /**< SSID too long error */
-    KERNEL_ERROR_EMPTY_PASSWORD              = -27, /**< Empty password error */
-    KERNEL_ERROR_PASSWORD_TOO_LONG           = -28, /**< Password too long error */
-    KERNEL_ERROR_READING_SSID                = -29, /**< Error reading SSID */
-    KERNEL_ERROR_READING_PASSWORD            = -30, /**< Error reading password */
-    KERNEL_ERROR_RECEIVING_FORM_DATA         = -31, /**< Error receiving form data */
-    KERNEL_ERROR_NO_OTA_PARTITION_FOUND      = -32, /**< No OTA partition found */
-    KERNEL_ERROR_OTA_BEGIN_FAILED            = -33, /**< OTA begin failed */
-    KERNEL_ERROR_NVS_OPEN                    = -34, /**< NVS open failed */
-    KERNEL_ERROR_NVS_SAVE                    = -35, /**< NVS save failed */
-    KERNEL_ERROR_NVS_LOAD                    = -36, /**< NVS load failed */
-    KERNEL_ERROR_NVS_ERASE_KEY               = -37, /**< NVS erase key failed */
-    KERNEL_ERROR_NVS_ERASE_ALL               = -38, /**< NVS erase all failed */
-    KERNEL_ERROR_NVS_NOT_INITIALIZED         = -39, /**< NVS not initialized */
-    KERNEL_ERROR_TIMESTAMP_FORMAT            = -40, /**< Timestamp format error */
-    KERNEL_ERROR_EMPTY_MQTT_TOPIC            = -41, /**< Empty MQTT topic error */
-    KERNEL_ERROR_NULL_MQTT_QUEUE             = -42, /**< Null MQTT queue error */
-    KERNEL_ERROR_MQTT_ENQUEUE_FAIL           = -43, /**< MQTT enqueue failure */
-    KERNEL_ERROR_EMPTY_QUEUE                 = -44, /**< Queue is empty */
-    KERNEL_ERROR_MQTT_INVALID_QOS            = -45, /**< Invalid MQTT Quality of Service (QoS) level */
-    KERNEL_ERROR_MQTT_INVALID_DATA_DIRECTION = -46, /**< Invalid MQTT data direction */
-    KERNEL_ERROR_MQTT_INVALID_TOPIC          = -47, /**< Invalid MQTT topic */
-    KERNEL_ERROR_MQTT_QUEUE_NULL             = -48, /**< MQTT queue is NULL */
-    KERNEL_ERROR_MQTT_TOO_MANY_TOPICS        = -49, /**< Too many MQTT topics registered */
-    KERNEL_ERROR_SERIALIZE_JSON              = -50, /**< Error serializing the struct */
-    KERNEL_ERROR_DESERIALIZE_JSON            = -51, /**< Error deserializing the struct */
-    KERNEL_ERROR_INVALID_INDEX               = -52, /**< */
-    KERNEL_ERROR_UNKNOWN_MAC                 = -53, /**< */
-    KERNEL_ERROR_UNSUPPORTED_TYPE            = -54, /**< */
+    /* -------- General (0x000) -------- */
+    KERNEL_ERROR_NONE                = 0x0000,
+    KERNEL_ERROR_FAIL                = 0x0001,
+    KERNEL_ERROR_NULL                = 0x0002,
+    KERNEL_ERROR_INVALID_ARG         = 0x0003,
+    KERNEL_ERROR_INVALID_SIZE        = 0x0004,
+    KERNEL_ERROR_INVALID_INDEX       = 0x0005,
+    KERNEL_ERROR_NOT_FOUND           = 0x0006,
+    KERNEL_ERROR_UNSUPPORTED_TYPE    = 0x0007,
+    KERNEL_ERROR_FORMATTING          = 0x0008,
+    KERNEL_ERROR_UNKNOWN_MAC         = 0x0009,
+
+    /* -------- Task/Queue (0x100) -------- */
+    KERNEL_ERROR_TASK_CREATE         = 0x0100,
+    KERNEL_ERROR_TASK_INIT           = 0x0101,
+    KERNEL_ERROR_TASK_FULL           = 0x0102,
+    KERNEL_ERROR_QUEUE_NULL          = 0x0103,
+    KERNEL_ERROR_QUEUE_FULL          = 0x0104,
+    KERNEL_ERROR_QUEUE_SEND          = 0x0105,
+    KERNEL_ERROR_EMPTY_QUEUE         = 0x0106,
+    KERNEL_ERROR_NO_MEM              = 0x0107,
+    KERNEL_ERROR_MUTEX_INIT_FAIL     = 0x0108,
+
+    /* -------- MQTT (0x200) -------- */
+    KERNEL_ERROR_MQTT_PUBLISH                = 0x0200,
+    KERNEL_ERROR_MQTT_SUBSCRIBE              = 0x0201,
+    KERNEL_ERROR_MQTT_REGISTER_FAIL          = 0x0202,
+    KERNEL_ERROR_MQTT_URI_FAIL               = 0x0203,
+    KERNEL_ERROR_MQTT_CONFIG_FAIL            = 0x0204,
+    KERNEL_ERROR_MQTT_QUEUE_NULL             = 0x0205,
+    KERNEL_ERROR_MQTT_ENQUEUE_FAIL           = 0x0206,
+    KERNEL_ERROR_EMPTY_MQTT_TOPIC            = 0x0207,
+    KERNEL_ERROR_MQTT_INVALID_TOPIC          = 0x0208,
+    KERNEL_ERROR_MQTT_INVALID_QOS            = 0x0209,
+    KERNEL_ERROR_MQTT_INVALID_DATA_DIRECTION = 0x020A,
+    KERNEL_ERROR_MQTT_TOO_MANY_TOPICS        = 0x020B,
+
+    /* -------- JSON/Serialization (0x300) -------- */
+    KERNEL_ERROR_SERIALIZE_JSON      = 0x0300,
+    KERNEL_ERROR_DESERIALIZE_JSON    = 0x0301,
+    KERNEL_ERROR_MISSING_FIELD       = 0x0302,
+    KERNEL_ERROR_INVALID_TYPE        = 0x0303,
+    KERNEL_ERROR_INVALID_COMMAND     = 0x0304,
+
+    /* -------- Storage/NVS (0x400) -------- */
+    KERNEL_ERROR_NVS_INIT            = 0x0400,
+    KERNEL_ERROR_NVS_OPEN            = 0x0401,
+    KERNEL_ERROR_NVS_SAVE            = 0x0402,
+    KERNEL_ERROR_NVS_LOAD            = 0x0403,
+    KERNEL_ERROR_NVS_ERASE_KEY       = 0x0404,
+    KERNEL_ERROR_NVS_ERASE_ALL       = 0x0405,
+    KERNEL_ERROR_NVS_NOT_INITIALIZED = 0x0406,
+
+    /* -------- OTA (0x500) -------- */
+    KERNEL_ERROR_NO_OTA_PARTITION_FOUND = 0x0500,
+    KERNEL_ERROR_OTA_BEGIN_FAILED       = 0x0501,
+
+    /* -------- Wi-Fi / Network (0x600) -------- */
+    KERNEL_ERROR_EMPTY_SSID          = 0x0600,
+    KERNEL_ERROR_SSID_TOO_LONG       = 0x0601,
+    KERNEL_ERROR_EMPTY_PASSWORD      = 0x0602,
+    KERNEL_ERROR_PASSWORD_TOO_LONG   = 0x0603,
+    KERNEL_ERROR_READING_SSID        = 0x0604,
+    KERNEL_ERROR_READING_PASSWORD    = 0x0605,
+    KERNEL_ERROR_SOCK_CREATE_FAIL    = 0x0606,
+    KERNEL_ERROR_RECEIVING_FORM_DATA = 0x0607,
+    KERNEL_ERROR_TIMESTAMP_FORMAT    = 0x0608,
+
+    /* -------- System Init (0x700) -------- */
+    KERNEL_ERROR_INITIALIZATION_FAIL = 0x0700,
+    KERNEL_ERROR_GLOBAL_EVENTS_INIT  = 0x0701,
+    KERNEL_ERROR_GLOBAL_QUEUES_INIT  = 0x0702,
+
+    /* -------- App/Commands (0x800) -------- */
+    KERNEL_ERROR_INVALID_INTERFACE   = 0x0800,
+
 } kernel_error_st;
+
 
 #endif /* ERROR_ENUM_H */

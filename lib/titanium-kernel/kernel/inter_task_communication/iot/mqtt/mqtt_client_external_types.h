@@ -6,10 +6,11 @@
 #include "kernel/error/error_num.h"
 #include "kernel/inter_task_communication/inter_task_communication.h"
 
-#define MQTT_MAXIMUM_TOPIC_LENGTH 64  ///< Defines the maximum length of an MQTT topic string.
-#define MAX_MQTT_TOPICS 10            ///< Maximum number of MQTT topics that can be subscribed to.
+#define MQTT_MAXIMUM_TOPIC_LENGTH 64      ///< Defines the maximum length of an MQTT topic string.
+#define MQTT_MAXIMUM_PAYLOAD_LENGTH 1024  ///< Defines the maximum length of an MQTT payload string.
+#define MAX_MQTT_TOPICS 10                ///< Maximum number of MQTT topics that can be subscribed to.
 
-typedef uint32_t data_type_et; ///< Type of the data used in the topic, used for serialization and routing.
+typedef uint32_t data_type_et;  ///< Type of the data used in the topic, used for serialization and routing.
 
 typedef enum mqtt_data_direction_e {
     PUBLISH,    ///< Publish data to the MQTT broker.
@@ -39,7 +40,7 @@ typedef struct mqtt_buffer_t {
  * This structure holds the compile-time configuration of an MQTT topic,
  * including its topic string, QoS level, data direction, and associated queue parameters.
  * It also includes a data type identifier used by the serialization/deserialization layer.
- * 
+ *
  * This structure is meant to be immutable and should be shared across runtime
  * topic instances. One instance should exist for each unique topic definition.
  */
@@ -83,7 +84,7 @@ typedef kernel_error_st (*subscribe_t)(uint8_t mqtt_index, mqtt_buffer_st *topic
  *
  * Called whenever an MQTT event with incoming data is received.
  */
-typedef kernel_error_st (*handle_event_data_t)(void);
+typedef kernel_error_st (*handle_event_data_t)(char *topic, mqtt_buffer_st *payload);
 
 /**
  * @brief Function pointer to get the number of active topics.
@@ -104,7 +105,7 @@ typedef size_t (*get_topics_count_t)(void);
  * The MQTT task interacts solely via function pointers.
  */
 typedef struct mqtt_bridge_s {
-    fetch_func_t fetch_publish_data;                ///< Function to fetch data for publishing.
+    fetch_func_t fetch_publish_data;        ///< Function to fetch data for publishing.
     subscribe_t subscribe;                  ///< Function to subscribe to topics (optional).
     handle_event_data_t handle_event_data;  ///< Function to handle incoming MQTT data (optional).
     get_topics_count_t get_topics_count;    ///< Function to retrieve the number of registered topics.

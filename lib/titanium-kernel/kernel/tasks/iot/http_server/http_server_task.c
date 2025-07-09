@@ -81,7 +81,7 @@ esp_err_t status_get_handler(httpd_req_t* req) {
  * @param[in] req HTTP request object.
  * @return ESP_OK on success, or an error code on failure.
  */
-static kernel_error_st post_uri_wifi_credentials(httpd_req_t* req) {
+static esp_err_t post_uri_wifi_credentials(httpd_req_t* req) {
     kernel_error_st result = KERNEL_ERROR_NONE;
 
     char buf[128] = {0};

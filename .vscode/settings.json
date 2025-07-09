@@ -42,6 +42,7 @@
         "type_traits": "c",
         "utility": "c",
         "cstdlib": "c",
-        "device_info.h": "c"
+        "device_info.h": "c",
+        "cstdint": "c"
     }
 }

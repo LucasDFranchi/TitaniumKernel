@@ -33,7 +33,22 @@ static mqtt_bridge_st mqtt_bridge               = {0};          ///< Pointer to 
  *
  * @return KERNEL_ERROR_NONE if successful, or an appropriate error code if not.
  */
-static kernel_error_st mqtt_subscribe(void);
+static kernel_error_st subscribe(void);
+
+/**
+ * @brief Handles incoming MQTT event data for subscribed topics.
+ *
+ * Matches the incoming topic string with registered topics and deserializes
+ * the payload accordingly.
+ *
+ * @param topic Pointer to the incoming MQTT topic string.
+ * @param payload Pointer to the mqtt_buffer_st containing the incoming payload data.
+ * @return KERNEL_ERROR_NONE on success;
+ *         KERNEL_ERROR_NULL if pointers are NULL;
+ *         KERNEL_ERROR_INVALID_SIZE if payload size is zero;
+ *         Other error codes as returned by mqtt_deserialize_data.
+ */
+static kernel_error_st handle_event_data(char* topic, char* data, size_t data_length);
 
 /**
  * @brief Handles MQTT events triggered by the client.
@@ -59,7 +74,7 @@ static void mqtt_event_handler(void* arg, esp_event_base_t base, int32_t event_i
             logger_print(INFO, TAG, "MQTT_EVENT_CONNECTED");
             is_mqtt_connected         = true;
             is_waiting_for_connection = false;
-            mqtt_subscribe();
+            subscribe();
             break;
 
         case MQTT_EVENT_DISCONNECTED:
@@ -72,8 +87,7 @@ static void mqtt_event_handler(void* arg, esp_event_base_t base, int32_t event_i
             logger_print(DEBUG, TAG, "MQTT_EVENT_DATA: Topic=%.*s, Data=%.*s",
                          event->topic_len, event->topic,
                          event->data_len, event->data);
-            // mqtt_bridge->handle_event_data();
-            // (event->topic, event->data, event->data_len);
+            handle_event_data(event->topic, event->data, event->data_len);
             break;
 
         case MQTT_EVENT_ERROR:
@@ -137,9 +151,9 @@ static void stop_mqtt_client(void) {
  * @warning No internal delays are used — if calling this rapidly, consider rate-limiting externally.
  */
 static void publish(void) {
-    char payload[1024] = {0};
-    char topic[64]     = {0};
-    qos_et qos         = QOS_0;
+    char payload[MQTT_MAXIMUM_PAYLOAD_LENGTH] = {0};
+    char topic[MQTT_MAXIMUM_TOPIC_LENGTH]     = {0};
+    qos_et qos                                = QOS_0;
 
     mqtt_buffer_st mqtt_buffer_payload = {
         .buffer = payload,
@@ -151,17 +165,21 @@ static void publish(void) {
     for (size_t i = 0; i < mqtt_bridge.get_topics_count(); i++) {
         kernel_error_st err = mqtt_bridge.fetch_publish_data(i, &mqtt_buffer_topic, &mqtt_buffer_payload, &qos);
 
-        if ((err != KERNEL_ERROR_NONE) && (err != KERNEL_ERROR_EMPTY_QUEUE)) {
+        if ((err == KERNEL_ERROR_EMPTY_QUEUE) || (err == KERNEL_ERROR_MQTT_INVALID_DATA_DIRECTION)) {
+            continue;
+        }
+
+        if (err != KERNEL_ERROR_NONE) {
             logger_print(ERR, TAG, "Failed to publish to topic %s - %d", topic, err);
             continue;
         }
 
         int msg_id = esp_mqtt_client_publish(mqtt_client, topic, payload, 0, qos, 0);
         if (msg_id < 0) {
-            logger_print(ERR, TAG, "Failed to publish to topic %s, msg_id=%d", topic, msg_id);
+            logger_print(ERR, TAG, "Failed to publish MQTT message (topic=%s, qos=%d)", topic, qos);
+        } else {
+            logger_print(DEBUG, TAG, "Published to topic %s, msg_id=%d", topic, msg_id);
         }
-
-        logger_print(DEBUG, TAG, "Published to topic %s, msg_id=%d", topic, msg_id);
     }
 }
 
@@ -175,8 +193,8 @@ static void publish(void) {
  *
  * @return KERNEL_ERROR_NONE if successful, or an appropriate error code if not.
  */
-static kernel_error_st mqtt_subscribe(void) {
-    char topic[64] = {0};
+static kernel_error_st subscribe(void) {
+    char topic[MQTT_MAXIMUM_TOPIC_LENGTH] = {0};
     qos_et qos     = QOS_0;
 
     mqtt_buffer_st mqtt_buffer_topic = {
@@ -201,6 +219,40 @@ static kernel_error_st mqtt_subscribe(void) {
     }
 
     return KERNEL_ERROR_NONE;
+}
+
+/**
+ * @brief Handles incoming MQTT event data for subscribed topics.
+ *
+ * Matches the incoming topic string with registered topics and deserializes
+ * the payload accordingly.
+ *
+ * @param topic Pointer to the incoming MQTT topic string.
+ * @param payload Pointer to the mqtt_buffer_st containing the incoming payload data.
+ * @return KERNEL_ERROR_NONE on success;
+ *         KERNEL_ERROR_NULL if pointers are NULL;
+ *         KERNEL_ERROR_INVALID_SIZE if payload size is zero;
+ *         Other error codes as returned by mqtt_deserialize_data.
+ */
+static kernel_error_st handle_event_data(char* topic, char* data, size_t data_length) {
+    if ((topic == NULL) || (data == NULL)) {
+        return KERNEL_ERROR_NULL;
+    }
+
+    if (data_length == 0 || data_length >= MQTT_MAXIMUM_PAYLOAD_LENGTH) {
+        logger_print(ERR, TAG, "Invalid data length %zu, max allowed is 1024", data_length);
+        return KERNEL_ERROR_INVALID_SIZE;
+    }
+
+    char payload_buffer[256] = {0};
+    memcpy(payload_buffer, data, data_length);
+    payload_buffer[data_length] = '\0';
+
+    mqtt_buffer_st payload = {
+        .buffer = payload_buffer,
+        .size   = data_length + 1};
+
+    return mqtt_bridge.handle_event_data(topic, &payload);
 }
 
 /**
@@ -248,7 +300,7 @@ static kernel_error_st mqtt_client_task_initialize(void) {
         return KERNEL_ERROR_MQTT_REGISTER_FAIL;
     }
 
-    if (esp_mqtt_client_set_uri(mqtt_client, "mqtt://mqtt.eclipseprojects.io") != ESP_OK) {
+    if (esp_mqtt_client_set_uri(mqtt_client, "mqtt://broker.hivemq.com") != ESP_OK) {
         logger_print(ERR, TAG, "Failed to set MQTT URI");
         return KERNEL_ERROR_MQTT_URI_FAIL;
     }
@@ -273,7 +325,7 @@ static kernel_error_st mqtt_client_task_initialize(void) {
 void mqtt_client_task_execute(void* pvParameters) {
     _global_structures = (global_structures_st*)pvParameters;
 
-    if ((mqtt_client_task_initialize() != ESP_OK) ||
+    if ((mqtt_client_task_initialize() != KERNEL_ERROR_NONE) ||
         (_global_structures == NULL) ||
         (_global_structures->global_queues.mqtt_bridge_queue == NULL) ||
         (_global_structures->global_events.firmware_event_group == NULL)) {
@@ -297,7 +349,6 @@ void mqtt_client_task_execute(void* pvParameters) {
         bool is_time_synced    = firmware_event_bits & TIME_SYNCED;
         TickType_t now         = xTaskGetTickCount();
 
-        // Handle MQTT reconnect logic
         if (!is_mqtt_connected && !is_waiting_for_connection) {
             if (is_wifi_connected && (now - last_connect_attempt > pdMS_TO_TICKS(5000))) {
                 logger_print(DEBUG, TAG, "Trying to start MQTT client...");
@@ -308,22 +359,18 @@ void mqtt_client_task_execute(void* pvParameters) {
             }
         }
 
-        // Timeout if stuck waiting to connect
         if (is_waiting_for_connection && (now - waiting_since > pdMS_TO_TICKS(15000))) {
             logger_print(WARN, TAG, "MQTT connect timeout, restarting client...");
             stop_mqtt_client();
             is_waiting_for_connection = false;
         }
 
-        // If connected and Wi-Fi is lost, stop client
         if (is_mqtt_connected && !is_wifi_connected) {
             logger_print(DEBUG, TAG, "Stopping MQTT client due to Wi-Fi disconnection...");
             stop_mqtt_client();
         }
 
-        // If connected and time is synced, publish data
         if (is_mqtt_connected && is_wifi_connected && is_time_synced) {
-            logger_print(DEBUG, TAG, "Publishing MQTT topics...");
             publish();
         }
 
