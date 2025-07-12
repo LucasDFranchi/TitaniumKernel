@@ -1,7 +1,7 @@
 #include "kernel.h"
 
-#include "kernel/utils/nvs_util.h"
 #include "kernel/device/device_info.h"
+#include "kernel/utils/nvs_util.h"
 
 task_interface_st sntp_task = {
     .arg          = NULL,
@@ -50,7 +50,6 @@ task_interface_st mqtt_task = {
 
 static const char *TAG = "KERNEL";  ///< Tag for logging
 
-
 /**
  * @brief Perform a system restart on the ESP32.
  *
@@ -59,7 +58,7 @@ static const char *TAG = "KERNEL";  ///< Tag for logging
  * current state is not possible or safe.
  *
  * @note This function does not return. The ESP32 will reboot immediately.
- * 
+ *
  * Example usage:
  * ```c
  * if (critical_fault_detected) {
@@ -109,14 +108,25 @@ kernel_error_st kernel_global_queues_initialize(global_queues_st *global_queue) 
 }
 
 /**
- * @brief Initializes the kernel by creating essential tasks.
+ * @brief Initializes the kernel subsystems and global resources.
  *
- * This function creates the SNTP and watchdog tasks required for system operation.
+ * This function sets up core components of the kernel, including:
+ * - Device information
+ * - Non-volatile storage (NVS)
+ * - Logging system
+ * - Global event and queue structures
+ * - System tasks (e.g., SNTP and watchdog)
  *
- * @param global_events Pointer to the global configuration structure.
- * @return KERNEL_ERROR_NONE on success, KERNEL_ERROR_TASK_CREATE if task creation fails.
+ * It must be called once during system startup before using any kernel services.
+ * If initialization fails at any stage, the function logs the error and attempts a system restart.
+ *
+ * @param release_mode        The build mode (RELEASE or DEBUG) used to configure logging behavior.
+ * @param log_output          The log output backend (e.g., SERIAL or UDP).
+ * @param global_structures   Pointer to the global system state structure. Must not be NULL.
+ *
+ * @return KERNEL_ERROR_NONE on success, or an appropriate error code if initialization fails.
  */
-kernel_error_st kernel_initialize(log_output_et log_output, global_structures_st *global_structures) {
+kernel_error_st kernel_initialize(release_mode_et release_mode, log_output_et log_output, global_structures_st *global_structures) {
     kernel_error_st ret = KERNEL_ERROR_NONE;
 
     if ((global_structures == NULL)) {
@@ -130,7 +140,7 @@ kernel_error_st kernel_initialize(log_output_et log_output, global_structures_st
         kernel_restart();
         return KERNEL_ERROR_NVS_INIT;
     }
-    logger_initialize(log_output, global_structures);
+    logger_initialize(release_mode, log_output, global_structures);
 
     if (kernel_global_events_initialize(&global_structures->global_events) != KERNEL_ERROR_NONE) {
         logger_print(ERR, TAG, "Failed to initialize global events");
@@ -214,10 +224,31 @@ kernel_error_st kernel_enable_mqtt(global_structures_st *global_structures) {
     return task_manager_enqueue_task(&mqtt_task);
 }
 
+/**
+ * @brief Starts all tasks that have been enqueued in the kernel's task manager.
+ *
+ * This function triggers the execution of all previously enqueued tasks.
+ * It should be called after all necessary tasks have been enqueued and
+ * the system is ready to start multitasking.
+ *
+ * @return KERNEL_ERROR_NONE on success, or an error code if starting tasks fails.
+ */
 kernel_error_st kernel_start_tasks(void) {
     return task_manager_start_queued_tasks();
 }
 
+/**
+ * @brief Enqueues a task to the kernel's task manager for later execution.
+ *
+ * Adds the specified task to the internal queue managed by the task manager.
+ * The task will be started when `kernel_start_tasks()` is called.
+ *
+ * @param task Pointer to the task interface structure to enqueue. Must not be NULL.
+ *
+ * @return KERNEL_ERROR_NONE on success,
+ *         KERNEL_ERROR_NULL if the task pointer is NULL,
+ *         or other task manager specific error codes.
+ */
 kernel_error_st kernel_enqueue_task(task_interface_st *task) {
     if (task == NULL) {
         return KERNEL_ERROR_NULL;

@@ -11,11 +11,12 @@
 #define LOGGER_UDP_HOST "logs5.papertrailapp.com"                                    ///< Papertrail hostname
 #define LOGGER_UDP_PORT (20770)                                                      ///< Papertrail port
 
-static log_output_et _log_output                = SERIAL;  ///< Log output channel (serial or UDP).
-static global_structures_st* _global_structures = NULL;    ///< Pointer to the global configuration structure.
-static SemaphoreHandle_t logger_mutex           = NULL;    ///< Mutex used for ensuring thread safety during UDP packet send operations.
-static struct sockaddr_in dest_addr             = {0};     ///< Destination address structure for the UDP server.
-static int sock                                 = -1;      ///< UDP socket descriptor used for sending data.
+static log_output_et _log_output                = SERIAL;                ///< Log output channel (serial or UDP).
+static release_mode_et _release_mode            = RELEASE_MODE_RELEASE;  ///< Current release mode of the system.
+static global_structures_st* _global_structures = NULL;                  ///< Pointer to the global configuration structure.
+static SemaphoreHandle_t logger_mutex           = NULL;                  ///< Mutex used for ensuring thread safety during UDP packet send operations.
+static struct sockaddr_in dest_addr             = {0};                   ///< Destination address structure for the UDP server.
+static int sock                                 = -1;                    ///< UDP socket descriptor used for sending data.
 
 /**
  * @brief Sends a UDP packet to the specified destination.
@@ -165,13 +166,25 @@ static kernel_error_st logger_send_message(const char* level, const char* tag, c
 }
 
 /**
- * @brief Initializes the logger module.
+ * @brief Initializes the logger subsystem with specified configuration.
  *
- * @param pvParameters Pointer to the global configuration.
- * @return ESP_OK on success, ESP_FAIL if initialization fails.
+ * Sets the logging output channel (e.g., SERIAL or UDP), the release mode
+ * (e.g., RELEASE or DEBUG), and stores a pointer to the global system structures.
+ * Also creates a mutex to ensure thread-safe logging operations.
+ *
+ * This function must be called before any logging is performed.
+ *
+ * @param release_mode       The current release mode determining logging verbosity.
+ * @param log_output         The desired logging output channel (e.g., SERIAL, UDP).
+ * @param global_structures  Pointer to the global system structures; must not be NULL.
+ *
+ * @return KERNEL_ERROR_NONE on successful initialization,
+ *         KERNEL_ERROR_INVALID_ARG if global_structures is NULL,
+ *         KERNEL_ERROR_MUTEX_INIT_FAIL if mutex creation fails.
  */
-kernel_error_st logger_initialize(log_output_et log_output, global_structures_st* global_structures) {
-    _log_output = log_output;
+kernel_error_st logger_initialize(release_mode_et release_mode, log_output_et log_output, global_structures_st* global_structures) {
+    _release_mode = release_mode;
+    _log_output   = log_output;
 
     if (global_structures == NULL) {
         return KERNEL_ERROR_INVALID_ARG;
@@ -232,7 +245,9 @@ kernel_error_st logger_print(log_level_et log_level, const char* tag, const char
             logger_send_message("[ERROR]", tag, message_body);
             break;
         case DEBUG:
-            logger_send_message("[DEBUG]", tag, message_body);
+            if (_release_mode == RELEASE_MODE_DEBUG) {
+                logger_send_message("[DEBUG]", tag, message_body);
+            }
             break;
         default:
             return KERNEL_ERROR_INVALID_ARG;

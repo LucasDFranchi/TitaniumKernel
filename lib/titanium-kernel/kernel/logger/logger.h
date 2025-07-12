@@ -27,6 +27,11 @@ typedef enum log_output_e {
     UDP,        /**< Output log messages to a UDP server. */
 } log_output_et;
 
+typedef enum release_mode_e {
+    RELEASE_MODE_RELEASE = 0, /**< */
+    RELEASE_MODE_DEBUG,       /**< */
+} release_mode_et;
+
 /**
  * @enum log_level_e
  * @brief Enumeration of log levels.
@@ -44,7 +49,7 @@ typedef enum log_level_e {
     DEBUG,    /**< Debug messages */
 } log_level_et;
 
-kernel_error_st logger_initialize(log_output_et log_output, global_structures_st* global_structures);
+kernel_error_st logger_initialize(release_mode_et release_mode, log_output_et log_output, global_structures_st* global_structures);
 
 /**
  * @brief Prints a log message with a specified log level.
