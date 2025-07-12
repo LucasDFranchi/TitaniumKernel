@@ -5,6 +5,8 @@
 
 #include "kernel/error/error_num.h"
 
+#include "kernel/inter_task_communication/inter_task_communication.h"
+
 /**
  * @file sensor.h
  * @brief Sensor configuration and readout interface.
@@ -61,19 +63,41 @@ void sensor_manager_initialize(void);
 kernel_error_st sensor_configure(uint8_t sensor_index);
 
 /**
- * @brief Reads the voltage for a given sensor channel.
+ * @brief Calibrates a specific sensor by updating its gain and offset.
  *
- * This function waits for the ADC conversion to complete, retrieves the raw ADC value,
- * and converts it to a voltage using the sensor's configuration.
+ * This function updates the calibration parameters for a sensor identified by
+ * its index. The gain is used to scale the final measured voltage, and the offset
+ * is subtracted from the raw internal voltage before gain is applied.
  *
- * @param sensor_index Index into the sensor_info table.
- * @param voltage Pointer to a float where the resulting voltage will be stored.
+ * Example:
+ * - Measured voltage = (raw_voltage - offset) * gain
+ *
+ * These values are stored in the `sensor_info` table and applied in future readings.
+ *
+ * @param sensor_index Index of the sensor to calibrate (0 to NUM_OF_CHANNELS - 1).
+ * @param offset       Offset value to subtract from the raw measured voltage.
+ * @param gain         Gain factor to apply after offset adjustment.
  * @return kernel_error_st
- *         - KERNEL_ERROR_NONE on success,
- *         - KERNEL_ERROR_INVALID_ARG if index is invalid,
- *         - KERNEL_ERROR_ADC_CONVERSION_ERROR if the ADC times out.
+ *         - KERNEL_ERROR_NONE on success
+ *         - KERNEL_ERROR_INVALID_ARG if the sensor index is out of range
  */
-kernel_error_st sensor_get_voltage(uint8_t sensor_index, float *voltage);
+kernel_error_st sensor_calibrate(uint8_t sensor_index, float offset, float gain);
+
+/**
+ * @brief Gathers sensor readings and sends a device report to the provided queue.
+ *
+ * This function:
+ * - Retrieves the current device timestamp.
+ * - Iterates through all sensor channels, collecting voltage readings.
+ * - Marks each successfully read sensor as active and stores the voltage.
+ * - Populates a `device_report_st` structure with the results.
+ * - Sends the report to the specified FreeRTOS queue.
+ *
+ * If a sensor reading fails, it logs an error and skips to the next channel.
+ *
+ * @param device_report_queue FreeRTOS queue to send the generated device report.
+ */
+void handle_device_report(QueueHandle_t device_report_queue);
 
 /**
  * @brief Gets the sensor type.

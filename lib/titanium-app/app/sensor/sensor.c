@@ -2,9 +2,12 @@
 
 #include "kernel/logger/logger.h"
 
+#include "app/app_extern_types.h"
 #include "app/driver/ads1115.h"
 #include "app/driver/tca9548a.h"
 #include "app/error/error_num.h"
+
+#include "kernel/device/device_info.h"
 
 /**
  * @brief Configuration array for ADS1115 ADC devices.
@@ -176,7 +179,7 @@ typedef struct sensor_info_s {
     float offset;           /**< Voltage offset to subtract from the measured value */
 } sensor_info_st;
 
-static const sensor_info_st sensor_info[] = {
+static sensor_info_st sensor_info[] = {
     // --- MUX_ADDRESS_0: Channels 0-7, Temp Sensors ---
     [SENSOR_TEMP_0_A0A1]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_0_A0A1], 1.0f, 0.0f},
     [SENSOR_TEMP_0_A2A3]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_0_A2A3], 1.0f, 0.0f},
@@ -308,7 +311,7 @@ void sensor_manager_initialize(void) {
  *         - KERNEL_ERROR_INVALID_ARG if index is invalid,
  *         - KERNEL_ERROR_ADC_CONVERSION_ERROR if the ADC times out.
  */
-kernel_error_st sensor_get_voltage(uint8_t sensor_index, float *voltage) {
+static kernel_error_st sensor_get_voltage(uint8_t sensor_index, float *voltage) {
     if (sensor_index >= NUM_OF_CHANNELS) {
         return KERNEL_ERROR_INVALID_ARG;
     }
@@ -351,6 +354,36 @@ kernel_error_st sensor_get_voltage(uint8_t sensor_index, float *voltage) {
 }
 
 /**
+ * @brief Calibrates a specific sensor by updating its gain and offset.
+ *
+ * This function updates the calibration parameters for a sensor identified by
+ * its index. The gain is used to scale the final measured voltage, and the offset
+ * is subtracted from the raw internal voltage before gain is applied.
+ *
+ * Example:
+ * - Measured voltage = (raw_voltage - offset) * gain
+ *
+ * These values are stored in the `sensor_info` table and applied in future readings.
+ *
+ * @param sensor_index Index of the sensor to calibrate (0 to NUM_OF_CHANNELS - 1).
+ * @param offset       Offset value to subtract from the raw measured voltage.
+ * @param gain         Gain factor to apply after offset adjustment.
+ * @return kernel_error_st
+ *         - KERNEL_ERROR_NONE on success
+ *         - KERNEL_ERROR_INVALID_ARG if the sensor index is out of range
+ */
+kernel_error_st sensor_calibrate(uint8_t sensor_index, float offset, float gain) {
+    if (sensor_index >= NUM_OF_CHANNELS) {
+        return KERNEL_ERROR_INVALID_ARG;
+    }
+
+    sensor_info[sensor_index].offset          = offset;
+    sensor_info[sensor_index].conversion_gain = gain;
+
+    return KERNEL_ERROR_NONE;
+}
+
+/**
  * @brief Returns the sensor type (temperature or pressure) for the given index.
  *
  * @param sensor_index Index into the sensor_info table.
@@ -362,4 +395,40 @@ sensor_type_et sensor_get_type(uint8_t sensor_index) {
     }
 
     return sensor_info[sensor_index].type;
+}
+
+/**
+ * @brief Gathers sensor readings and sends a device report to the provided queue.
+ *
+ * This function:
+ * - Retrieves the current device timestamp.
+ * - Iterates through all sensor channels, collecting voltage readings.
+ * - Marks each successfully read sensor as active and stores the voltage.
+ * - Populates a `device_report_st` structure with the results.
+ * - Sends the report to the specified FreeRTOS queue.
+ *
+ * If a sensor reading fails, it logs an error and skips to the next channel.
+ *
+ * @param device_report_queue FreeRTOS queue to send the generated device report.
+ */
+void handle_device_report(QueueHandle_t device_report_queue) {
+    device_report_st device_report = {0};
+
+    device_info_get_current_time(device_report.timestamp, sizeof(device_report.timestamp));
+    device_report.num_of_channels = NUM_OF_CHANNELS - 1;
+
+    for (int i = 0; i < NUM_OF_CHANNELS; i++) {
+        float voltage = 0.0f;
+        if (sensor_get_voltage(i, &voltage) != KERNEL_ERROR_NONE) {
+            logger_print(ERR, TAG, "Failed to get voltage for sensor %d", i);
+            vTaskDelay(pdMS_TO_TICKS(100));
+            continue;
+        }
+        device_report.sensors[i].value  = voltage;
+        device_report.sensors[i].active = true;
+    }
+
+    if (xQueueSend(device_report_queue, &device_report, pdMS_TO_TICKS(100)) != pdPASS) {
+        logger_print(ERR, TAG, "Failed to send sensor report to queue");
+    }
 }

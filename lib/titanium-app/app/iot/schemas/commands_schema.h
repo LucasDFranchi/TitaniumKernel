@@ -25,9 +25,8 @@
  */
 static const json_field_t calibration_schema[] = {
     {"sensor_id", JSON_TYPE_INT},
-    {"gain",      JSON_TYPE_FLOAT},
-    {"offset",    JSON_TYPE_FLOAT}
-};
+    {"gain", JSON_TYPE_FLOAT},
+    {"offset", JSON_TYPE_FLOAT}};
 
 // Future command schemas can be added below:
 // static const json_field_t reboot_schema[] = {

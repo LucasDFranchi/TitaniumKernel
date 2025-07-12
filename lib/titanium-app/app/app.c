@@ -15,12 +15,14 @@
 #include "driver/i2c.h"
 #include "math.h"
 
+#include "kernel/device/device_info.h"
 #include "kernel/inter_task_communication/inter_task_communication.h"
 #include "kernel/logger/logger.h"
 #include "kernel/tasks/interface/task_interface.h"
 #include "kernel/utils/utils.h"
 
 #include "app/app_extern_types.h"
+#include "app/command_dispatcher/command_dispatcher.h"
 #include "app/error/error_num.h"
 #include "app/iot/mqtt_bridge.h"
 #include "app/sensor/sensor.h"
@@ -31,7 +33,8 @@
  */
 typedef enum mqtt_topic_index_e {
     DEVICE_REPORT = 0, /**< Sensor data reports */
-    COMMAND,           /**< System status updates */
+    COMMAND,           /**<*/
+    COMMAND_RESPONSE,  /**<*/
     TOPIC_COUNT,       /**< Total number of defined topics */
 } mqtt_topic_index_et;
 
@@ -57,6 +60,14 @@ static const mqtt_topic_info_st mqtt_topic_infos[] = {
         .queue_item_size     = sizeof(command_st),
         .data_type           = DATA_TYPE_COMMAND,
     },
+    [COMMAND_RESPONSE] = {
+        .topic               = "command",
+        .qos                 = QOS_1,
+        .mqtt_data_direction = PUBLISH,
+        .queue_length        = 10,
+        .queue_item_size     = sizeof(command_response_st),
+        .data_type           = DATA_TYPE_COMMAND_RESPONSE,
+    },
 };
 
 /**
@@ -71,6 +82,10 @@ mqtt_topic_st mqtt_topics[MAX_MQTT_TOPICS] = {
     },
     [COMMAND] = {
         .info  = &mqtt_topic_infos[COMMAND],
+        .queue = NULL,
+    },
+    [COMMAND_RESPONSE] = {
+        .info  = &mqtt_topic_infos[COMMAND_RESPONSE],
         .queue = NULL,
     },
 };
@@ -99,8 +114,6 @@ mqtt_bridge_init_struct_st mqtt_bridge_init_struct = {
 };
 
 /* Application Global Variables */
-static device_report_st device_report = {0};
-
 /**
  * @brief Pointer to the global configuration structure.
  *
@@ -135,38 +148,34 @@ static esp_err_t app_task_initialize() {
 
 void app_task_execute(void *pvParameters) {
     _global_structures = (global_structures_st *)pvParameters;
-    if ((app_task_initialize() != ESP_OK) ||
-        (_global_structures == NULL) ||
-        (_global_structures->global_events.firmware_event_group == NULL)) {
+    if ((app_task_initialize() != ESP_OK) || validate_global_structure(_global_structures)) {
         logger_print(ERR, TAG, "Failed to initialize app task");
         vTaskDelete(NULL);
     }
     static bool led_on = false;
 
     while (1) {
-        memset(&device_report, 0, sizeof(device_report_st));
+        handle_incoming_command(mqtt_topics[COMMAND].queue, mqtt_topics[COMMAND_RESPONSE].queue);
+        handle_device_report(mqtt_topics[DEVICE_REPORT].queue);
 
-        get_timestamp_in_iso_format(device_report.timestamp, sizeof(device_report.timestamp));
+        // memset(&device_report, 0, sizeof(device_report_st));
+        // device_info_get_current_time(device_report.timestamp, sizeof(device_report.timestamp));
+        // device_report.num_of_channels = NUM_OF_CHANNELS - 1;
 
-        device_report.num_of_channels = NUM_OF_CHANNELS;
+        // for (int i = 0; i < NUM_OF_CHANNELS; i++) {
+        //     float voltage = 0.0f;
+        //     if (sensor_get_voltage(i, &voltage) != KERNEL_ERROR_NONE) {
+        //         logger_print(ERR, TAG, "Failed to get voltage for sensor %d", i);
+        //         vTaskDelay(pdMS_TO_TICKS(100));
+        //         continue;
+        //     }
+        //     device_report.sensors[i].value  = voltage;
+        //     device_report.sensors[i].active = true;
+        // }
 
-        for (int i = 0; i < NUM_OF_CHANNELS; i++) {
-            float voltage = 0.0f;
-            if (sensor_get_voltage(i, &voltage) != KERNEL_ERROR_NONE) {
-                logger_print(ERR, TAG, "Failed to get voltage for sensor %d", i);
-                vTaskDelay(pdMS_TO_TICKS(100));
-                continue;
-            }
-            device_report.sensors[i].value  = voltage;
-            device_report.sensors[i].active = true;
-        }
-        if (mqtt_topics[DEVICE_REPORT].queue == NULL) {
-            logger_print(ERR, TAG, "NULL QUEUE");
-            continue;
-        }
-        if (xQueueSend(mqtt_topics[DEVICE_REPORT].queue, &device_report, pdMS_TO_TICKS(100)) != pdPASS) {
-            logger_print(ERR, TAG, "Failed to send sensor report to queue");
-        }
+        // if (xQueueSend(mqtt_topics[DEVICE_REPORT].queue, &device_report, pdMS_TO_TICKS(100)) != pdPASS) {
+        //     logger_print(ERR, TAG, "Failed to send sensor report to queue");
+        // }
 
         led_on = !led_on;
         gpio_set_level(GPIO_NUM_32, led_on);

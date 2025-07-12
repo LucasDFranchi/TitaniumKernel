@@ -17,6 +17,7 @@
 #include "kernel/logger/logger.h"
 #include "kernel/tasks/system/network/network_task.h"
 #include "kernel/utils/nvs_util.h"
+#include "kernel/utils/utils.h"
 
 static const char *TAG                      = "Network Task";     ///< Tag for logging.
 static const char AP_SSID[]                 = "Titanium\0";       ///< Access Point SSID.
@@ -271,9 +272,7 @@ void network_task_execute(void *pvParameters) {
     kernel_error_st result = KERNEL_ERROR_NONE;
 
     _global_structures = (global_structures_st *)pvParameters;
-    if ((network_task_initialize() != ESP_OK) ||
-        (_global_structures == NULL) ||
-        (_global_structures->global_events.firmware_event_group == NULL)) {
+    if ((network_task_initialize() != ESP_OK) || validate_global_structure(_global_structures)) {
         logger_print(ERR, TAG, "Failed to initialize network task");
         vTaskDelete(NULL);
     }

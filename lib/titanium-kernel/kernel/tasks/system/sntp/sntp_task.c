@@ -13,6 +13,7 @@
 
 #include "kernel/inter_task_communication/events/events_definition.h"
 #include "kernel/logger/logger.h"
+#include "kernel/utils/utils.h"
 
 #include "lwip/apps/sntp.h"
 
@@ -74,7 +75,7 @@ void sntp_task_execute(void *pvParameters) {
     logger_print(INFO, TAG, "Starting SNTP task execution...");
 
     _global_structures = (global_structures_st *)pvParameters;
-    if (_global_structures == NULL || _global_structures->global_events.firmware_event_group == NULL) {
+    if (validate_global_structure(_global_structures)) {
         logger_print(ERR, TAG, "Failed to initialize SNTP task");
         vTaskDelete(NULL);
     }

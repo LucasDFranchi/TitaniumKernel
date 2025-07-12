@@ -38,6 +38,22 @@ extern "C" {
 kernel_error_st serialize_data_report(QueueHandle_t queue, char *out_buffer, size_t buffer_size);
 
 /**
+ * @brief Serializes a CMD_SET_CALIBRATION command response into JSON format.
+ *
+ * Outputs a JSON object with:
+ * {
+ *   "command_status": <status>,
+ *   "sensor_id": <sensor index>
+ * }
+ *
+ * @param cmd_sensor_response Pointer to the sensor response payload.
+ * @param out_buffer Buffer where the serialized JSON will be written.
+ * @param buffer_size Size of the output buffer.
+ * @return kernel_error_st Serialization result.
+ */
+kernel_error_st serialize_command_response(QueueHandle_t queue, char *out_buffer, size_t buffer_size);
+
+/**
  * @brief Deserializes a `set_calibration` command from a JSON object and pushes it to a queue.
  *
  * This function expects a JSON object with the following keys:

@@ -28,3 +28,19 @@ kernel_error_st device_info_init(void);
  * @return Pointer to the unique ID string (length DEVICE_ID_LENGTH).
  */
 const char* device_info_get_id(void);
+
+/**
+ * @brief Get the current timestamp in ISO 8601 format.
+ *
+ * This function retrieves the current system time and formats it
+ * as an ISO 8601 string (e.g., "2024-12-24T15:30:45").
+ *
+ * @param[out] buffer      Pointer to the buffer where the formatted timestamp will be stored.
+ * @param[in]  buffer_size Size of the buffer.
+ *
+ * @return ESP_OK on success, or an appropriate error code on failure:
+ *         - ESP_ERR_INVALID_ARG if the buffer is NULL or the size is zero.
+ *         - ESP_ERR_INVALID_STATE if the system time is not set.
+ *         - ESP_FAIL if time formatting fails.
+ */
+kernel_error_st device_info_get_current_time(char* buffer, size_t buffer_size);

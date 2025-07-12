@@ -1,9 +1,11 @@
-// device_info.c
 #include "device_info.h"
+
+#include <string.h>
+#include <time.h>
+
 #include "esp_log.h"
 #include "esp_mac.h"
 #include "esp_system.h"
-#include <string.h>
 
 static const char* TAG = "device_info";
 
@@ -63,4 +65,44 @@ kernel_error_st device_info_init(void) {
  */
 const char* device_info_get_id(void) {
     return device_id;
+}
+
+/**
+ * @brief Get the current timestamp in ISO 8601 format.
+ *
+ * This function retrieves the current system time and formats it
+ * as an ISO 8601 string (e.g., "2024-12-24T15:30:45").
+ *
+ * @param[out] buffer      Pointer to the buffer where the formatted timestamp will be stored.
+ * @param[in]  buffer_size Size of the buffer.
+ *
+ * @return ESP_OK on success, or an appropriate error code on failure:
+ *         - ESP_ERR_INVALID_ARG if the buffer is NULL or the size is zero.
+ *         - ESP_ERR_INVALID_STATE if the system time is not set.
+ *         - ESP_FAIL if time formatting fails.
+ */
+kernel_error_st device_info_get_current_time(char* buffer, size_t buffer_size) {
+    if (buffer == NULL) {
+        return KERNEL_ERROR_NULL;
+    }
+
+    if (buffer_size == 0) {
+        return KERNEL_ERROR_INVALID_SIZE;
+    }
+
+    time_t now = time(NULL);
+    if (now == (time_t)(-1)) {
+        return KERNEL_ERROR_INVALID_INTERFACE;
+    }
+
+    struct tm timeinfo;
+    if (localtime_r(&now, &timeinfo) == NULL) {
+        return KERNEL_ERROR_FAIL;
+    }
+
+    if (strftime(buffer, buffer_size, "%Y-%m-%dT%H:%M:%S", &timeinfo) == 0) {
+        return KERNEL_ERROR_FORMATTING;
+    }
+
+    return KERNEL_ERROR_NONE;
 }

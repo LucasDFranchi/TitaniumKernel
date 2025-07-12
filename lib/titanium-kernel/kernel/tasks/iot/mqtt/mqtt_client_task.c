@@ -8,6 +8,7 @@
 #include "kernel/logger/logger.h"
 #include "kernel/tasks/iot/mqtt/mqtt_client_task.h"
 #include "kernel/tasks/system/network/network_task.h"
+#include "kernel/utils/utils.h"
 
 /**
  * @brief Pointer to the global configuration structure.
@@ -195,7 +196,7 @@ static void publish(void) {
  */
 static kernel_error_st subscribe(void) {
     char topic[MQTT_MAXIMUM_TOPIC_LENGTH] = {0};
-    qos_et qos     = QOS_0;
+    qos_et qos                            = QOS_0;
 
     mqtt_buffer_st mqtt_buffer_topic = {
         .buffer = topic,
@@ -325,10 +326,7 @@ static kernel_error_st mqtt_client_task_initialize(void) {
 void mqtt_client_task_execute(void* pvParameters) {
     _global_structures = (global_structures_st*)pvParameters;
 
-    if ((mqtt_client_task_initialize() != KERNEL_ERROR_NONE) ||
-        (_global_structures == NULL) ||
-        (_global_structures->global_queues.mqtt_bridge_queue == NULL) ||
-        (_global_structures->global_events.firmware_event_group == NULL)) {
+    if ((mqtt_client_task_initialize() != KERNEL_ERROR_NONE) || validate_global_structure(_global_structures)) {
         logger_print(ERR, TAG, "Failed to initialize MQTT task");
         vTaskDelete(NULL);
     }

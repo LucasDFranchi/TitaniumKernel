@@ -5,6 +5,7 @@
 #include "kernel/inter_task_communication/queues/queues_definition.h"
 #include "kernel/logger/logger.h"
 #include "kernel/tasks/system/network/network_task.h"
+#include "kernel/utils/utils.h"
 
 #include "esp_ota_ops.h"
 #include "esp_system.h"
@@ -26,6 +27,8 @@ static bool is_server_connected   = false;
 
 extern const uint8_t bin_data_index_html_start[] asm("_binary_index_html_start"); /**< Start of index.html binary data. */
 extern const uint8_t bin_data_index_html_end[] asm("_binary_index_html_end");     /**< End of index.html binary data. */
+extern const uint8_t bin_data_schema_start[] asm("_binary_schema_json_start");    /**< Start of json schema binary data. */
+extern const uint8_t bin_data_schema_end[] asm("_binary_schema_json_end");        /**< End of json schema binary data. */
 
 credentials_st cred = {0};
 
@@ -47,8 +50,8 @@ static esp_err_t get_uri_index_html(httpd_req_t* req) {
 /**
  * @brief HTTP GET handler that returns Wi-Fi connection status in JSON format.
  *
- * This function reads the firmware event group to check if the device is 
- * connected to Wi-Fi (via the WIFI_CONNECTED_STA event bit). It responds to 
+ * This function reads the firmware event group to check if the device is
+ * connected to Wi-Fi (via the WIFI_CONNECTED_STA event bit). It responds to
  * the client with a simple JSON object indicating the connection status.
  *
  * The expected output is:
@@ -155,7 +158,7 @@ static esp_err_t post_uri_wifi_credentials(httpd_req_t* req) {
  *
  * @note This implementation assumes the firmware is uploaded using multipart
  *       encoding and skips the header manually. This logic is tightly coupled
- *       to the transfer format and should be refactored into smaller helper 
+ *       to the transfer format and should be refactored into smaller helper
  *       functions for improved readability and maintainability.
  */
 static esp_err_t ota_post_handler(httpd_req_t* req) {
@@ -188,7 +191,7 @@ static esp_err_t ota_post_handler(httpd_req_t* req) {
         if (!started) {
             char* firmware_start = strstr(buf, "\r\n\r\n");
             if (firmware_start) {
-                firmware_start += 4; 
+                firmware_start += 4;
                 int skip_len = firmware_start - buf;
                 int bin_size = read - skip_len;
 
@@ -201,7 +204,6 @@ static esp_err_t ota_post_handler(httpd_req_t* req) {
 
                 started = true;
             } else {
-
                 continue;
             }
         } else {
@@ -332,16 +334,13 @@ static esp_err_t http_server_task_initialize(void) {
  */
 void http_server_task_execute(void* pvParameters) {
     _global_structures = (global_structures_st*)pvParameters;
-    if ((http_server_task_initialize() != ESP_OK) ||  // Horrivel
-        (_global_structures == NULL) ||
-        (_global_structures->global_events.firmware_event_group == NULL)) {
+    if ((http_server_task_initialize() != ESP_OK) || validate_global_structure(_global_structures)) {
         logger_print(ERR, TAG, "Failed to initialize HTTP Server task");
         vTaskDelete(NULL);
     }
 
     while (1) {
         EventBits_t firmware_event_bits = xEventGroupGetBits(_global_structures->global_events.firmware_event_group);
-        // logger_print(INFO, TAG, "MAIN SERVER");
 
         if (is_server_connected) {
             if ((firmware_event_bits & WIFI_CONNECTED_AP) == 0) {
