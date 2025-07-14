@@ -117,13 +117,13 @@ static esp_err_t post_uri_wifi_credentials(httpd_req_t* req) {
     size_t ssid_len = strlen(cred.ssid);
     if (ssid_len >= sizeof(cred.ssid)) {
         httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "SSID is too long");
-        return KERNEL_ERROR_SSID_TOO_LONG;
+        return KERNEL_ERROR_STA_SSID_TOO_LONG;
     }
 
     size_t password_len = strlen(cred.password);
     if (password_len >= sizeof(cred.password)) {
         httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Password is too long");
-        return KERNEL_ERROR_PASSWORD_TOO_LONG;
+        return KERNEL_ERROR_STA_PASSWORD_TOO_LONG;
     }
 
     logger_print(DEBUG, TAG, "SSID: %s, Password: %s", cred.ssid, cred.password);

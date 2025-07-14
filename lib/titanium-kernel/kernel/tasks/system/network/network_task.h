@@ -11,13 +11,13 @@
  * @brief Network management interface for ESP32, supporting AP and STA modes.
  */
 
-/**
- * @brief Struct representing the current network connection status.
- */
-typedef struct network_status_s {
-    bool is_connect_ap;   ///< Indicates if the device is connected to the Access Point.
-    bool is_connect_sta;  ///< Indicates if the device is connected to a Station.
-} network_status_st;
+// /**
+//  * @brief Struct representing the current network connection status.
+//  */
+// typedef struct network_status_s {
+//     bool is_connect_ap;   ///< Indicates if the device is connected to the Access Point.
+//     bool is_connect_sta;  ///< Indicates if the device is connected to a Station.
+// } network_status_st;
 
 /**
  * @brief Set Wi-Fi credentials for connecting to a station.
