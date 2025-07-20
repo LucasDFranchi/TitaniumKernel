@@ -51,7 +51,7 @@ static esp_err_t get_uri_index_html(httpd_req_t* req) {
  * @brief HTTP GET handler that returns Wi-Fi connection status in JSON format.
  *
  * This function reads the firmware event group to check if the device is
- * connected to Wi-Fi (via the WIFI_CONNECTED_STA event bit). It responds to
+ * connected to Wi-Fi (via the STA_GOT_IP event bit). It responds to
  * the client with a simple JSON object indicating the connection status.
  *
  * The expected output is:
@@ -67,7 +67,7 @@ esp_err_t status_get_handler(httpd_req_t* req) {
     EventBits_t firmware_event_bits = xEventGroupGetBits(_global_structures->global_events.firmware_event_group);
 
     bool is_status_green = false;
-    if ((firmware_event_bits & WIFI_CONNECTED_STA) == 1) {
+    if ((firmware_event_bits & STA_GOT_IP) == 1) {
         is_status_green = true;
     }
     const char* status_json = is_status_green

@@ -25,6 +25,47 @@
 #include "app/command_dispatcher/command_dispatcher.h"
 #include "app/iot/mqtt_bridge.h"
 #include "app/sensor/sensor.h"
+#include "app/system/network_bridge/network_bridge.h"
+
+/**
+ * @brief Network bridge interface with function pointers for Ethernet operations.
+ *
+ * This static instance holds the function pointers for driver initialization
+ * and Ethernet event handling. It is initialized with NULLs and configured
+ * during network bridge initialization.
+ */
+static network_bridge_st network_bridge = {
+    .initialize_driver = NULL,
+};
+
+/**
+ * @brief Static initialization structure for the network bridge configuration.
+ *
+ * Contains the Ethernet device hardware configuration including SPI pins,
+ * interrupt and PHY reset pins, polling parameters, and MAC address storage.
+ * It also holds a pointer to the associated network_bridge interface.
+ */
+static network_bridge_init_st network_bridge_init_struct = {
+    .ethernet_device = {
+        .ethernet_hardware_config = {
+            .ethernet_spi_config = {
+                .miso          = GPIO_NUM_19,  ///< SPI MISO pin number
+                .mosi          = GPIO_NUM_23,  ///< SPI MOSI pin number
+                .sclk          = GPIO_NUM_18,  ///< SPI Clock pin number
+                .cs            = GPIO_NUM_5,   ///< SPI Chip Select pin number
+                .spi_host      = SPI3_HOST,    ///< SPI host to use (SPI3)
+                .spi_clock_mhz = 10,           ///< SPI clock frequency in MHz
+            },
+            .irq_gpio       = -1,           ///< IRQ GPIO pin (-1 if unused)
+            .phy_reset_gpio = GPIO_NUM_26,  ///< PHY reset GPIO pin number
+        },
+        .poll_period_ms = 10,          ///< Polling period in milliseconds
+        .phy_addr       = 1,           ///< PHY address on the MDIO bus
+        .mac_addr       = {0},         ///< MAC address placeholder (initialized to zero)
+        .rx_stack_size  = (2048 * 4),  ///< RX stack size in bytes
+    },
+    .network_bridge = &network_bridge,  ///< Pointer to the network bridge interface instance
+};
 
 /* MQTT Topics Definition */
 /**
@@ -127,11 +168,19 @@ static esp_err_t app_task_initialize() {
     sensor_manager_initialize();
 
     if (mqtt_bridge_initialize(&mqtt_bridge_init_struct) != KERNEL_ERROR_NONE) {
-        logger_print(INFO, TAG, "MQTT bridge installed successfully!");
+        logger_print(INFO, TAG, "MQTT bridge installed failed!");
         return ESP_FAIL;
     }
     xQueueSend(_global_structures->global_queues.mqtt_bridge_queue,
                mqtt_bridge_init_struct.mqtt_bridge,
+               pdMS_TO_TICKS(100));
+
+    if (network_bridge_initialize(&network_bridge_init_struct) != KERNEL_ERROR_NONE) {
+        logger_print(INFO, TAG, "Network bridge installed failed!");
+        return ESP_FAIL;
+    }
+    xQueueSend(_global_structures->global_queues.network_bridge_queue,
+               network_bridge_init_struct.network_bridge,
                pdMS_TO_TICKS(100));
 
     gpio_config_t io_conf = {

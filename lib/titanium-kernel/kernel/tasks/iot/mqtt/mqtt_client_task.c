@@ -269,7 +269,7 @@ static kernel_error_st handle_event_data(char* topic, char* data, size_t data_le
  * @retval KERNEL_ERROR_NULL         Global structures or queue is NULL.
  * @retval KERNEL_ERROR_EMPTY_QUEUE  Queue did not return a valid bridge within timeout.
  */
-kernel_error_st install_bridge(void) {
+kernel_error_st mqtt_install_bridge(void) {
     if (xQueueReceive(_global_structures->global_queues.mqtt_bridge_queue, &mqtt_bridge, pdMS_TO_TICKS(100)) == pdTRUE) {
         logger_print(INFO, TAG, "MQTT bridge successfully installed.");
     } else {
@@ -331,7 +331,7 @@ void mqtt_client_task_execute(void* pvParameters) {
         vTaskDelete(NULL);
     }
 
-    while (install_bridge() != KERNEL_ERROR_NONE) {
+    while (mqtt_install_bridge() != KERNEL_ERROR_NONE) {
         logger_print(WARN, TAG, "Waiting for MQTT bridge to be available...");
         vTaskDelay(pdMS_TO_TICKS(500));
     }
@@ -343,7 +343,7 @@ void mqtt_client_task_execute(void* pvParameters) {
         EventBits_t firmware_event_bits = xEventGroupGetBits(
             _global_structures->global_events.firmware_event_group);
 
-        bool is_wifi_connected = firmware_event_bits & WIFI_CONNECTED_STA;
+        bool is_wifi_connected = firmware_event_bits & STA_GOT_IP;
         bool is_time_synced    = firmware_event_bits & TIME_SYNCED;
         TickType_t now         = xTaskGetTickCount();
 

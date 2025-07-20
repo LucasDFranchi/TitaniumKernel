@@ -85,7 +85,7 @@ void sntp_task_execute(void *pvParameters) {
     
     while (1) {
         EventBits_t firmware_event_bits = xEventGroupGetBits(_global_structures->global_events.firmware_event_group);
-        if ((firmware_event_bits & WIFI_CONNECTED_STA) == 1) {
+        if ((firmware_event_bits & STA_GOT_IP) == 1) {
             logger_print(DEBUG, TAG, "Trying to synchronize time...");
             sntp_task_sync_time_obtain_time();
         }

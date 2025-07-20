@@ -6,23 +6,19 @@
 #include "kernel/error/error_num.h"
 
 typedef struct global_queues_s {
-    QueueHandle_t mqtt_bridge_queue;  ///< Queue for handling MQTT topics and messages.
-    QueueHandle_t credentials_queue;  ///< Queue for handling Credentials for WiFi or other services.
+    QueueHandle_t network_bridge_queue;  ///< Queue to receive network bridge configuration and events.
+    QueueHandle_t mqtt_bridge_queue;     ///< Queue to handle MQTT bridge messages and events.
+    QueueHandle_t credentials_queue;     ///< Queue for handling credentials (e.g., Wi-Fi SSID and password) updates.
 } global_queues_st;
 
 /**
- * @brief Initializes the global configuration structure.
+ * @brief Initialize FreeRTOS queues used for inter-task communication.
  *
- * This function initializes the global configuration by setting up the firmware event
- * group and MQTT topics for "temperature" and "humidity". It ensures that memory
- * resources are available and initializes each MQTT topic with a unique queue for
- * sensor data. It also handles error cases for invalid arguments, memory allocation
- * failures, and topic initialization failures.
+ * This function creates and configures queues for various system components,
+ * allowing safe message passing between tasks. It initializes queues for
+ * network bridge events, MQTT bridge messages, and credential updates.
  *
- * @param config Pointer to the global configuration structure to be initialized.
- *
- * @return ESP_OK if the initialization is successful. Otherwise, returns one of the following error codes:
- *         - ESP_ERR_INVALID_ARG if the config pointer is NULL.
- *         - ESP_ERR_NO_MEM if memory allocation fails at any step.
+ * @param[out] config Pointer to the global_queues_st structure to initialize.
+ * @return KERNEL_ERROR_NONE on success, or an error code if queue creation fails.
  */
 kernel_error_st global_queues_initialize(global_queues_st *config);

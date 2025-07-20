@@ -12,7 +12,7 @@
 #include "kernel/error/error_num.h"
 #include "kernel/inter_task_communication/events/events_definition.h"
 #include "kernel/inter_task_communication/iot/mqtt/mqtt_client_external_types.h"
-#include "kernel/inter_task_communication/iot/network/network_external_types.h"
+#include "kernel/inter_task_communication/system/network/network_external_types.h"
 #include "kernel/inter_task_communication/queues/queues_definition.h"
 
 typedef struct global_structures_s {

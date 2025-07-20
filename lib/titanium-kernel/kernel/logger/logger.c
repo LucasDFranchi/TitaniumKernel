@@ -82,7 +82,7 @@ static bool is_station_connected(void) {
 
     EventBits_t firmware_event_bits = xEventGroupGetBits(_global_structures->global_events.firmware_event_group);
 
-    return (firmware_event_bits & WIFI_CONNECTED_STA) == 1;
+    return (firmware_event_bits & STA_GOT_IP) == 1;
 }
 
 /**

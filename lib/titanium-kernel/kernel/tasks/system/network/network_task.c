@@ -6,6 +6,7 @@
  * Access Point (AP) and Station (STA) modes. It supports setting up an AP,
  * connecting to an external network as a STA, and handling network events.
  */
+#include "esp_eth.h"
 #include "esp_event.h"
 #include "esp_wifi.h"
 #include "lwip/err.h"
@@ -19,7 +20,9 @@
 #include "kernel/utils/utils.h"
 
 /* Global Constants Definition */
-static const char *TAG = "Network Task";  ///< Tag for logging.
+static const char *TAG = "Network Task";        ///< Tag for logging.
+static esp_eth_handle_t eth_handle;             ///< Handle for the Ethernet driver instance; currently supports only one external Ethernet device.
+static network_bridge_st network_bridge = {0};  ///< Network bridge interface instance used for Ethernet event handling and driver operations.
 
 /**
  * @brief Pointer to the global configuration structure.
@@ -31,18 +34,23 @@ static const char *TAG = "Network Task";  ///< Tag for logging.
 static global_structures_st *_global_structures = NULL;  ///< Pointer to the global configuration structure.
 
 /**
- * @brief Central event handler for Wi-Fi and IP events.
+ * @brief Central event handler for Wi-Fi, IP, and Ethernet events.
  *
- * This function dispatches incoming events from the Wi-Fi and IP subsystems
- * to their respective handlers (`wifi_manager_wifi_event_handler` and
- * `wifi_manager_sta_got_ip`). It also updates the system's global event group
- * with the current Wi-Fi interface connection statuses.
+ * This function dispatches incoming events from the Wi-Fi, IP, and Ethernet
+ * subsystems to their respective handlers. It routes:
+ * - Wi-Fi events to `wifi_manager_wifi_event_handler`
+ * - IP events to `wifi_manager_sta_got_ip` or `network_bridge.got_ip`
+ * - Ethernet events to `network_bridge.handle_ethernet_events`
  *
- * This mechanism enables other tasks to synchronize with the AP or STA
- * connection state using FreeRTOS event groups.
+ * After processing the event, it updates the system's global event group
+ * (`firmware_event_group`) to reflect the current connection statuses of
+ * the Wi-Fi AP interface, the Wi-Fi STA interface, and the Ethernet interface.
+ *
+ * These event group bits (`WIFI_CONNECTED_AP`, `STA_GOT_IP`) allow other
+ * FreeRTOS tasks to synchronize with network state changes.
  *
  * @param[in] arg         Optional user data pointer (unused).
- * @param[in] event_base  Base of the event (e.g., WIFI_EVENT, IP_EVENT).
+ * @param[in] event_base  Base of the event (e.g., WIFI_EVENT, IP_EVENT, ETH_EVENT).
  * @param[in] event_id    ID of the specific event.
  * @param[in] event_data  Pointer to event-specific data structure.
  */
@@ -51,21 +59,108 @@ static void network_task_event_handler(void *arg, esp_event_base_t event_base,
     if (event_base == WIFI_EVENT) {
         wifi_manager_wifi_event_handler(event_id, event_data);
     } else if (event_base == IP_EVENT) {
-        wifi_manager_sta_got_ip(event_id, event_data);
+        if (event_id == IP_EVENT_STA_GOT_IP) {
+            wifi_manager_sta_got_ip(event_id, event_data);
+        } else if ((event_id == IP_EVENT_ETH_GOT_IP) && network_bridge.got_ip) {
+            network_bridge.got_ip(event_data);
+        }
+    } else if ((event_base == ETH_EVENT) && network_bridge.handle_ethernet_events) {
+        network_bridge.handle_ethernet_events(event_id, event_data);
     }
 
     EventGroupHandle_t firmware_event_group = _global_structures->global_events.firmware_event_group;
-    if (wifi_manager_get_connection_status(WIFI_MANAGER_IF_AP)) {
+
+    bool wifi_ap_connected  = wifi_manager_get_connection_status(WIFI_MANAGER_IF_AP);
+    bool wifi_sta_connected = wifi_manager_get_connection_status(WIFI_MANAGER_IF_STA);
+    bool ethernet_connected = network_bridge.get_ethernet_status ? network_bridge.get_ethernet_status() : false;
+
+    if (wifi_ap_connected) {
         xEventGroupSetBits(firmware_event_group, WIFI_CONNECTED_AP);
     } else {
         xEventGroupClearBits(firmware_event_group, WIFI_CONNECTED_AP);
     }
 
-    if (wifi_manager_get_connection_status(WIFI_MANAGER_IF_STA)) {
-        xEventGroupSetBits(firmware_event_group, WIFI_CONNECTED_STA);
+    if (ethernet_connected || wifi_sta_connected) {
+        xEventGroupSetBits(firmware_event_group, STA_GOT_IP);
     } else {
-        xEventGroupClearBits(firmware_event_group, WIFI_CONNECTED_STA);
+        xEventGroupClearBits(firmware_event_group, STA_GOT_IP);
     }
+}
+
+/**
+ * @brief Registers and starts the Ethernet network interface.
+ *
+ * This function creates a new Ethernet interface, installs the Ethernet driver
+ * using the configured bridge initializer, starts the DHCP client, and starts
+ * the Ethernet interface.
+ *
+ * @return KERNEL_ERROR_NONE on success, or a specific kernel error on failure.
+ */
+static kernel_error_st register_network_device(void) {
+    esp_netif_config_t cfg = ESP_NETIF_DEFAULT_ETH();
+    esp_netif_t *eth_netif = esp_netif_new(&cfg);
+
+    if (network_bridge.initialize_driver == NULL) {
+        return KERNEL_ERROR_FUNC_POINTER_NULL;
+    }
+
+    kernel_error_st err = network_bridge.initialize_driver(&eth_handle);
+    if (err != KERNEL_ERROR_NONE) {
+        logger_print(ERR, TAG, "Failed to install ethernet driver: %d", err);
+    }
+
+    esp_err_t result = esp_netif_attach(eth_netif, esp_eth_new_netif_glue(eth_handle));
+    if (result != ESP_OK) {
+        logger_print(ERR, TAG, "Failed to attach Ethernet netif: %s", esp_err_to_name(result));
+        return KERNEL_ERROR_ETH_NET_INTERFACE_ATTACH;
+    }
+
+    result = esp_netif_dhcpc_start(eth_netif);
+    if (result != ESP_OK) {
+        logger_print(ERR, TAG, "Failed to start DHCP client: %s", esp_err_to_name(result));
+        return KERNEL_ERROR_DHCP_START;
+    }
+
+    logger_print(INFO, TAG, "DHCP client started successfully");
+
+    result = esp_eth_start(eth_handle);
+    if (result != ESP_OK) {
+        logger_print(ERR, TAG, "Failed to start Ethernet: %s", esp_err_to_name(result));
+        return KERNEL_ERROR_ETHERNET_START;
+    }
+
+    return KERNEL_ERROR_NONE;
+}
+
+/**
+ * @brief Installs the external network bridge if not already installed.
+ *
+ * Attempts to receive a bridge configuration from the global queue and,
+ * if successful, registers the Ethernet device. Ensures the installation
+ * is performed only once.
+ *
+ * @return KERNEL_ERROR_NONE on success or if already installed, or a specific error code on failure.
+ */
+static kernel_error_st network_install_bridge(void) {
+    static bool is_external_device_installed = false;
+
+    if (is_external_device_installed) {
+        return KERNEL_ERROR_NONE;
+    }
+
+    if (xQueueReceive(_global_structures->global_queues.network_bridge_queue, &network_bridge, pdMS_TO_TICKS(100)) == pdTRUE) {
+        kernel_error_st err = register_network_device();
+        if (err != KERNEL_ERROR_NONE) {
+            logger_print(INFO, TAG, "Failed to install external ethernet device: %d", err);
+            return err;
+        }
+        logger_print(INFO, TAG, "Network bridge successfully installed.");
+        is_external_device_installed = true;
+    } else {
+        logger_print(DEBUG, TAG, "No network bridge configuration available yet. Will retry later.");
+    }
+
+    return KERNEL_ERROR_NONE;
 }
 
 /**
@@ -78,33 +173,58 @@ static void network_task_event_handler(void *arg, esp_event_base_t event_base,
 static kernel_error_st network_task_initialize(void) {
     esp_err_t result = ESP_OK;
 
-    /* Start Common Block */
     result = esp_netif_init();
-    ESP_ERROR_CHECK_WITHOUT_ABORT(result);
+    if (result != ESP_OK) {
+        logger_print(ERR, TAG, "Failed to initialize TCP/IP stack (esp_netif_init): %s", esp_err_to_name(result));
+        return KERNEL_ERROR_WIFI_EVENT_REGISTER;
+    }
+
     result = esp_event_loop_create_default();
-    ESP_ERROR_CHECK_WITHOUT_ABORT(result);
+    if (result != ESP_OK) {
+        logger_print(ERR, TAG, "Failed to create default event loop (esp_event_loop_create_default): %s", esp_err_to_name(result));
+        return KERNEL_ERROR_WIFI_EVENT_REGISTER;
+    }
 
     result = esp_event_handler_register(WIFI_EVENT,
                                         ESP_EVENT_ANY_ID,
                                         &network_task_event_handler,
                                         NULL);
-    ESP_ERROR_CHECK_WITHOUT_ABORT(result);
+    if (result != ESP_OK) {
+        logger_print(ERR, TAG, "Failed to register WIFI event handler: %s", esp_err_to_name(result));
+        return KERNEL_ERROR_WIFI_EVENT_REGISTER;
+    }
+
     result = esp_event_handler_register(IP_EVENT,
                                         IP_EVENT_STA_GOT_IP,
                                         &network_task_event_handler,
                                         NULL);
+    if (result != ESP_OK) {
+        logger_print(ERR, TAG, "Failed to register WiFi IP event handler: %s", esp_err_to_name(result));
+        return KERNEL_ERROR_IP_EVENT_REGISTER;
+    }
+
+    result = esp_event_handler_register(ETH_EVENT,
+                                        ESP_EVENT_ANY_ID,
+                                        &network_task_event_handler,
+                                        NULL);
+    if (result != ESP_OK) {
+        logger_print(ERR, TAG, "Failed to register Ethernet event handler: %s", esp_err_to_name(result));
+        return KERNEL_ERROR_ETH_EVENT_REGISTER;
+    }
+    result = esp_event_handler_register(IP_EVENT,
+                                        IP_EVENT_ETH_GOT_IP,
+                                        &network_task_event_handler,
+                                        NULL);
+    if (result != ESP_OK) {
+        logger_print(ERR, TAG, "Failed to register Ethernet IP event handler: %s", esp_err_to_name(result));
+        return KERNEL_ERROR_IP_EVENT_REGISTER;
+    }
 
     kernel_error_st err = wifi_manager_initialize();
     if (err != KERNEL_ERROR_NONE) {
         logger_print(ERR, TAG, "Failed to initalized the WiFi Manager");
         return err;
     }
-    // ESP_ERROR_CHECK_WITHOUT_ABORT(result);
-    // result = esp_event_handler_register(ETH_EVENT,
-    //                                     ESP_EVENT_ANY_ID,
-    //                                     &network_task_event_handler,
-    //                                     NULL);
-    /* End Common Block */
 
     return result;
 }
@@ -125,8 +245,10 @@ void network_task_execute(void *pvParameters) {
         vTaskDelete(NULL);
     }
 
+    credentials_st cred = {0};
     while (1) {
-        credentials_st cred = {0};
+        network_install_bridge();
+
         if (xQueueReceive(_global_structures->global_queues.credentials_queue, &cred, pdMS_TO_TICKS(100)) == pdPASS) {
             logger_print(DEBUG, TAG, "SSID: %s, Password: %s", cred.ssid, cred.password);
             wifi_manager_set_credentials(cred.ssid, cred.password);
