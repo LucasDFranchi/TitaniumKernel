@@ -1,7 +1,7 @@
 #pragma once
 
-#include "stdint.h"
 #include "stdbool.h"
+#include "stdint.h"
 
 #include "kernel/error/error_num.h"
 
@@ -19,7 +19,7 @@
  * @def NUM_OF_CHANNELS
  * @brief Total number of sensor channels supported.
  */
-#define NUM_OF_CHANNELS (22)
+#define NUM_OF_CHANNELS 25
 
 /**
  * @enum sensor_type_et
@@ -30,6 +30,7 @@ typedef enum sensor_type_e {
     SENSOR_TYPE_PRESSURE,        /**< Pressure sensor */
     SENSOR_TYPE_VOLTAGE,         /**< Voltage sensor */
     SENSOR_TYPE_CURRENT,         /**< Current sensor */
+    SENSOR_TYPE_POWER_FACTOR,    /**< Power Factor sensor */
     SENSOR_TYPE_UNDEFINED,       /**< Unknown or invalid sensor type */
 } sensor_type_et;
 
@@ -37,8 +38,9 @@ typedef enum sensor_type_e {
  * @brief Structure representing a single sensor's report.
  */
 typedef struct sensor_report_s {
-    float value; /**< Measured value from the sensor */
-    bool active; /**< Indicates whether the sensor is currently active */
+    float value;                /**< Measured value from the sensor */
+    bool active;                /**< Indicates whether the sensor is currently active */
+    sensor_type_et sensor_type; /**< Indicates the sensor type */
 } sensor_report_st;
 
 /**

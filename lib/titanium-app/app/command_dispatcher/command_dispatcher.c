@@ -41,6 +41,7 @@ kernel_error_st process_set_calibration_command(command_st* command, command_res
     command_response->command_u.cmd_sensor_response.sensor_index   = cmd.sensor_index;
     command_status_et command_status                               = result == KERNEL_ERROR_NONE ? COMMAND_SUCCESS : COMMAND_CALIBRATION_FAIL;
     command_response->command_u.cmd_sensor_response.command_status = command_status;
+    command_response->command_u.cmd_sensor_response.sensor_type    = sensor_get_type(cmd.sensor_index);
 
     return result;
 }
@@ -87,8 +88,8 @@ kernel_error_st process_command(command_st* command, command_response_st* comman
  * @param command_response_queue  FreeRTOS queue to send command responses.
  */
 void handle_incoming_command(QueueHandle_t command_queue, QueueHandle_t command_response_queue) {
-    command_st command = {0};
-    command_response_st command_response ={0};
+    command_st command                   = {0};
+    command_response_st command_response = {0};
 
     if (xQueueReceive(command_queue, &command, pdMS_TO_TICKS(100)) == pdPASS) {
         if (process_command(&command, &command_response) != KERNEL_ERROR_NONE) {

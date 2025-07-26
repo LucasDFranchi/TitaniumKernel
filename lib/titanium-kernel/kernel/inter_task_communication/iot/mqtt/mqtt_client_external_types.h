@@ -7,7 +7,7 @@
 #include "kernel/inter_task_communication/inter_task_communication.h"
 
 #define MQTT_MAXIMUM_TOPIC_LENGTH 64      ///< Defines the maximum length of an MQTT topic string.
-#define MQTT_MAXIMUM_PAYLOAD_LENGTH 1024  ///< Defines the maximum length of an MQTT payload string.
+#define MQTT_MAXIMUM_PAYLOAD_LENGTH 2048  ///< Defines the maximum length of an MQTT payload string.
 #define MAX_MQTT_TOPICS 10                ///< Maximum number of MQTT topics that can be subscribed to.
 
 typedef uint32_t data_type_et;  ///< Type of the data used in the topic, used for serialization and routing.

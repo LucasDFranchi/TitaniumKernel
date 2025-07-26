@@ -198,7 +198,7 @@ static esp_err_t ota_post_handler(httpd_req_t* req) {
                 err = esp_ota_write(ota_handle, firmware_start, bin_size);
                 if (err != ESP_OK) {
                     esp_ota_abort(ota_handle);
-                    logger_print(ERR, TAG, "OTA write failed at start");
+                    logger_print(ERR, TAG, "OTA write failed at start: %d", (int)err);
                     return err;
                 }
 

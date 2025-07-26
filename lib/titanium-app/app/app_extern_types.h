@@ -111,6 +111,7 @@ typedef struct cmd_device_response_s {
 typedef struct cmd_sensor_response_s {
     command_status_et command_status; /**< Execution result of the command */
     uint8_t sensor_index;             /**< Index of the sensor that responded */
+    sensor_type_et sensor_type;       /**< Type of the sensor that responded */
 } cmd_sensor_response_st;
 
 /**

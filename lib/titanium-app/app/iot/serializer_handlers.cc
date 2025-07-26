@@ -6,7 +6,7 @@
 #include "app/iot/schemas/commands_schema.h"
 #include "app/iot/schemas/schema_validator.h"
 
-#define MAXIMUM_DOC_SIZE 1024
+#define MAXIMUM_DOC_SIZE 2048
 
 /**
  * @note This module uses StaticJsonDocument and avoids dynamic allocation.
@@ -60,8 +60,29 @@ kernel_error_st serialize_data_report(QueueHandle_t queue, char *out_buffer, siz
     JsonArray sensors = doc.createNestedArray("sensors");
     for (int i = 0; i < device_report.num_of_channels; i++) {
         JsonObject sensor = sensors.createNestedObject();
-        sensor["value"]   = device_report.sensors[i].value;
-        sensor["active"]  = device_report.sensors[i].active;
+        /* This is not very maintable, it's necessary to find a better way to trunk the float value */
+        sensor["value"]  = (int)(device_report.sensors[i].value * 100 + 0.5) / 100.00f;
+        sensor["active"] = device_report.sensors[i].active;
+
+        switch (device_report.sensors[i].sensor_type) {
+            case SENSOR_TYPE_TEMPERATURE:
+                sensor["unit"] = "°C";
+                break;
+            case SENSOR_TYPE_PRESSURE:
+                sensor["unit"] = "kPa";
+                break;
+            case SENSOR_TYPE_VOLTAGE:
+                sensor["unit"] = "V";
+                break;
+            case SENSOR_TYPE_CURRENT:
+                sensor["unit"] = "A";
+                break;
+            case SENSOR_TYPE_POWER_FACTOR:
+                sensor["unit"] = "%";
+                break;
+            default:
+                sensor["unit"] = "Unkown";
+        }
     }
 
     size_t json_size = serializeJson(doc, out_buffer, buffer_size);
@@ -98,10 +119,30 @@ kernel_error_st serialize_command_response_sensor(command_response_st *command_r
 
     StaticJsonDocument<MAXIMUM_DOC_SIZE> doc;
 
-    doc["command_index"] = command_response->command_index;
+    doc["command_index"]  = command_response->command_index;
     doc["command_status"] = command_response->command_u.cmd_sensor_response.command_status;
-    doc["sensor_id"] = command_response->command_u.cmd_sensor_response.sensor_index;
+    doc["sensor_id"]      = command_response->command_u.cmd_sensor_response.sensor_index;
 
+    switch (command_response->command_u.cmd_sensor_response.sensor_type) {
+        case SENSOR_TYPE_TEMPERATURE:
+            doc["unit"] = "°C";
+            break;
+        case SENSOR_TYPE_PRESSURE:
+            doc["unit"] = "kPa";
+            break;
+        case SENSOR_TYPE_VOLTAGE:
+            doc["unit"] = "V";
+            break;
+        case SENSOR_TYPE_CURRENT:
+            doc["unit"] = "A";
+            break;
+        case SENSOR_TYPE_POWER_FACTOR:
+            doc["unit"] = "%";
+            break;
+        default:
+            doc["unit"] = "Unkown";
+    }
+    
     size_t json_size = serializeJson(doc, out_buffer, buffer_size);
 
     if (json_size == 0 || json_size >= buffer_size) {
@@ -111,6 +152,25 @@ kernel_error_st serialize_command_response_sensor(command_response_st *command_r
     return KERNEL_ERROR_NONE;
 }
 
+/**
+ * @brief Serializes a command response from a FreeRTOS queue into a provided output buffer.
+ *
+ * This function attempts to receive a `command_response_st` structure from the specified queue
+ * and serialize it into the given output buffer based on the command type. Currently supports
+ * CMD_SET_CALIBRATION responses.
+ *
+ * @param[in]  queue        Handle to the FreeRTOS queue containing command responses.
+ * @param[out] out_buffer   Pointer to the character buffer where the serialized response will be stored.
+ * @param[in]  buffer_size  Size of the output buffer in bytes.
+ *
+ * @return kernel_error_st Returns:
+ *                         - KERNEL_ERROR_NONE on success
+ *                         - KERNEL_ERROR_NULL if out_buffer is NULL
+ *                         - KERNEL_ERROR_INVALID_SIZE if buffer_size is 0
+ *                         - KERNEL_ERROR_QUEUE_NULL if queue is NULL
+ *                         - KERNEL_ERROR_EMPTY_QUEUE if the queue is empty or timed out
+ *                         - KERNEL_ERROR_INVALID_COMMAND if the command type is not recognized
+ */
 kernel_error_st serialize_command_response(QueueHandle_t queue, char *out_buffer, size_t buffer_size) {
     if (out_buffer == NULL) {
         return KERNEL_ERROR_NULL;

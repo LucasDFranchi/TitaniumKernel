@@ -3,10 +3,39 @@
 #include "app/app_extern_types.h"
 #include "app/driver/ads1115.h"
 #include "app/driver/tca9548a.h"
+#include "app/sensor/converters/converter.h"
 
 #include "kernel/device/device_info.h"
 #include "kernel/error/error_num.h"
 #include "kernel/logger/logger.h"
+
+/**
+ * @brief Simple mock values for voltage, current, and power factor
+ * Used for quick testing and debug output — not connected to real sensors
+ */
+
+#include "esp_random.h"
+#include "esp_system.h"
+
+float get_mock_voltage() {
+    // Random float between -5.0 and +5.0
+    float variation = ((float)(esp_random() % 10000) / 10000.0f) * 0.3f - 0.15f;
+    return 220.0f + variation;
+}
+
+float get_mock_current() {
+    // Random float between -0.15 and +0.15
+    float variation = ((float)(esp_random() % 10000) / 10000.0f) * 0.3f - 0.15f;
+    return 1.45f + variation;
+}
+
+float get_mock_power_factor() {
+    // Random float between 0.85 and 1.0
+    float variation = ((float)(esp_random() % 10000) / 10000.0f) * 0.15f;
+    return 0.85f + variation;
+}
+
+/* End Mock Values */
 
 /**
  * @brief Configuration array for ADS1115 ADC devices.
@@ -33,7 +62,7 @@ static const ads1115_config_st ads1115_config[] = {
             .comp_lat  = COMP_LAT_NON_LATCHING,
             .comp_pol  = COMP_POL_ACTIVE_LOW,
             .comp_mode = COMP_MODE_TRADITIONAL,
-            .dr        = DR_128SPS,
+            .dr        = DR_8SPS,
             .mode      = MODE_SINGLESHOT,
             .pga       = PGA_2_048V,
             .mux       = ADC_CONFIG_DIFF_A0_A1,
@@ -47,10 +76,38 @@ static const ads1115_config_st ads1115_config[] = {
             .comp_lat  = COMP_LAT_NON_LATCHING,
             .comp_pol  = COMP_POL_ACTIVE_LOW,
             .comp_mode = COMP_MODE_TRADITIONAL,
-            .dr        = DR_128SPS,
+            .dr        = DR_8SPS,
             .mode      = MODE_SINGLESHOT,
             .pga       = PGA_2_048V,
             .mux       = ADC_CONFIG_DIFF_A2_A3,
+            .os        = OS_START_SINGLE_CONV,
+        },
+    },
+    [2] = {
+        .dev_addr     = ADS1115_I2C_ADDRESS,
+        .reg_cfg.bits = {
+            .comp_que  = COMP_QUE_DISABLE,
+            .comp_lat  = COMP_LAT_NON_LATCHING,
+            .comp_pol  = COMP_POL_ACTIVE_LOW,
+            .comp_mode = COMP_MODE_TRADITIONAL,
+            .dr        = DR_8SPS,
+            .mode      = MODE_SINGLESHOT,
+            .pga       = PGA_4_096V,
+            .mux       = ADC_CONFIG_SINGLE_ENDED_A0,
+            .os        = OS_START_SINGLE_CONV,
+        },
+    },
+    [3] = {
+        .dev_addr     = ADS1115_I2C_ADDRESS,
+        .reg_cfg.bits = {
+            .comp_que  = COMP_QUE_DISABLE,
+            .comp_lat  = COMP_LAT_NON_LATCHING,
+            .comp_pol  = COMP_POL_ACTIVE_LOW,
+            .comp_mode = COMP_MODE_TRADITIONAL,
+            .dr        = DR_8SPS,
+            .mode      = MODE_SINGLESHOT,
+            .pga       = PGA_4_096V,
+            .mux       = ADC_CONFIG_SINGLE_ENDED_A1,
             .os        = OS_START_SINGLE_CONV,
         },
     },
@@ -101,30 +158,58 @@ typedef struct {
  *
  * This allows high-level code to refer to sensors by name instead of hardcoded integers.
  */
-typedef enum {
-    SENSOR_TEMP_0_A0A1,
-    SENSOR_TEMP_0_A2A3,
-    SENSOR_TEMP_1_A0A1,
-    SENSOR_TEMP_1_A2A3,
-    SENSOR_TEMP_2_A0A1,
-    SENSOR_TEMP_2_A2A3,
-    SENSOR_TEMP_3_A0A1,
-    SENSOR_TEMP_3_A2A3,
-    SENSOR_TEMP_4_A0A1,
-    SENSOR_TEMP_4_A2A3,
-    SENSOR_TEMP_5_A0A1,
-    SENSOR_TEMP_5_A2A3,
-    SENSOR_TEMP_6_A0A1,
-    SENSOR_TEMP_6_A2A3,
-    SENSOR_TEMP_7_A0A1,
-    SENSOR_TEMP_7_A2A3,
-    SENSOR_TEMP_8_A0A1,
-    SENSOR_TEMP_8_A2A3,
-    SENSOR_TEMP_9_A0A1,
-    SENSOR_TEMP_9_A2A3,
-    SENSOR_PRESSURE_0_A0,
-    SENSOR_PRESSURE_0_A1,
-    SENSOR_COUNT
+typedef enum hw_config_e {
+    MUX_0_ADC_0_A0A1,
+    MUX_0_ADC_0_A2A3,
+    MUX_0_ADC_1_A0A1,
+    MUX_0_ADC_1_A2A3,
+    MUX_0_ADC_2_A0A1,
+    MUX_0_ADC_2_A2A3,
+    MUX_0_ADC_3_A0A1,
+    MUX_0_ADC_3_A2A3,
+    MUX_0_ADC_4_A0A1,
+    MUX_0_ADC_4_A2A3,
+    MUX_0_ADC_5_A0A1,
+    MUX_0_ADC_5_A2A3,
+    MUX_0_ADC_6_A0A1,
+    MUX_0_ADC_6_A2A3,
+    MUX_0_ADC_7_A0A1,
+    MUX_0_ADC_7_A2A3,
+    MUX_1_ADC_6_A0A1,
+    MUX_1_ADC_6_A2A3,
+    MUX_1_ADC_7_A0A1,
+    MUX_1_ADC_7_A2A3,
+    MUX_1_ADC_0_A0,
+    MUX_1_ADC_0_A1,
+} hw_config_et;
+
+typedef enum sensor_index_e {
+    SENSOR_00 = 0,
+    SENSOR_01,
+    SENSOR_02,
+    SENSOR_03,
+    SENSOR_04,
+    SENSOR_05,
+    SENSOR_06,
+    SENSOR_07,
+    SENSOR_08,
+    SENSOR_09,
+    SENSOR_10,
+    SENSOR_11,
+    SENSOR_12,
+    SENSOR_13,
+    SENSOR_14,
+    SENSOR_15,
+    SENSOR_16,
+    SENSOR_17,
+    SENSOR_18,
+    SENSOR_19,
+    SENSOR_20,
+    SENSOR_21,
+    SENSOR_22,
+    SENSOR_23,
+    SENSOR_24,
+    SENSOR_COUNT,
 } sensor_index_et;
 
 /**
@@ -136,28 +221,28 @@ typedef enum {
  * - The ADS1115 ADC configuration (device address and input multiplexer setup)
  */
 static const sensor_hw_st sensor_hw[] = {
-    [SENSOR_TEMP_0_A0A1]   = {&tca9548a_config[0], &ads1115_config[0]},
-    [SENSOR_TEMP_0_A2A3]   = {&tca9548a_config[0], &ads1115_config[1]},
-    [SENSOR_TEMP_1_A0A1]   = {&tca9548a_config[1], &ads1115_config[0]},
-    [SENSOR_TEMP_1_A2A3]   = {&tca9548a_config[1], &ads1115_config[1]},
-    [SENSOR_TEMP_2_A0A1]   = {&tca9548a_config[2], &ads1115_config[0]},
-    [SENSOR_TEMP_2_A2A3]   = {&tca9548a_config[2], &ads1115_config[1]},
-    [SENSOR_TEMP_3_A0A1]   = {&tca9548a_config[3], &ads1115_config[0]},
-    [SENSOR_TEMP_3_A2A3]   = {&tca9548a_config[3], &ads1115_config[1]},
-    [SENSOR_TEMP_4_A0A1]   = {&tca9548a_config[4], &ads1115_config[0]},
-    [SENSOR_TEMP_4_A2A3]   = {&tca9548a_config[4], &ads1115_config[1]},
-    [SENSOR_TEMP_5_A0A1]   = {&tca9548a_config[5], &ads1115_config[0]},
-    [SENSOR_TEMP_5_A2A3]   = {&tca9548a_config[5], &ads1115_config[1]},
-    [SENSOR_TEMP_6_A0A1]   = {&tca9548a_config[6], &ads1115_config[0]},
-    [SENSOR_TEMP_6_A2A3]   = {&tca9548a_config[6], &ads1115_config[1]},
-    [SENSOR_TEMP_7_A0A1]   = {&tca9548a_config[7], &ads1115_config[0]},
-    [SENSOR_TEMP_7_A2A3]   = {&tca9548a_config[7], &ads1115_config[1]},
-    [SENSOR_TEMP_8_A0A1]   = {&tca9548a_config[8], &ads1115_config[0]},
-    [SENSOR_TEMP_8_A2A3]   = {&tca9548a_config[8], &ads1115_config[1]},
-    [SENSOR_TEMP_9_A0A1]   = {&tca9548a_config[9], &ads1115_config[0]},
-    [SENSOR_TEMP_9_A2A3]   = {&tca9548a_config[9], &ads1115_config[1]},
-    [SENSOR_PRESSURE_0_A0] = {&tca9548a_config[10], &ads1115_config[0]},
-    [SENSOR_PRESSURE_0_A1] = {&tca9548a_config[10], &ads1115_config[1]},
+    [MUX_0_ADC_0_A0A1] = {&tca9548a_config[0], &ads1115_config[0]},
+    [MUX_0_ADC_0_A2A3] = {&tca9548a_config[0], &ads1115_config[1]},
+    [MUX_0_ADC_1_A0A1] = {&tca9548a_config[1], &ads1115_config[0]},
+    [MUX_0_ADC_1_A2A3] = {&tca9548a_config[1], &ads1115_config[1]},
+    [MUX_0_ADC_2_A0A1] = {&tca9548a_config[2], &ads1115_config[0]},
+    [MUX_0_ADC_2_A2A3] = {&tca9548a_config[2], &ads1115_config[1]},
+    [MUX_0_ADC_3_A0A1] = {&tca9548a_config[3], &ads1115_config[0]},
+    [MUX_0_ADC_3_A2A3] = {&tca9548a_config[3], &ads1115_config[1]},
+    [MUX_0_ADC_4_A0A1] = {&tca9548a_config[4], &ads1115_config[0]},
+    [MUX_0_ADC_4_A2A3] = {&tca9548a_config[4], &ads1115_config[1]},
+    [MUX_0_ADC_5_A0A1] = {&tca9548a_config[5], &ads1115_config[0]},
+    [MUX_0_ADC_5_A2A3] = {&tca9548a_config[5], &ads1115_config[1]},
+    [MUX_0_ADC_6_A0A1] = {&tca9548a_config[6], &ads1115_config[0]},
+    [MUX_0_ADC_6_A2A3] = {&tca9548a_config[6], &ads1115_config[1]},
+    [MUX_0_ADC_7_A0A1] = {&tca9548a_config[7], &ads1115_config[0]},
+    [MUX_0_ADC_7_A2A3] = {&tca9548a_config[7], &ads1115_config[1]},
+    [MUX_1_ADC_6_A0A1] = {&tca9548a_config[9], &ads1115_config[1]},
+    [MUX_1_ADC_6_A2A3] = {&tca9548a_config[9], &ads1115_config[0]},
+    [MUX_1_ADC_7_A0A1] = {&tca9548a_config[10], &ads1115_config[0]},
+    [MUX_1_ADC_7_A2A3] = {&tca9548a_config[10], &ads1115_config[1]},
+    [MUX_1_ADC_0_A0]   = {&tca9548a_config[8], &ads1115_config[2]},
+    [MUX_1_ADC_0_A1]   = {&tca9548a_config[8], &ads1115_config[3]},
 };
 
 /**
@@ -180,29 +265,31 @@ typedef struct sensor_info_s {
 
 static sensor_info_st sensor_info[] = {
     // --- MUX_ADDRESS_0: Channels 0-7, Temp Sensors ---
-    [SENSOR_TEMP_0_A0A1]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_0_A0A1], 1.0f, 0.0f},
-    [SENSOR_TEMP_0_A2A3]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_0_A2A3], 1.0f, 0.0f},
-    [SENSOR_TEMP_1_A0A1]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_1_A0A1], 1.0f, 0.0f},
-    [SENSOR_TEMP_1_A2A3]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_1_A2A3], 1.0f, 0.0f},
-    [SENSOR_TEMP_2_A0A1]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_2_A0A1], 1.0f, 0.0f},
-    [SENSOR_TEMP_2_A2A3]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_2_A2A3], 1.0f, 0.0f},
-    [SENSOR_TEMP_3_A0A1]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_3_A0A1], 1.0f, 0.0f},
-    [SENSOR_TEMP_3_A2A3]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_3_A2A3], 1.0f, 0.0f},
-    [SENSOR_TEMP_4_A0A1]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_4_A0A1], 1.0f, 0.0f},
-    [SENSOR_TEMP_4_A2A3]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_4_A2A3], 1.0f, 0.0f},
-    [SENSOR_TEMP_5_A0A1]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_5_A0A1], 1.0f, 0.0f},
-    [SENSOR_TEMP_5_A2A3]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_5_A2A3], 1.0f, 0.0f},
-    [SENSOR_TEMP_6_A0A1]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_6_A0A1], 1.0f, 0.0f},
-    [SENSOR_TEMP_6_A2A3]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_6_A2A3], 1.0f, 0.0f},
-    [SENSOR_TEMP_7_A0A1]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_7_A0A1], 1.0f, 0.0f},
-    [SENSOR_TEMP_7_A2A3]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_7_A2A3], 1.0f, 0.0f},
-    [SENSOR_TEMP_8_A0A1]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_8_A0A1], 1.0f, 0.0f},
-    [SENSOR_TEMP_8_A2A3]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_8_A2A3], 1.0f, 0.0f},
-    [SENSOR_TEMP_9_A0A1]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_9_A0A1], 1.0f, 0.0f},
-    [SENSOR_TEMP_9_A2A3]   = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[SENSOR_TEMP_9_A2A3], 1.0f, 0.0f},
-    [SENSOR_PRESSURE_0_A0] = {SENSOR_TYPE_PRESSURE, &sensor_hw[SENSOR_PRESSURE_0_A0], 1.0f, 0.0f},
-    [SENSOR_PRESSURE_0_A1] = {SENSOR_TYPE_PRESSURE, &sensor_hw[SENSOR_PRESSURE_0_A1], 1.0f, 0.0f},
-
+    [SENSOR_00] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_4_A2A3], 1.0f, 0.0f},
+    [SENSOR_01] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_4_A0A1], 1.0f, 0.0f},
+    [SENSOR_02] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_5_A2A3], 1.0f, 0.0f},
+    [SENSOR_03] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_5_A0A1], 1.0f, 0.0f},
+    [SENSOR_04] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_6_A2A3], 1.0f, 0.0f},
+    [SENSOR_05] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_6_A0A1], 1.0f, 0.0f},
+    [SENSOR_06] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_7_A2A3], 1.0f, 0.0f},
+    [SENSOR_07] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_7_A0A1], 1.0f, 0.0f},
+    [SENSOR_08] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_1_ADC_6_A0A1], 1.0f, 0.0f},
+    [SENSOR_09] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_1_ADC_6_A2A3], 1.0f, 0.0f},
+    [SENSOR_10] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_1_ADC_7_A2A3], 1.0f, 0.0f},
+    [SENSOR_11] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_1_ADC_7_A0A1], 1.0f, 0.0f},
+    [SENSOR_12] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_3_A0A1], 1.0f, 0.0f},
+    [SENSOR_13] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_3_A2A3], 1.0f, 0.0f},
+    [SENSOR_14] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_2_A0A1], 1.0f, 0.0f},
+    [SENSOR_15] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_2_A2A3], 1.0f, 0.0f},
+    [SENSOR_16] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_1_A0A1], 1.0f, 0.0f},
+    [SENSOR_17] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_1_A2A3], 1.0f, 0.0f},
+    [SENSOR_18] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_0_A0A1], 1.0f, 0.0f},
+    [SENSOR_19] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_0_A2A3], 1.0f, 0.0f},
+    [SENSOR_20] = {SENSOR_TYPE_PRESSURE, &sensor_hw[MUX_1_ADC_0_A1], 1.0f, 0.0f},
+    [SENSOR_21] = {SENSOR_TYPE_PRESSURE, &sensor_hw[MUX_1_ADC_0_A0], 1.0f, 0.0f},
+    [SENSOR_22] = {SENSOR_TYPE_VOLTAGE, &sensor_hw[MUX_1_ADC_0_A0], 1.0f, 0.0f},
+    [SENSOR_23] = {SENSOR_TYPE_CURRENT, &sensor_hw[MUX_1_ADC_0_A0], 1.0f, 0.0f},
+    [SENSOR_24] = {SENSOR_TYPE_POWER_FACTOR, &sensor_hw[MUX_1_ADC_0_A0], 1.0f, 0.0f},
 };
 
 /* Hardware Constant Definitions */
@@ -414,7 +501,7 @@ void handle_device_report(QueueHandle_t device_report_queue) {
     device_report_st device_report = {0};
 
     device_info_get_current_time(device_report.timestamp, sizeof(device_report.timestamp));
-    device_report.num_of_channels = NUM_OF_CHANNELS - 1;
+    device_report.num_of_channels = NUM_OF_CHANNELS;
 
     for (int i = 0; i < NUM_OF_CHANNELS; i++) {
         float voltage = 0.0f;
@@ -423,8 +510,34 @@ void handle_device_report(QueueHandle_t device_report_queue) {
             vTaskDelay(pdMS_TO_TICKS(100));
             continue;
         }
-        device_report.sensors[i].value  = voltage;
-        device_report.sensors[i].active = true;
+
+        sensor_type_et type = sensor_get_type(i);
+        switch (type) {
+            case SENSOR_TYPE_TEMPERATURE:
+                device_report.sensors[i].value = voltage_to_temperature(voltage, i);
+                break;
+
+            case SENSOR_TYPE_VOLTAGE:
+                device_report.sensors[i].value = get_mock_voltage();
+                break;
+            case SENSOR_TYPE_CURRENT:
+                device_report.sensors[i].value = get_mock_current();
+                break;
+            case SENSOR_TYPE_POWER_FACTOR:
+                device_report.sensors[i].value = get_mock_power_factor();
+                break;
+            case SENSOR_TYPE_PRESSURE:
+                device_report.sensors[i].value = voltage;
+                break;
+
+            default:
+                logger_print(ERR, TAG, "Undefined sensor type at index %d!", i);
+                device_report.sensors[i].value = voltage;
+                break;
+        }
+
+        device_report.sensors[i].active      = i != SENSOR_20;;
+        device_report.sensors[i].sensor_type = type;
     }
 
     if (xQueueSend(device_report_queue, &device_report, pdMS_TO_TICKS(100)) != pdPASS) {

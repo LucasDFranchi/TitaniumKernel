@@ -54,7 +54,7 @@
 #  endif
 #endif
 #ifndef ARDUINOJSON_USE_DOUBLE
-#  define ARDUINOJSON_USE_DOUBLE 1
+#  define ARDUINOJSON_USE_DOUBLE 0
 #endif
 #ifndef ARDUINOJSON_USE_LONG_LONG
 #  if defined(__SIZEOF_POINTER__) && __SIZEOF_POINTER__ >= 4 || \

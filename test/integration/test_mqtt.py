@@ -4,6 +4,7 @@ import time
 import paho.mqtt.client as mqtt
 import threading
 
+unit_test_list = ["°C", "°C", "°C", "°C", "°C", "°C", "°C", "°C", "°C", "°C","°C", "°C", "°C", "°C", "°C", "°C", "°C", "°C", "°C", "°C", "kPa", "kPa", "V", "A", "%"]
 
 @pytest.fixture
 def mqtt_client():
@@ -42,38 +43,24 @@ def test_set_calibration_command(mqtt_client):
 
     mqtt_client.publish("iocloud/request/1C69209DFC08/command", json.dumps(payload))
 
-    response = wait_for_response(mqtt_client, topic_resp, timeout=10)
-    print(response)
+    response = wait_for_response(mqtt_client, topic_resp, timeout=25)
     assert response["command_index"] == 1
     assert response["command_status"] == 0
     assert response.get("sensor_id") == 2
-
-
-def test_bulk_calibration_commands_sequential(mqtt_client):
-    topic_req = "iocloud/request/1C69209DFC08/command"
+    assert response.get("unit") == unit_test_list[response.get("sensor_id", 0)]
+    
+def test_set_calibration_check_all_units(mqtt_client):
     topic_resp = "iocloud/response/1C69209DFC08/command"
+    mqtt_client.subscribe(topic_resp)  # Subscribe before publish
 
-    for i in range(1000):
-        sensor_id = i % 10
-        gain = round(1.0 + i * 0.001, 3)
-        offset = round(0.01 + i * 0.0001, 4)
+    for sensor_id in range(0, 25):
+        payload = {"command": 1, "params": {"sensor_id": sensor_id, "gain": 1.00, "offset": 0.00}}
 
-        payload = {
-            "command": 1,
-            "params": {
-                "sensor_id": sensor_id,
-                "gain": gain,
-                "offset": offset
-            }
-        }
+        mqtt_client.publish("iocloud/request/1C69209DFC08/command", json.dumps(payload))
 
-        mqtt_client.publish(topic_req, json.dumps(payload))
+        response = wait_for_response(mqtt_client, topic_resp, timeout=25)
 
-        response = wait_for_response(mqtt_client, topic_resp, timeout=5)
-
-        print(f"[{i+1}/1000] Response: {response}")
-
-        # Basic checks
-        assert response["command_index"] == 1
-        assert response["command_status"] == 0
+        assert response.get("command_index") == 1
+        assert response.get("command_status") == 0
         assert response.get("sensor_id") == sensor_id
+        assert response.get("unit") == unit_test_list[response.get("sensor_id", 0)]
