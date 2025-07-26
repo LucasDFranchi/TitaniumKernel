@@ -122,6 +122,8 @@ kernel_error_st serialize_command_response_sensor(command_response_st *command_r
     doc["command_index"]  = command_response->command_index;
     doc["command_status"] = command_response->command_u.cmd_sensor_response.command_status;
     doc["sensor_id"]      = command_response->command_u.cmd_sensor_response.sensor_index;
+    doc["gain"]      = command_response->command_u.cmd_sensor_response.gain;
+    doc["offset"]      = command_response->command_u.cmd_sensor_response.offset;
 
     switch (command_response->command_u.cmd_sensor_response.sensor_type) {
         case SENSOR_TYPE_TEMPERATURE:

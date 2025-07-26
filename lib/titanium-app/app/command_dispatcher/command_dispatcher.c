@@ -42,6 +42,8 @@ kernel_error_st process_set_calibration_command(command_st* command, command_res
     command_status_et command_status                               = result == KERNEL_ERROR_NONE ? COMMAND_SUCCESS : COMMAND_CALIBRATION_FAIL;
     command_response->command_u.cmd_sensor_response.command_status = command_status;
     command_response->command_u.cmd_sensor_response.sensor_type    = sensor_get_type(cmd.sensor_index);
+    command_response->command_u.cmd_sensor_response.gain           = cmd.gain;
+    command_response->command_u.cmd_sensor_response.offset         = cmd.offset;
 
     return result;
 }

@@ -39,22 +39,29 @@ def test_set_calibration_command(mqtt_client):
     topic_resp = "iocloud/response/1C69209DFC08/command"
     mqtt_client.subscribe(topic_resp)  # Subscribe before publish
 
-    payload = {"command": 1, "params": {"sensor_id": 2, "gain": 1.23, "offset": 0.04}}
+    gain = 1.00
+    offset = 0.00
+    payload = {"command": 1, "params": {"sensor_id": 2, "gain": gain, "offset": offset}}
 
     mqtt_client.publish("iocloud/request/1C69209DFC08/command", json.dumps(payload))
-
+    
     response = wait_for_response(mqtt_client, topic_resp, timeout=25)
+    
     assert response["command_index"] == 1
     assert response["command_status"] == 0
     assert response.get("sensor_id") == 2
     assert response.get("unit") == unit_test_list[response.get("sensor_id", 0)]
+    assert response.get("gain") == gain
+    assert response.get("offset") == offset
     
 def test_set_calibration_check_all_units(mqtt_client):
     topic_resp = "iocloud/response/1C69209DFC08/command"
     mqtt_client.subscribe(topic_resp)  # Subscribe before publish
 
     for sensor_id in range(0, 25):
-        payload = {"command": 1, "params": {"sensor_id": sensor_id, "gain": 1.00, "offset": 0.00}}
+        gain = 1.00
+        offset = 0.00
+        payload = {"command": 1, "params": {"sensor_id": sensor_id, "gain": gain, "offset": offset}}
 
         mqtt_client.publish("iocloud/request/1C69209DFC08/command", json.dumps(payload))
 
@@ -64,3 +71,5 @@ def test_set_calibration_check_all_units(mqtt_client):
         assert response.get("command_status") == 0
         assert response.get("sensor_id") == sensor_id
         assert response.get("unit") == unit_test_list[response.get("sensor_id", 0)]
+        assert response.get("gain") == gain
+        assert response.get("offset") == offset
