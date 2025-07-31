@@ -62,7 +62,7 @@ static const ads1115_config_st ads1115_config[] = {
             .comp_lat  = COMP_LAT_NON_LATCHING,
             .comp_pol  = COMP_POL_ACTIVE_LOW,
             .comp_mode = COMP_MODE_TRADITIONAL,
-            .dr        = DR_8SPS,
+            .dr        = DR_128SPS,
             .mode      = MODE_SINGLESHOT,
             .pga       = PGA_2_048V,
             .mux       = ADC_CONFIG_DIFF_A0_A1,
@@ -76,7 +76,7 @@ static const ads1115_config_st ads1115_config[] = {
             .comp_lat  = COMP_LAT_NON_LATCHING,
             .comp_pol  = COMP_POL_ACTIVE_LOW,
             .comp_mode = COMP_MODE_TRADITIONAL,
-            .dr        = DR_8SPS,
+            .dr        = DR_128SPS,
             .mode      = MODE_SINGLESHOT,
             .pga       = PGA_2_048V,
             .mux       = ADC_CONFIG_DIFF_A2_A3,
@@ -90,9 +90,9 @@ static const ads1115_config_st ads1115_config[] = {
             .comp_lat  = COMP_LAT_NON_LATCHING,
             .comp_pol  = COMP_POL_ACTIVE_LOW,
             .comp_mode = COMP_MODE_TRADITIONAL,
-            .dr        = DR_8SPS,
+            .dr        = DR_128SPS,
             .mode      = MODE_SINGLESHOT,
-            .pga       = PGA_4_096V,
+            .pga       = PGA_2_048V,
             .mux       = ADC_CONFIG_SINGLE_ENDED_A0,
             .os        = OS_START_SINGLE_CONV,
         },
@@ -104,7 +104,7 @@ static const ads1115_config_st ads1115_config[] = {
             .comp_lat  = COMP_LAT_NON_LATCHING,
             .comp_pol  = COMP_POL_ACTIVE_LOW,
             .comp_mode = COMP_MODE_TRADITIONAL,
-            .dr        = DR_8SPS,
+            .dr        = DR_128SPS,
             .mode      = MODE_SINGLESHOT,
             .pga       = PGA_4_096V,
             .mux       = ADC_CONFIG_SINGLE_ENDED_A1,
@@ -221,16 +221,16 @@ typedef enum sensor_index_e {
  * - The ADS1115 ADC configuration (device address and input multiplexer setup)
  */
 static const sensor_hw_st sensor_hw[] = {
-    [MUX_0_ADC_0_A0A1] = {&tca9548a_config[0], &ads1115_config[0]},
-    [MUX_0_ADC_0_A2A3] = {&tca9548a_config[0], &ads1115_config[1]},
+    [MUX_0_ADC_0_A0A1] = {&tca9548a_config[0], &ads1115_config[2]},
+    [MUX_0_ADC_0_A2A3] = {&tca9548a_config[0], &ads1115_config[3]},
     [MUX_0_ADC_1_A0A1] = {&tca9548a_config[1], &ads1115_config[0]},
     [MUX_0_ADC_1_A2A3] = {&tca9548a_config[1], &ads1115_config[1]},
     [MUX_0_ADC_2_A0A1] = {&tca9548a_config[2], &ads1115_config[0]},
     [MUX_0_ADC_2_A2A3] = {&tca9548a_config[2], &ads1115_config[1]},
     [MUX_0_ADC_3_A0A1] = {&tca9548a_config[3], &ads1115_config[0]},
     [MUX_0_ADC_3_A2A3] = {&tca9548a_config[3], &ads1115_config[1]},
-    [MUX_0_ADC_4_A0A1] = {&tca9548a_config[4], &ads1115_config[0]},
-    [MUX_0_ADC_4_A2A3] = {&tca9548a_config[4], &ads1115_config[1]},
+    [MUX_0_ADC_4_A0A1] = {&tca9548a_config[4], &ads1115_config[2]},
+    [MUX_0_ADC_4_A2A3] = {&tca9548a_config[4], &ads1115_config[3]},
     [MUX_0_ADC_5_A0A1] = {&tca9548a_config[5], &ads1115_config[0]},
     [MUX_0_ADC_5_A2A3] = {&tca9548a_config[5], &ads1115_config[1]},
     [MUX_0_ADC_6_A0A1] = {&tca9548a_config[6], &ads1115_config[0]},
@@ -267,29 +267,29 @@ static sensor_info_st sensor_info[] = {
     // --- MUX_ADDRESS_0: Channels 0-7, Temp Sensors ---
     [SENSOR_00] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_4_A2A3], 1.0f, 0.0f},
     [SENSOR_01] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_4_A0A1], 1.0f, 0.0f},
-    [SENSOR_02] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_5_A2A3], 1.0f, 0.0f},
-    [SENSOR_03] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_5_A0A1], 1.0f, 0.0f},
-    [SENSOR_04] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_6_A2A3], 1.0f, 0.0f},
-    [SENSOR_05] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_6_A0A1], 1.0f, 0.0f},
-    [SENSOR_06] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_7_A2A3], 1.0f, 0.0f},
-    [SENSOR_07] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_7_A0A1], 1.0f, 0.0f},
-    [SENSOR_08] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_1_ADC_6_A0A1], 1.0f, 0.0f},
-    [SENSOR_09] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_1_ADC_6_A2A3], 1.0f, 0.0f},
-    [SENSOR_10] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_1_ADC_7_A2A3], 1.0f, 0.0f},
-    [SENSOR_11] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_1_ADC_7_A0A1], 1.0f, 0.0f},
-    [SENSOR_12] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_3_A0A1], 1.0f, 0.0f},
-    [SENSOR_13] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_3_A2A3], 1.0f, 0.0f},
-    [SENSOR_14] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_2_A0A1], 1.0f, 0.0f},
-    [SENSOR_15] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_2_A2A3], 1.0f, 0.0f},
-    [SENSOR_16] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_1_A0A1], 1.0f, 0.0f},
-    [SENSOR_17] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_1_A2A3], 1.0f, 0.0f},
-    [SENSOR_18] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_0_A0A1], 1.0f, 0.0f},
-    [SENSOR_19] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_0_A2A3], 1.0f, 0.0f},
-    [SENSOR_20] = {SENSOR_TYPE_PRESSURE, &sensor_hw[MUX_1_ADC_0_A1], 1.0f, 0.0f},
-    [SENSOR_21] = {SENSOR_TYPE_PRESSURE, &sensor_hw[MUX_1_ADC_0_A0], 1.0f, 0.0f},
-    [SENSOR_22] = {SENSOR_TYPE_VOLTAGE, &sensor_hw[MUX_1_ADC_0_A0], 1.0f, 0.0f},
-    [SENSOR_23] = {SENSOR_TYPE_CURRENT, &sensor_hw[MUX_1_ADC_0_A0], 1.0f, 0.0f},
-    [SENSOR_24] = {SENSOR_TYPE_POWER_FACTOR, &sensor_hw[MUX_1_ADC_0_A0], 1.0f, 0.0f},
+    // [SENSOR_02] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_5_A2A3], 1.0f, 0.0f},
+    // [SENSOR_03] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_5_A0A1], 1.0f, 0.0f},
+    // [SENSOR_04] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_6_A2A3], 1.0f, 0.0f},
+    // [SENSOR_05] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_6_A0A1], 1.0f, 0.0f},
+    // [SENSOR_06] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_7_A2A3], 1.0f, 0.0f},
+    // [SENSOR_07] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_7_A0A1], 1.0f, 0.0f},
+    // [SENSOR_08] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_1_ADC_6_A0A1], 1.0f, 0.0f},
+    // [SENSOR_09] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_1_ADC_6_A2A3], 1.0f, 0.0f},
+    // [SENSOR_10] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_1_ADC_7_A2A3], 1.0f, 0.0f},
+    // [SENSOR_11] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_1_ADC_7_A0A1], 1.0f, 0.0f},
+    // [SENSOR_12] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_3_A0A1], 1.0f, 0.0f},
+    // [SENSOR_13] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_3_A2A3], 1.0f, 0.0f},
+    // [SENSOR_14] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_2_A0A1], 1.0f, 0.0f},
+    // [SENSOR_15] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_2_A2A3], 1.0f, 0.0f},
+    // [SENSOR_16] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_1_A0A1], 1.0f, 0.0f},
+    // [SENSOR_17] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_1_A2A3], 1.0f, 0.0f},
+    // [SENSOR_18] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_0_A0A1], 1.0f, 0.0f},
+    // [SENSOR_19] = {SENSOR_TYPE_TEMPERATURE, &sensor_hw[MUX_0_ADC_0_A2A3], 1.0f, 0.0f},
+    // [SENSOR_20] = {SENSOR_TYPE_PRESSURE, &sensor_hw[MUX_1_ADC_0_A1], 1.0f, 0.0f},
+    // [SENSOR_21] = {SENSOR_TYPE_PRESSURE, &sensor_hw[MUX_1_ADC_0_A0], 1.0f, 0.0f},
+    // [SENSOR_22] = {SENSOR_TYPE_VOLTAGE, &sensor_hw[MUX_1_ADC_0_A0], 1.0f, 0.0f},
+    // [SENSOR_23] = {SENSOR_TYPE_CURRENT, &sensor_hw[MUX_1_ADC_0_A0], 1.0f, 0.0f},
+    // [SENSOR_24] = {SENSOR_TYPE_POWER_FACTOR, &sensor_hw[MUX_1_ADC_0_A0], 1.0f, 0.0f},
 };
 
 /* Hardware Constant Definitions */
@@ -397,7 +397,7 @@ void sensor_manager_initialize(void) {
  *         - KERNEL_ERROR_INVALID_ARG if index is invalid,
  *         - KERNEL_ERROR_ADC_CONVERSION_ERROR if the ADC times out.
  */
-static kernel_error_st sensor_get_voltage(uint8_t sensor_index, float *voltage) {
+static kernel_error_st sensor_get_voltage(uint8_t sensor_index, int16_t *voltage) {
     if (sensor_index >= NUM_OF_CHANNELS) {
         return KERNEL_ERROR_INVALID_ARG;
     }
@@ -418,7 +418,8 @@ static kernel_error_st sensor_get_voltage(uint8_t sensor_index, float *voltage) 
         return KERNEL_ERROR_ADC_CONVERSION_ERROR;
     }
 
-    int16_t raw_value      = ads1115_get_raw_value(sensor_info[sensor_index].hw->adc);
+    int16_t raw_value = 0;
+    ads1115_get_raw_value(sensor_info[sensor_index].hw->adc, &raw_value);
     float internal_voltage = 0.0f;
 
     switch (sensor_info[sensor_index].hw->adc->reg_cfg.bits.pga) {
@@ -433,8 +434,14 @@ static kernel_error_st sensor_get_voltage(uint8_t sensor_index, float *voltage) 
             return KERNEL_ERROR_INVALID_ARG;
     }
 
-    internal_voltage -= sensor_info[sensor_index].offset;
-    *voltage = internal_voltage * sensor_info[sensor_index].conversion_gain;
+    logger_print(DEBUG, TAG,
+                 "Sensor %d: Raw Value: %d, Internal Voltage: %f mV",
+                 sensor_index, raw_value, internal_voltage * 1000.0f);
+
+    // internal_voltage -= sensor_info[sensor_index].offset;
+    // *voltage = internal_voltage * sensor_info[sensor_index].conversion_gain;
+
+    *voltage = (int16_t)(internal_voltage * 1000);
 
     return KERNEL_ERROR_NONE;
 }
@@ -504,7 +511,8 @@ void handle_device_report(QueueHandle_t device_report_queue) {
     device_report.num_of_channels = NUM_OF_CHANNELS;
 
     for (int i = 0; i < NUM_OF_CHANNELS; i++) {
-        float voltage = 0.0f;
+        int16_t voltage = 0;
+
         if (sensor_get_voltage(i, &voltage) != KERNEL_ERROR_NONE) {
             logger_print(ERR, TAG, "Failed to get voltage for sensor %d", i);
             vTaskDelay(pdMS_TO_TICKS(100));
@@ -536,7 +544,8 @@ void handle_device_report(QueueHandle_t device_report_queue) {
                 break;
         }
 
-        device_report.sensors[i].active      = i != SENSOR_20;;
+        device_report.sensors[i].active = i != SENSOR_20;
+        ;
         device_report.sensors[i].sensor_type = type;
     }
 

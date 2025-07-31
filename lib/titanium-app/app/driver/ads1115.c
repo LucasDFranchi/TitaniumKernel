@@ -151,21 +151,30 @@ esp_err_t ads1115_update(const ads1115_config_st *dev) {
 }
 
 /**
- * @brief Read the raw ADC conversion result.
+ * @brief Read the raw ADC conversion result from the ADS1115.
  *
  * Retrieves the latest conversion value from the ADS1115 conversion register.
  * The value returned is a 16-bit signed integer in the ADS1115's native format.
  *
- * This function assumes a conversion has already been triggered and completed.
- * It does not initiate a new conversion.
+ * @param[in]  dev        Pointer to the ADS1115 configuration structure.
+ * @param[out] raw_value  Pointer to store the 16-bit signed raw ADC result.
  *
- * @param[in] dev Pointer to an ADS1115 configuration structure.
- *
- * @return 16-bit raw ADC value read from the conversion register.
+ * @return
+ *     - ESP_OK:     Conversion result read successfully
+ *     - ESP_FAIL or other esp_err_t: I2C communication error
  */
-uint16_t ads1115_get_raw_value(const ads1115_config_st *dev) {
-    read_register(dev->dev_addr, REG_ADDR_CONVERSION);
-    return (uint16_t)(((read_buffer[0] << 8) & 0xFF00) | read_buffer[1]);
+esp_err_t ads1115_get_raw_value(const ads1115_config_st *dev, int16_t *raw_value) {
+    if (!dev || !raw_value) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    esp_err_t err = read_register(dev->dev_addr, REG_ADDR_CONVERSION);
+    if (err != ESP_OK) {
+        return err;
+    }
+
+    *raw_value = (int16_t)((read_buffer[0] << 8) | read_buffer[1]);
+    return ESP_OK;
 }
 
 /**

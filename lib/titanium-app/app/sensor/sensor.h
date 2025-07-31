@@ -19,7 +19,7 @@
  * @def NUM_OF_CHANNELS
  * @brief Total number of sensor channels supported.
  */
-#define NUM_OF_CHANNELS 25
+#define NUM_OF_CHANNELS 2
 
 /**
  * @enum sensor_type_et

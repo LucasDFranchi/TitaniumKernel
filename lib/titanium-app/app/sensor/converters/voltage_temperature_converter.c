@@ -11,9 +11,9 @@ static const char* TAG = "Converter";
  * temperature (in degrees Celsius). It is used for converting measured resistance
  * from a thermistor into a temperature using a lookup table with interpolation.
  */
-typedef struct ntc_entry_s{
-    float resistance_kohm;   /*!< Resistance of the thermistor in kilo-ohms (kΩ) */
-    int temperature_c;       /*!< Corresponding temperature in degrees Celsius (°C) */
+typedef struct ntc_entry_s {
+    float resistance_kohm; /*!< Resistance of the thermistor in kilo-ohms (kΩ) */
+    int temperature_c;     /*!< Corresponding temperature in degrees Celsius (°C) */
 } ntc_entry_st;
 
 // clang-format off
@@ -69,11 +69,17 @@ static const ntc_entry_st ntc_table[] = {
  * @param vout Output voltage from the thermistor divider.
  * @return Calculated thermistor resistance in kΩ.
  */
-static float calculate_resistance_kohm(float vout) {
-    static const float voltage_input       = 3.3f;
+static float calculate_resistance_kohm(int16_t vinput) {
+    const int16_t vref                     = 1650;  // Reference voltage for the ADC, adjust as needed
+    int16_t vadjust                        = vref - 1658;
+    int16_t vout                           = vref - (vinput + vadjust); // Adjusted output voltage
+    int16_t voltage_input                  = vref * 2;
     static const uint32_t fixed_resistance = 100 * 1000;
-    float bridge_ratio                     = vout / voltage_input;
+    float bridge_ratio                     = (float)vout / voltage_input;  // Check for zero
     float denominator                      = 1.0f + 2.0f * bridge_ratio;
+
+    logger_print(DEBUG, TAG, "vinput: %d mV, vref: %d, vadjust: %d, vout: %d",
+                 vinput, vref, vadjust, vout);
 
     if (denominator == 0.0f) {
         logger_print(ERR, TAG, "Division by zero in resistance calculation (vout: %f)", vout);
@@ -81,7 +87,9 @@ static float calculate_resistance_kohm(float vout) {
     }
 
     float resistance_ohm = fixed_resistance * (1.0f - 2.0f * bridge_ratio) / denominator;
-    return resistance_ohm / 1000.0f; 
+
+    logger_print(DEBUG, TAG, "Calculated resistance: %.3f Ω (%.3f kΩ)", resistance_ohm, resistance_ohm / 1000.0f);
+    return resistance_ohm / 1000.0f;
 }
 
 /**
@@ -132,7 +140,6 @@ static float resistance_to_temperature(float resistance_kohm, int sensor_index) 
 
     return t1 + (resistance_kohm - r1) * (t2 - t1) / (r2 - r1);
 }
-
 
 /**
  * @brief Convert voltage output from thermistor divider to temperature.
