@@ -2,7 +2,7 @@
 
 #include "kernel/error/error_num.h"
 
-#include "app/external/json_handler.h"
+#include "app/third_party/json_handler.h"
 
 typedef enum {
     JSON_TYPE_INT,

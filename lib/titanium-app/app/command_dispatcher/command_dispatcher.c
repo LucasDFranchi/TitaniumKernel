@@ -12,7 +12,7 @@
 
 #include "kernel/logger/logger.h"
 
-#include "app/sensor/sensor.h"
+#include "app/sensors/sensor_manager.h"
 
 /* Application Global Variables */
 static const char* TAG = "Command Dispatcher";  ///< Tag used for logging.
