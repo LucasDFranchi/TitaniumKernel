@@ -24,33 +24,21 @@
  */
 #include "tca9548a.h"
 
-/**
- * @brief Send a single-byte command to the TCA9548A over I2C.
- *
- * This function handles the low-level I2C transmission to send one command byte
- * (used for channel selection or disabling) to a TCA9548A device.
- *
- * @param[in] tca9548a_config Pointer to device configuration containing I2C address.
- * @param[in] data Command byte to send (bitmask for channel selection).
- * @return ESP_OK on success, ESP_ERR_INVALID_ARG if config is NULL, or other I2C errors.
- */
-static esp_err_t i2c_send_one_byte(const tca9548a_config_st *tca9548a_config, uint8_t data) {
-    esp_err_t ret_err = ESP_OK;
-
-    if (!tca9548a_config) {
+static esp_err_t write_register(const tca9548a_config_st *tca9548a_config, uint8_t data) {
+    if ((!tca9548a_config) || (!tca9548a_config->i2c_interface.i2c_write_fn)) {
         return ESP_ERR_INVALID_ARG;
     }
 
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    ret_err += i2c_master_start(cmd);
-    ret_err += i2c_master_write_byte(cmd, (tca9548a_config->dev_address << 1) | I2C_MASTER_WRITE, true);
-    ret_err += i2c_master_write_byte(cmd, data, true);
-    ret_err += i2c_master_stop(cmd);
+    uint8_t dev_addr = tca9548a_config->hw_config.bus_hw_config->dev_address;
+    if (dev_addr >= NUM_OF_MUX_ADDRESS) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    i2c_port_t port = tca9548a_config->hw_config.bus_hw_config->port;
+    if (port >= I2C_NUM_MAX) {
+        return ESP_ERR_INVALID_ARG;
+    }
 
-    ret_err += i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(500));
-    i2c_cmd_link_delete(cmd);
-
-    return ret_err;
+    return tca9548a_config->i2c_interface.i2c_write_fn(port, dev_addr, 0, sizeof(data), &data);
 }
 
 /**
@@ -67,12 +55,12 @@ esp_err_t tca9548a_enable_channel(const tca9548a_config_st *tca9548a_config) {
         return ESP_ERR_INVALID_ARG;
     }
 
-    if (tca9548a_config->channel >= MUX_CHANNEL_NONE) {
+    if (tca9548a_config->hw_config.channel >= NUM_OF_MUX_CHANNELS) {
         return ESP_ERR_INVALID_ARG;
     }
 
-    uint8_t data = 1 << tca9548a_config->channel;
-    return i2c_send_one_byte(tca9548a_config, data);
+    uint8_t data = 1 << tca9548a_config->hw_config.channel;
+    return write_register(tca9548a_config, data);
 }
 
 /**
@@ -92,16 +80,40 @@ esp_err_t tca9548a_disable_all_channels(const tca9548a_config_st *tca9548a_confi
         return ESP_ERR_INVALID_ARG;
     }
 
-    return i2c_send_one_byte(tca9548a_config, disable_all_channels_cmd);
+    return write_register(tca9548a_config, disable_all_channels_cmd);
 }
 
+/**
+ * @brief Reset the TCA9548A I2C multiplexer via the designated GPIO reset pin.
+ *
+ * This function pulls the reset pin low and then high with a delay in between to trigger a hardware reset
+ * on the TCA9548A device. The pin must be connected to the RESET input of the multiplexer.
+ *
+ * @param tca9548a_config Pointer to the TCA9548A configuration structure containing the reset GPIO pin.
+ *
+ * @return
+ *     - ESP_OK: Reset completed successfully.
+ *     - ESP_ERR_INVALID_ARG: Null pointer provided for configuration.
+ *     - Other esp_err_t values: Errors returned by gpio_set_level.
+ */
+esp_err_t tca9548a_reset(const tca9548a_config_st *tca9548a_config) {
+    const uint8_t reset_time_ms = 100;
 
-void tca9548a_reset(int reset_pin) {
-    const uint8_t reset_time = 100;  // Reset pulse duration in milliseconds
+    if (!tca9548a_config) {
+        return ESP_ERR_INVALID_ARG;
+    }
 
-    gpio_set_level(reset_pin, 0);
-    vTaskDelay(pdMS_TO_TICKS(reset_time));
+    esp_err_t ret = gpio_set_level(tca9548a_config->hw_config.bus_hw_config->reset_pin, 0);
+    if (ret != ESP_OK) {
+        return ret;
+    }
+    vTaskDelay(pdMS_TO_TICKS(reset_time_ms));
 
-    gpio_set_level(reset_pin, 1);
-    vTaskDelay(pdMS_TO_TICKS(reset_time));
+    ret = gpio_set_level(tca9548a_config->hw_config.bus_hw_config->reset_pin, 1);
+    if (ret != ESP_OK) {
+        return ret;
+    }
+    vTaskDelay(pdMS_TO_TICKS(reset_time_ms));
+
+    return ESP_OK;
 }

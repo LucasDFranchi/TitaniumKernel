@@ -1,7 +1,7 @@
 #include "serializer_handlers.h"
 
 #include "app/app_extern_types.h"
-#include "app/external/json_handler.h"
+#include "app/third_party/json_handler.h"
 
 #include "app/iot/schemas/commands_schema.h"
 #include "app/iot/schemas/schema_validator.h"

@@ -43,6 +43,7 @@
         "utility": "c",
         "cstdlib": "c",
         "device_info.h": "c",
-        "cstdint": "c"
+        "cstdint": "c",
+        "sensor_manager.h": "c"
     }
 }

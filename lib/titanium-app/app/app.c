@@ -24,7 +24,7 @@
 #include "app/app_extern_types.h"
 #include "app/command_dispatcher/command_dispatcher.h"
 #include "app/iot/mqtt_bridge.h"
-#include "app/sensor/sensor.h"
+#include "app/sensors/sensor_manager.h"
 #include "app/system/network_bridge/network_bridge.h"
 
 /**
@@ -110,6 +110,10 @@ static const mqtt_topic_info_st mqtt_topic_infos[] = {
     },
 };
 
+sensor_manager_config_st sensor_manager_config = {
+    .sensor_manager_queue = NULL,
+};
+
 /**
  * @brief Runtime array of MQTT topics with associated queues.
  *
@@ -165,8 +169,6 @@ static global_structures_st *_global_structures = NULL;                ///< Poin
 static const char *TAG                          = "Application Task";  ///< Tag used for logging.
 
 static esp_err_t app_task_initialize() {
-    sensor_manager_initialize();
-
     if (mqtt_bridge_initialize(&mqtt_bridge_init_struct) != KERNEL_ERROR_NONE) {
         logger_print(INFO, TAG, "MQTT bridge installed failed!");
         return ESP_FAIL;
@@ -182,6 +184,14 @@ static esp_err_t app_task_initialize() {
     xQueueSend(_global_structures->global_queues.network_bridge_queue,
                network_bridge_init_struct.network_bridge,
                pdMS_TO_TICKS(100));
+
+    if (mqtt_topics[DEVICE_REPORT].queue != NULL) {
+        sensor_manager_config.sensor_manager_queue = mqtt_topics[DEVICE_REPORT].queue;
+    }
+    if (sensor_manager_initialize(&sensor_manager_config) != KERNEL_ERROR_NONE) {
+        logger_print(INFO, TAG, "Sensor manager initialization failed!");
+        return ESP_FAIL;
+    }
 
     gpio_config_t io_conf = {
         .pin_bit_mask = (1ULL << GPIO_NUM_32),
@@ -204,7 +214,7 @@ void app_task_execute(void *pvParameters) {
 
     while (1) {
         handle_incoming_command(mqtt_topics[COMMAND].queue, mqtt_topics[COMMAND_RESPONSE].queue);
-        handle_device_report(mqtt_topics[DEVICE_REPORT].queue);
+        sensor_manager_loop();
 
         led_on = !led_on;
         gpio_set_level(GPIO_NUM_32, led_on);

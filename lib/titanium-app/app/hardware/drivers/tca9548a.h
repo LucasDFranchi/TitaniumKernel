@@ -6,33 +6,22 @@
  * allowing communication with multiple devices that share the same I2C address
  * by isolating them on separate mux channels.
  *
- * Supported features:
- * - Selecting a single active I2C channel
- * - Disabling all channels
- * - Basic error handling and logging
- *
- * Example usage:
- * @code
- * tca9548a_config_st config = { .dev_address = 0x70 };
- * tca9548a_enable_channel(&config, MUX_CHANNEL_3);
- * // Communicate with device behind channel 3
- * tca9548a_disable_all_channels(&config);
- * @endcode
- *
  * @author Lucas D. Franchi
  * @license Apache License 2.0
  */
 #pragma once
 
-#include "driver/i2c.h"
 #include "esp_log.h"
 
-typedef enum mux_address_e {
+#include "kernel/hal/i2c/i2c.h"
+
+typedef enum tca9548a_address_e {
     MUX_ADDRESS_0 = 0x70, /*!< TCA9548A I2C address 0x70 */
     MUX_ADDRESS_1 = 0x71, /*!< TCA9548A I2C address 0x71 */
+    NUM_OF_MUX_ADDRESS,   /*!< Invalid TCA9548A I2C address */
 } mux_address_et;
 
-typedef enum mux_channel_e {
+typedef enum tca9548a_channel_e {
     MUX_CHANNEL_0 = 0,
     MUX_CHANNEL_1,
     MUX_CHANNEL_2,
@@ -41,12 +30,23 @@ typedef enum mux_channel_e {
     MUX_CHANNEL_5,
     MUX_CHANNEL_6,
     MUX_CHANNEL_7,
-    MUX_CHANNEL_NONE,
+    NUM_OF_MUX_CHANNELS,
 } mux_channel_et;
 
-typedef struct tca9548a_config_t {
+typedef struct tca9548a_bus_config_s {
+    i2c_port_t port;            /*!< I2C port number (e.g., I2C_NUM_0 or I2C_NUM_1) */
     mux_address_et dev_address; /*!< I2C address of the TCA9548A multiplexer */
-    mux_channel_et channel;     /*!< Currently selected channel (0-7) */
+    int reset_pin;              /*!< GPIO pin used for hardware reset */
+} tca9548a_bus_config_st;
+
+typedef struct tca9548a_hw_config_s {
+    const tca9548a_bus_config_st *bus_hw_config; /*!< Hardware bus configuration */
+    mux_channel_et channel;                      /*!< Currently selected channel (0-7) */
+} tca9548a_hw_config_st;
+
+typedef struct tca9548a_config_t {
+    const tca9548a_hw_config_st hw_config; /*!< Pointer to hardware configuration */
+    i2c_interface_st i2c_interface;        /**< Function pointer for I2C write operations */
 } tca9548a_config_st;
 
 /**
@@ -72,5 +72,17 @@ esp_err_t tca9548a_enable_channel(const tca9548a_config_st *tca9548a_config);
  */
 esp_err_t tca9548a_disable_all_channels(const tca9548a_config_st *tca9548a_config);
 
-
-void tca9548a_reset(int reset_pin);
+/**
+ * @brief Reset the TCA9548A I2C multiplexer via the designated GPIO reset pin.
+ *
+ * This function pulls the reset pin low and then high with a delay in between to trigger a hardware reset
+ * on the TCA9548A device. The pin must be connected to the RESET input of the multiplexer.
+ *
+ * @param tca9548a_config Pointer to the TCA9548A configuration structure containing the reset GPIO pin.
+ *
+ * @return
+ *     - ESP_OK: Reset completed successfully.
+ *     - ESP_ERR_INVALID_ARG: Null pointer provided for configuration.
+ *     - Other esp_err_t values: Errors returned by gpio_set_level.
+ */
+esp_err_t tca9548a_reset(const tca9548a_config_st *tca9548a_config);
