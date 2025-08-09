@@ -145,21 +145,14 @@ static esp_err_t post_uri_wifi_credentials(httpd_req_t* req) {
 /**
  * @brief Handles OTA firmware upload via HTTP POST request.
  *
- * This function receives a firmware image through a POST request and writes it
- * to the next available OTA partition. It expects the firmware to be wrapped in
- * a multipart/form-data request, and it skips the HTTP header by searching for
- * the "\r\n\r\n" sequence before starting the OTA write.
+ * This function receives a raw binary firmware image through a POST request and writes it
+ * directly to the next available OTA partition.
  *
  * After successfully writing the firmware, it finalizes the OTA process,
  * sets the new partition as bootable, and triggers a device restart.
  *
  * @param req Pointer to the HTTP request containing the firmware image.
  * @return esp_err_t ESP_OK on success, or an appropriate error code on failure.
- *
- * @note This implementation assumes the firmware is uploaded using multipart
- *       encoding and skips the header manually. This logic is tightly coupled
- *       to the transfer format and should be refactored into smaller helper
- *       functions for improved readability and maintainability.
  */
 static esp_err_t ota_post_handler(httpd_req_t* req) {
     const esp_partition_t* ota_partition = esp_ota_get_next_update_partition(NULL);
@@ -177,42 +170,21 @@ static esp_err_t ota_post_handler(httpd_req_t* req) {
 
     char buf[1024];
     int remaining = req->content_len;
-    bool started  = false;
 
     while (remaining > 0) {
         int to_read = remaining < sizeof(buf) ? remaining : sizeof(buf);
-        int read    = httpd_req_recv(req, buf, to_read);
+        int read = httpd_req_recv(req, buf, to_read);
         if (read <= 0) {
             logger_print(ERR, TAG, "Failed to receive firmware data");
             esp_ota_abort(ota_handle);
             return ESP_FAIL;
         }
 
-        if (!started) {
-            char* firmware_start = strstr(buf, "\r\n\r\n");
-            if (firmware_start) {
-                firmware_start += 4;
-                int skip_len = firmware_start - buf;
-                int bin_size = read - skip_len;
-
-                err = esp_ota_write(ota_handle, firmware_start, bin_size);
-                if (err != ESP_OK) {
-                    esp_ota_abort(ota_handle);
-                    logger_print(ERR, TAG, "OTA write failed at start: %d", (int)err);
-                    return err;
-                }
-
-                started = true;
-            } else {
-                continue;
-            }
-        } else {
-            err = esp_ota_write(ota_handle, buf, read);
-            if (err != ESP_OK) {
-                esp_ota_abort(ota_handle);
-                logger_print(ERR, TAG, "OTA write failed");
-                return err;
-            }
+        err = esp_ota_write(ota_handle, buf, read);
+        if (err != ESP_OK) {
+            esp_ota_abort(ota_handle);
+            logger_print(ERR, TAG, "OTA write failed");
+            return err;
         }
 
         remaining -= read;

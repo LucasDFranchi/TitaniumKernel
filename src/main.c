@@ -21,7 +21,7 @@ task_interface_st app_task = {
 };
 
 void app_main() {
-    kernel_initialize(RELEASE_MODE_DEBUG, SERIAL, &global_structures);
+    kernel_initialize(RELEASE_MODE_DEBUG, UDP, &global_structures);
     kernel_enable_network(&global_structures);
     kernel_enable_http_server(&global_structures);
     kernel_enable_mqtt(&global_structures);
