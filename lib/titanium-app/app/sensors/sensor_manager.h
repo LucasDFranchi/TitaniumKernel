@@ -57,6 +57,9 @@ typedef enum sensor_channel_e {
     SENSOR_CH_19,
     SENSOR_CH_20,
     SENSOR_CH_21,
+    SENSOR_CH_22,
+    SENSOR_CH_23,
+    SENSOR_CH_24,
     NUM_OF_CHANNEL_SENSORS
 } sensor_channel_et;
 
