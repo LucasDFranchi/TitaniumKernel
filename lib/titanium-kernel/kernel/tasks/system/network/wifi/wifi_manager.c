@@ -11,6 +11,7 @@
 #include "kernel/inter_task_communication/inter_task_communication.h"
 #include "kernel/logger/logger.h"
 #include "kernel/utils/nvs_util.h"
+#include "kernel/device/device_info.h"
 
 /**
  * @brief Struct representing the current wifi connection status.
