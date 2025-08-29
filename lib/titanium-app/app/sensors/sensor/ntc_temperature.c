@@ -184,7 +184,7 @@ kernel_error_st ntc_sensor_read(sensor_interface_st *ctx, uint8_t sensor_index, 
         logger_print(ERR, TAG, "Failed to select MUX for sensor %d", sensor_index);
         return err;
     }
-
+    vTaskDelay(pdMS_TO_TICKS(10));
     /* First we measure the reference branch to estimate the error based on the voltage input */
     err = ctx->adc_controller->configure(&ctx->hw->adc_ref_branch);
     if (err != KERNEL_ERROR_NONE) {
