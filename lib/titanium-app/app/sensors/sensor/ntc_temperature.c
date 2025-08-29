@@ -188,24 +188,24 @@ kernel_error_st ntc_sensor_read(sensor_interface_st *ctx, uint8_t sensor_index, 
     /* First we measure the reference branch to estimate the error based on the voltage input */
     err = ctx->adc_controller->configure(&ctx->hw->adc_ref_branch);
     if (err != KERNEL_ERROR_NONE) {
-        logger_print(ERR, TAG, "Failed to configure reference branch ADC for sensor %d", sensor_index);
+        logger_print(ERR, TAG, "Failed to configure reference branch ADC for sensor %d - %d", sensor_index, err);
         return err;
     }
     err = ctx->adc_controller->read(&ctx->hw->adc_ref_branch, &reference_raw_adc);
     if (err != KERNEL_ERROR_NONE) {
-        logger_print(ERR, TAG, "Failed to read reference branch ADC for sensor %d", sensor_index);
+        logger_print(ERR, TAG, "Failed to read reference branch ADC for sensor %d - %d", sensor_index, err);
         return err;
     }
 
     /* Them we try to measure using the maximum PGA*/
     err = ctx->adc_controller->configure(&ctx->hw->adc_sensor_branch);
     if (err != KERNEL_ERROR_NONE) {
-        logger_print(ERR, TAG, "Failed to configure sensor branch ADC for sensor %d", sensor_index);
+        logger_print(ERR, TAG, "Failed to configure sensor branch ADC for sensor %d - %d", sensor_index, err);
         return err;
     }
     err = ctx->adc_controller->read(&ctx->hw->adc_sensor_branch, &sensor_raw_adc);
     if (err != KERNEL_ERROR_NONE) {
-        logger_print(ERR, TAG, "Failed to read sensor branch ADC for sensor %d", sensor_index);
+        logger_print(ERR, TAG, "Failed to read sensor branch ADC for sensor %d - %d", sensor_index, err);
         return err;
     }
 
@@ -222,12 +222,12 @@ kernel_error_st ntc_sensor_read(sensor_interface_st *ctx, uint8_t sensor_index, 
 
         err = ctx->adc_controller->configure(&ctx->hw->adc_sensor_branch);
         if (err != KERNEL_ERROR_NONE) {
-            logger_print(ERR, TAG, "Failed to configure sensor branch ADC for sensor %d", sensor_index);
+            logger_print(ERR, TAG, "Failed to configure sensor branch ADC for sensor %d - %d", sensor_index, err);
             return err;
         }
         err = ctx->adc_controller->read(&ctx->hw->adc_sensor_branch, &sensor_raw_adc);
         if (err != KERNEL_ERROR_NONE) {
-            logger_print(ERR, TAG, "Failed to read sensor branch ADC for sensor %d", sensor_index);
+            logger_print(ERR, TAG, "Failed to read sensor branch ADC for sensor %d - %d", sensor_index, err);
             return err;
         }
         pga_sensor_branch = ctx->adc_controller->get_lsb_size(ctx->hw->adc_sensor_branch.pga_gain);

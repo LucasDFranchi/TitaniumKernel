@@ -9,6 +9,8 @@
 #include "app/hardware/controllers/adc_controller.h"
 #include "app/hardware/controllers/mux_controller.h"
 #include "app/sensors/sensor/ntc_temperature.h"
+#include "app/sensors/sensor/power_sensor.h"
+#include "app/sensors/sensor/pressure_sensor.h"
 #include "app/sensors/sensor_interface/sensor_interface.h"
 
 /* Global Variables */
@@ -127,6 +129,21 @@ static sensor_hw_st sensor_hw[NUM_OF_CHANNEL_SENSORS] = {
         .adc_ref_branch    = {0},
         .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A0},
         .mux_hw_config     = {.mux_address = MUX_ADDRESS_1, .mux_channel = MUX_CHANNEL_0},
+    },
+    [SENSOR_CH_22] = {
+        .adc_ref_branch    = {0},
+        .adc_sensor_branch = {0},
+        .mux_hw_config     = {0},
+    },
+    [SENSOR_CH_23] = {
+        .adc_ref_branch    = {0},
+        .adc_sensor_branch = {0},
+        .mux_hw_config     = {0},
+    },
+    [SENSOR_CH_24] = {
+        .adc_ref_branch    = {0},
+        .adc_sensor_branch = {0},
+        .mux_hw_config     = {0},
     },
 };
 
@@ -329,6 +346,33 @@ static sensor_interface_st sensor_interface[NUM_OF_CHANNEL_SENSORS] = {
         .conversion_gain = 1.0f,
         .offset          = 0.0f,
     },
+    [SENSOR_CH_22] = {
+        .type            = SENSOR_TYPE_VOLTAGE,
+        .hw              = &sensor_hw[SENSOR_CH_22],
+        .adc_controller  = NULL,
+        .mux_controller  = NULL,
+        .read            = NULL,
+        .conversion_gain = 1.0f,
+        .offset          = 0.0f,
+    },
+    [SENSOR_CH_23] = {
+        .type            = SENSOR_TYPE_CURRENT,
+        .hw              = &sensor_hw[SENSOR_CH_23],
+        .adc_controller  = NULL,
+        .mux_controller  = NULL,
+        .read            = NULL,
+        .conversion_gain = 1.0f,
+        .offset          = 0.0f,
+    },
+    [SENSOR_CH_24] = {
+        .type            = SENSOR_TYPE_POWER_FACTOR,
+        .hw              = &sensor_hw[SENSOR_CH_24],
+        .adc_controller  = NULL,
+        .mux_controller  = NULL,
+        .read            = NULL,
+        .conversion_gain = 1.0f,
+        .offset          = 0.0f,
+    },
 };
 
 /**
@@ -372,9 +416,29 @@ kernel_error_st sensor_manager_initialize(sensor_manager_config_st *config) {
     }
 
     for (int i = 0; i < NUM_OF_CHANNEL_SENSORS; i++) {
-        sensor_interface[i].adc_controller = &adc_controller;
-        sensor_interface[i].mux_controller = &mux_controller;
-        sensor_interface[i].read           = ntc_sensor_read;
+        switch(sensor_interface[i].type) {
+            case SENSOR_TYPE_TEMPERATURE:
+                sensor_interface[i].adc_controller = &adc_controller;
+                sensor_interface[i].mux_controller = &mux_controller;
+                sensor_interface[i].read           = ntc_sensor_read;
+                printf("Sensor %d is temperature\n", i);
+                break;
+            case SENSOR_TYPE_PRESSURE:
+                sensor_interface[i].adc_controller = &adc_controller;
+                sensor_interface[i].mux_controller = &mux_controller;
+                sensor_interface[i].read           = pressure_sensor_read;
+                break;
+            case SENSOR_TYPE_VOLTAGE:
+            case SENSOR_TYPE_CURRENT:
+            case SENSOR_TYPE_POWER_FACTOR:
+                sensor_interface[i].adc_controller = NULL;
+                sensor_interface[i].mux_controller = NULL;
+                sensor_interface[i].read           = power_sensor_read;
+                break;
+            default:
+                logger_print(WARN, TAG, "Sensor type %d not supported on channel %d", sensor_interface[i].type, i);
+                break;
+        }
     }
 
     return KERNEL_ERROR_NONE;
@@ -400,7 +464,7 @@ void sensor_manager_loop() {
     device_info_get_current_time(device_report.timestamp, sizeof(device_report.timestamp));
     device_report.num_of_channels = NUM_OF_CHANNEL_SENSORS;
 
-    for (int i = 0; i < NUM_OF_CHANNEL_SENSORS; i++) {
+    for (int i = 0; i < 12; i++) {
         device_report.sensors[i].sensor_type = sensor_interface[i].type;
         if (sensor_interface[i].read) {
             kernel_error_st err             = sensor_interface[i].read(&sensor_interface[i], i, &device_report.sensors[i].value);
