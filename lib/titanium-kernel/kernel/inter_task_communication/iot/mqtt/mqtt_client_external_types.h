@@ -23,6 +23,11 @@ typedef enum qos_e {
     QOS_2 = 2,  ///< Quality of Service (QoS) level 2 - exactly once.
 } qos_et;
 
+typedef enum message_type_e {
+    MESSAGE_TYPE_TARGET = 0,  ///< Message is targeted to a specific device.
+    MESSAGE_TYPE_BROADCAST,   ///< Message is broadcast to all devices.
+} message_type_et;
+
 /**
  * @brief MQTT buffer abstraction.
  *
@@ -51,6 +56,7 @@ typedef struct {
     size_t queue_length;                          ///< Number of items the associated queue can hold.
     uint32_t queue_item_size;                     ///< Size in bytes of each item in the queue.
     data_type_et data_type;                       ///< Type of the data used in the topic, used for serialization and routing.
+    message_type_et message_type;                 ///< Type of message (TARGET or BROADCAST).
 } mqtt_topic_info_st;
 
 /**
@@ -73,11 +79,11 @@ typedef struct {
 typedef kernel_error_st (*fetch_func_t)(uint8_t mqtt_index, mqtt_buffer_st *topic, mqtt_buffer_st *payload, qos_et *qos);
 
 /**
- * @brief Function pointer for subscribing to topics.
+ * @brief Function pointer for get topics to subscribe.
  *
  * Called during initialization to set up MQTT subscriptions.
  */
-typedef kernel_error_st (*subscribe_t)(uint8_t mqtt_index, mqtt_buffer_st *topic, qos_et *qos);
+typedef kernel_error_st (*get_topic_t)(uint8_t mqtt_index, mqtt_buffer_st *topic, qos_et *qos);
 
 /**
  * @brief Function pointer for handling incoming MQTT data.
@@ -106,7 +112,7 @@ typedef size_t (*get_topics_count_t)(void);
  */
 typedef struct mqtt_bridge_s {
     fetch_func_t fetch_publish_data;        ///< Function to fetch data for publishing.
-    subscribe_t subscribe;                  ///< Function to subscribe to topics (optional).
+    get_topic_t get_topic;                  ///< Function to subscribe to topics (optional).
     handle_event_data_t handle_event_data;  ///< Function to handle incoming MQTT data (optional).
     get_topics_count_t get_topics_count;    ///< Function to retrieve the number of registered topics.
 } mqtt_bridge_st;

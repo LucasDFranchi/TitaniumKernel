@@ -1,6 +1,6 @@
 #include "kernel/hal/i2c/i2c.h"
 
-#define I2C_DEFAULT_CLK_SPEED_HZ 400000
+#define I2C_DEFAULT_CLK_SPEED_HZ 100000
 #define I2C_CMD_TIMEOUT_MS 500
 #define I2C_CMD_TIMEOUT_TICKS pdMS_TO_TICKS(I2C_CMD_TIMEOUT_MS)
 
@@ -72,8 +72,12 @@ static esp_err_t i2c_handle_write(i2c_port_t port, uint8_t dev_adr, uint8_t w_ad
 
     esp_err_t ret_err = i2c_master_start(cmd);
     ret_err |= i2c_master_write_byte(cmd, (dev_adr << 1) | I2C_MASTER_WRITE, true);
-    ret_err |= i2c_master_write_byte(cmd, w_adr, true);
-    ret_err |= i2c_master_write(cmd, buff, w_len, true);
+    if (w_len == 1) {
+        ret_err |= i2c_master_write_byte(cmd, buff[0], true);
+    } else {
+        ret_err |= i2c_master_write_byte(cmd, w_adr, true);
+        ret_err |= i2c_master_write(cmd, buff, w_len, true);
+    }
     ret_err |= i2c_master_stop(cmd);
 
     if (ret_err == ESP_OK) {
@@ -172,8 +176,8 @@ static esp_err_t i2c_init_once(i2c_port_t port) {
         .mode             = I2C_MODE_MASTER,
         .sda_io_num       = i2c_instance[port].hw_config.sda,
         .scl_io_num       = i2c_instance[port].hw_config.scl,
-        .sda_pullup_en    = GPIO_PULLUP_ENABLE,
-        .scl_pullup_en    = GPIO_PULLUP_ENABLE,
+        .sda_pullup_en    = GPIO_PULLUP_DISABLE,
+        .scl_pullup_en    = GPIO_PULLUP_DISABLE,
         .master.clk_speed = I2C_DEFAULT_CLK_SPEED_HZ};
 
     esp_err_t err = i2c_param_config(port, &conf);

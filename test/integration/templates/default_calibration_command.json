@@ -1,0 +1,8 @@
+{
+    "command": 1,
+    "params": {
+        "sensor_id": 0,
+        "gain": 1,
+        "offset": 0
+    }
+}

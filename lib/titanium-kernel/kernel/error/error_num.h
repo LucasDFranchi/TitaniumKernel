@@ -8,32 +8,6 @@
  *
  * Each error is grouped into a hexadecimal range to improve traceability,
  * organization, and debugging in large systems.
- *
- * ----------------------------------------------------------------------------
- * Error Code Sections:
- * ----------------------------------------------------------------------------
- * 0x0000 - 0x00FF : General Errors
- * 0x0100 - 0x01FF : Queue, Task, and Thread Errors
- * 0x0200 - 0x02FF : MQTT-Related Errors
- * 0x0300 - 0x03FF : JSON, Schema, and Serialization Errors
- * 0x0400 - 0x04FF : Storage and NVS Errors
- * 0x0500 - 0x05FF : OTA Update Errors
- * 0x0600 - 0x06FF : Network and Wi-Fi Configuration Errors
- * 0x0700 - 0x07FF : System and Global Initialization Errors
- * 0x0800 - 0x08FF : Application and Command Errors
- *
- * ----------------------------------------------------------------------------
- * Usage Example:
- * ----------------------------------------------------------------------------
- * @code
- * kernel_error_t err = some_function();
- * if (err != KERNEL_ERROR_NONE) {
- *     printf("Error code: 0x%04X\n", err);
- * }
- * @endcode
- *
- * @note Ensure that functions returning these error codes follow
- *       the convention where `KERNEL_ERROR_NONE` (0x0000) indicates success.
  */
 
 #ifndef ERROR_ENUM_H
@@ -56,6 +30,8 @@ typedef enum kernel_error_s {
     KERNEL_ERROR_FORMATTING        = 0x0008,
     KERNEL_ERROR_UNKNOWN_MAC       = 0x0009,
     KERNEL_ERROR_FUNC_POINTER_NULL = 0x000A,
+    KERNEL_ERROR_TIMEOUT           = 0x000B,
+    KERNEL_ERROR_FORMAT            = 0x000C,
 
     /* -------- Task/Queue (0x100) -------- */
     KERNEL_ERROR_TASK_CREATE     = 0x0100,
@@ -81,13 +57,15 @@ typedef enum kernel_error_s {
     KERNEL_ERROR_MQTT_INVALID_QOS            = 0x0209,
     KERNEL_ERROR_MQTT_INVALID_DATA_DIRECTION = 0x020A,
     KERNEL_ERROR_MQTT_TOO_MANY_TOPICS        = 0x020B,
+    KERNEL_ERROR_MQTT_INVALID_MESSAGE_TYPE   = 0x020C,
 
     /* -------- JSON/Serialization (0x300) -------- */
-    KERNEL_ERROR_SERIALIZE_JSON   = 0x0300,
-    KERNEL_ERROR_DESERIALIZE_JSON = 0x0301,
-    KERNEL_ERROR_MISSING_FIELD    = 0x0302,
-    KERNEL_ERROR_INVALID_TYPE     = 0x0303,
-    KERNEL_ERROR_INVALID_COMMAND  = 0x0304,
+    KERNEL_ERROR_SERIALIZE_JSON           = 0x0300,
+    KERNEL_ERROR_DESERIALIZE_JSON         = 0x0301,
+    KERNEL_ERROR_MISSING_FIELD            = 0x0302,
+    KERNEL_ERROR_INVALID_TYPE             = 0x0303,
+    KERNEL_ERROR_INVALID_COMMAND          = 0x0306,
+    KERNEL_ERROR_INVALID_COMMAND_RESPONSE = 0x0307,
 
     /* -------- Storage/NVS (0x400) -------- */
     KERNEL_ERROR_NVS_INIT            = 0x0400,
@@ -133,6 +111,8 @@ typedef enum kernel_error_s {
     KERNEL_ERROR_IP_EVENT_REGISTER        = 0x061A,
     KERNEL_ERROR_ETH_EVENT_REGISTER       = 0x061B,
     KERNEL_ERROR_ETHERNET_START           = 0x061C,
+    KERNEL_ERROR_FAILED_GET_IPV4          = 0x061D,
+    KERNEL_ERROR_FAILED_GET_NETIF_HANDLE  = 0x061E,
 
     /* -------- System Init (0x700) -------- */
     KERNEL_ERROR_INITIALIZATION_FAIL = 0x0700,
@@ -141,6 +121,8 @@ typedef enum kernel_error_s {
 
     /* -------- App/Commands (0x800) -------- */
     KERNEL_ERROR_INVALID_INTERFACE = 0x0800,
+    KERNEL_ERROR_INVALID_USER      = 0x0801,
+    KERNEL_ERROR_INVALID_PASSWORD  = 0x0802,
 
     /* -------- App/Sensors (0x900) -------- */
     KERNEL_ERROR_MUX_DISABLECHANNEL_ERROR  = 0x0900,
@@ -150,19 +132,22 @@ typedef enum kernel_error_s {
     KERNEL_ERROR_ADC_CONVERSION_ERROR      = 0x0904,
     KERNEL_ERROR_ADC_CONFIG_MISMATCH_ERROR = 0x0905,
     KERNEL_ERROR_ADC_READ_ERROR            = 0x0906,
+    KERNEL_ERROR_FAILED_TO_ENCODE_PACKET   = 0x0907,
+    KERNEL_ERROR_FAILED_TO_DECODE_PACKET   = 0x0908,
 
     /* -------- Drivers (0x1000) -------- */
-    KERNEL_ERROR_FAIL_INSTALL_ISR    = 0x1000,
-    KERNEL_ERROR_FAIL_SPI_BUS_INIT   = 0x1001,
-    KERNEL_ERROR_GETTING_DEFAULT_MAC = 0x1002,
-    KERNEL_ERROR_DERIVE_LOCAL_MAC    = 0x1003,
-    KERNEL_ERROR_INSTALL_ETH_DRIVER  = 0x1004,
-    KERNEL_ERROR_ALLOC_ETH_MAC       = 0x1005,
-    KERNEL_ERROR_ALLOC_ETH_PHY       = 0x1006,
-    KERNEL_ERROR_BURNING_MAC_ADDRESS = 0x1007,
-    KERNEL_ERROR_MUX_RESET_ERROR     = 0x1008,
-    KERNEL_ERROR_MUX_INIT_ERROR      = 0x1009,
-    KERNEL_ERROR_ADC_INIT_ERROR      = 0x100A,
+    KERNEL_ERROR_FAIL_INSTALL_ISR     = 0x1000,
+    KERNEL_ERROR_FAIL_SPI_BUS_INIT    = 0x1001,
+    KERNEL_ERROR_GETTING_DEFAULT_MAC  = 0x1002,
+    KERNEL_ERROR_DERIVE_LOCAL_MAC     = 0x1003,
+    KERNEL_ERROR_INSTALL_ETH_DRIVER   = 0x1004,
+    KERNEL_ERROR_ALLOC_ETH_MAC        = 0x1005,
+    KERNEL_ERROR_ALLOC_ETH_PHY        = 0x1006,
+    KERNEL_ERROR_BURNING_MAC_ADDRESS  = 0x1007,
+    KERNEL_ERROR_MUX_RESET_ERROR      = 0x1008,
+    KERNEL_ERROR_MUX_INIT_ERROR       = 0x1009,
+    KERNEL_ERROR_ADC_INIT_ERROR       = 0x100A,
+    KERNEL_ERROR_UART_NOT_INITIALIZED = 0x100B,
 
     /* -------- Hardware (0x1000) ------- */
     KERNEL_ERROR_GPIO_CONFIG_FAIL    = 0x1100,

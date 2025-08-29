@@ -18,6 +18,7 @@
 #include "kernel/tasks/system/network/network_task.h"
 #include "kernel/tasks/system/network/wifi/wifi_manager.h"
 #include "kernel/utils/utils.h"
+#include "kernel/device/device_info.h"
 
 /* Global Constants Definition */
 static const char *TAG = "Network Task";        ///< Tag for logging.
@@ -64,6 +65,8 @@ static void network_task_event_handler(void *arg, esp_event_base_t event_base,
         } else if ((event_id == IP_EVENT_ETH_GOT_IP) && network_bridge.got_ip) {
             network_bridge.got_ip(event_data);
         }
+        ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
+        device_info_set_ip_address(event->ip_info.ip);
     } else if ((event_base == ETH_EVENT) && network_bridge.handle_ethernet_events) {
         network_bridge.handle_ethernet_events(event_id, event_data);
     }

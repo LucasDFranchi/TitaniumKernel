@@ -44,6 +44,17 @@
         "cstdlib": "c",
         "device_info.h": "c",
         "cstdint": "c",
-        "sensor_manager.h": "c"
+        "sensor_manager.h": "c",
+        "modbus_master.h": "c",
+        "buffer": "c",
+        "internet": "c",
+        "compare": "c",
+        "sensor_interface.h": "c",
+        "mux_controller.h": "c",
+        "app_extern_types.h": "c",
+        "task.h": "c",
+        "text_encoding": "c",
+        "typeinfo": "c",
+        "modbus_types.h": "c"
     }
 }

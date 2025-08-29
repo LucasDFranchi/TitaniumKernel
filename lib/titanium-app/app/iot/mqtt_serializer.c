@@ -91,8 +91,7 @@ kernel_error_st mqtt_deserialize_data(mqtt_topic_st *topic, char *buffer, size_t
         return KERNEL_ERROR_INVALID_SIZE;
     }
 
-    kernel_error_st err;
-
+    kernel_error_st err = KERNEL_ERROR_NONE;
     switch (topic->info->data_type) {
         case DATA_TYPE_COMMAND:
             err = deserialize_command(topic->queue, buffer, buffer_size);

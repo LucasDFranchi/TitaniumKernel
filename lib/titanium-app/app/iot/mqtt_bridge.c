@@ -9,16 +9,29 @@
 #include "app/iot/mqtt_serializer.h"
 
 /* Module Global Defines */
-static const char *TAG = "MQTT Bridge";  ///< Tag used for logging MQTT bridge operations.
+/**
+ * @brief Tag used for logging MQTT bridge operations.
+ */
+static const char *TAG = "MQTT Bridge";
 
 /* Module Global Variables */
-static size_t mqtt_bridge_num_topics              = 0;    ///< Number of MQTT topics registered in the bridge.
-static mqtt_topic_st mqtt_topics[MAX_MQTT_TOPICS] = {0};  ///< Array of MQTT topics for sensor data.
+/**
+ * @brief Number of MQTT topics registered in the bridge.
+ */
+static size_t mqtt_bridge_num_topics = 0;
+
+/**
+ * @brief Array of registered MQTT topics for publish/subscribe operations.
+ */
+static mqtt_topic_st mqtt_topics[MAX_MQTT_TOPICS] = {0};
 
 /**
  * @brief Validates the Quality of Service (QoS) level.
  *
- * Checks if the provided QoS level is one of the valid MQTT QoS levels (0, 1, or 2).
+ * Ensures that the provided QoS level is one of the valid MQTT QoS values:
+ * - QOS_0
+ * - QOS_1
+ * - QOS_2
  *
  * @param[in] qos QoS level to validate.
  * @return KERNEL_ERROR_NONE if valid; otherwise, KERNEL_ERROR_MQTT_INVALID_QOS.
@@ -36,11 +49,13 @@ kernel_error_st validate_qos(const qos_et qos) {
 }
 
 /**
- * @brief Validates the MQTT data direction (PUBLISH or SUBSCRIBE).
+ * @brief Validates the MQTT data direction.
  *
- * Ensures that the direction parameter is either PUBLISH or SUBSCRIBE.
+ * Ensures that the direction is either:
+ * - PUBLISH
+ * - SUBSCRIBE
  *
- * @param direction Data direction to validate.
+ * @param[in] direction Data direction to validate.
  * @return KERNEL_ERROR_NONE if valid; otherwise, KERNEL_ERROR_MQTT_INVALID_DATA_DIRECTION.
  */
 kernel_error_st validate_data_direction(const mqtt_data_direction_et direction) {
@@ -54,12 +69,13 @@ kernel_error_st validate_data_direction(const mqtt_data_direction_et direction) 
     return KERNEL_ERROR_NONE;
 }
 
-
 /**
- * @brief Validates the length and existence of the topic string.
+ * @brief Validates the MQTT topic string.
  *
- * Checks that the topic string is non-null, non-empty, and shorter than the
- * maximum allowed MQTT topic length.
+ * Checks that the topic string:
+ * - Is not NULL
+ * - Is not empty
+ * - Does not exceed MQTT_MAXIMUM_TOPIC_LENGTH
  *
  * @param[in] topic Pointer to the topic string.
  * @return KERNEL_ERROR_NONE if valid; otherwise, KERNEL_ERROR_MQTT_INVALID_TOPIC.
@@ -72,13 +88,16 @@ kernel_error_st validate_mqtt_topic_length(const char *topic) {
 }
 
 /**
- * @brief Validates the structure of an MQTT topic registration.
+ * @brief Validates an MQTT topic registration structure.
  *
- * Validates all important fields in the MQTT topic, including QoS, direction,
- * topic string, queue handle availability, and maximum number of topics.
+ * Verifies that the provided MQTT topic structure is valid, including:
+ * - QoS
+ * - Data direction
+ * - Topic string
+ * - Number of registered topics (does not exceed MAX_MQTT_TOPICS)
  *
  * @param[in] topic Pointer to the topic structure to validate.
- * @return KERNEL_ERROR_NONE if valid; otherwise, appropriate error code.
+ * @return KERNEL_ERROR_NONE if valid; otherwise, an appropriate error code.
  */
 kernel_error_st validate_mqtt_topic(const mqtt_topic_st *topic) {
     if (topic == NULL) {
@@ -107,13 +126,15 @@ kernel_error_st validate_mqtt_topic(const mqtt_topic_st *topic) {
 /**
  * @brief Registers a new MQTT topic in the bridge.
  *
- * Validates the topic and, on success, creates a FreeRTOS queue and adds
- * the topic to the internal MQTT topics list.
+ * Validates the topic and, if successful:
+ * - Creates a FreeRTOS queue for the topic
+ * - Stores the topic in the bridge’s internal topic list
  *
- * @param[in] topic Pointer to the topic structure to register.
+ * @param[in,out] topic Pointer to the topic structure to register. Queue handle will be assigned.
  * @return KERNEL_ERROR_NONE on success;
- *         KERNEL_ERROR_NULL if topic is NULL;
- *         KERNEL_ERROR_MQTT_REGISTER_FAIL if validation fails or queue creation fails.
+ * @return KERNEL_ERROR_NULL if topic is NULL;
+ * @return KERNEL_ERROR_MQTT_REGISTER_FAIL if validation fails;
+ * @return KERNEL_ERROR_QUEUE_NULL if queue creation fails.
  */
 kernel_error_st register_topic(mqtt_topic_st *topic) {
     if (topic == NULL) {
@@ -138,14 +159,14 @@ kernel_error_st register_topic(mqtt_topic_st *topic) {
 }
 
 /**
- * @brief Checks if a given MQTT topic has data available to publish.
+ * @brief Checks if a topic has pending data to publish.
  *
- * Queries the FreeRTOS queue associated with the topic to check if any
- * messages are waiting to be sent.
+ * Inspects the FreeRTOS queue associated with the topic to determine
+ * if there are messages waiting to be sent.
  *
- * @param topic Pointer to the mqtt_topic_st instance to check.
- * @return true if there is data waiting in the topic's queue.
- * @return false if the topic pointer or its queue is NULL, or if no messages are waiting.
+ * @param[in] topic Pointer to the MQTT topic structure.
+ * @retval true  if data is available in the queue.
+ * @retval false if topic or queue is NULL, or no messages are waiting.
  */
 bool has_data_to_publish(const mqtt_topic_st *topic) {
     if (topic == NULL || topic->queue == NULL) {
@@ -155,25 +176,24 @@ bool has_data_to_publish(const mqtt_topic_st *topic) {
 }
 
 /**
- * @brief Fetches the next payload and topic to publish for a given MQTT topic index.
+ * @brief Fetches the next publishable message for a topic.
  *
- * This function retrieves data from the queue associated with the specified MQTT topic,
- * serializes the payload, and formats the full MQTT topic string including the device unique ID.
- * It also returns the QoS level for the message.
+ * Retrieves data from the topic queue, serializes it, and builds
+ * the complete MQTT topic string including the device ID.
  *
- * @param mqtt_index Index of the MQTT topic in the bridge's topic list.
- * @param topic Pointer to an mqtt_buffer_st struct where the formatted MQTT topic string will be stored.
- * @param payload Pointer to an mqtt_buffer_st struct where the serialized payload will be stored.
- * @param qos Pointer to a qos_et variable where the QoS level will be stored.
+ * @param[in]  mqtt_index Index of the topic in the internal topic list.
+ * @param[out] topic      Pointer to buffer structure for the formatted MQTT topic string.
+ * @param[out] payload    Pointer to buffer structure for the serialized payload.
+ * @param[out] qos        Pointer to store the message QoS level.
  *
- * @return KERNEL_ERROR_NONE if data was successfully fetched and serialized.
- * @return KERNEL_ERROR_NULL if any pointer arguments are NULL.
+ * @return KERNEL_ERROR_NONE on success.
+ * @return KERNEL_ERROR_NULL if any pointer is NULL.
  * @return KERNEL_ERROR_INVALID_INDEX if mqtt_index is out of bounds.
- * @return KERNEL_ERROR_MQTT_QUEUE_NULL if the topic's queue is NULL.
- * @return KERNEL_ERROR_MQTT_INVALID_DATA_DIRECTION if the topic is not for publishing.
- * @return KERNEL_ERROR_EMPTY_QUEUE if no data is available to publish.
- * @return KERNEL_ERROR_FORMATTING if the topic buffer is too small to hold the full topic string.
- * @return Other error codes returned by mqtt_serialize_data on serialization failure.
+ * @return KERNEL_ERROR_MQTT_QUEUE_NULL if topic queue is NULL.
+ * @return KERNEL_ERROR_MQTT_INVALID_DATA_DIRECTION if topic is not PUBLISH type.
+ * @return KERNEL_ERROR_EMPTY_QUEUE if no data available.
+ * @return KERNEL_ERROR_FORMATTING if topic buffer is too small.
+ * @return Other serialization errors from mqtt_serialize_data().
  */
 kernel_error_st fetch_publish_data(uint8_t mqtt_index, mqtt_buffer_st *topic, mqtt_buffer_st *payload, qos_et *qos) {
     if (topic == NULL || payload == NULL || qos == NULL) {
@@ -228,32 +248,32 @@ kernel_error_st fetch_publish_data(uint8_t mqtt_index, mqtt_buffer_st *topic, mq
 
 
 /**
- * @brief Retrieves the number of MQTT topics currently registered in the bridge.
+ * @brief Gets the number of topics registered in the bridge.
  *
- * Provides the count of topics that have been successfully registered.
- *
- * @return Number of registered MQTT topics.
+ * @return Count of registered MQTT topics.
  */
 static inline size_t get_topics_count(void) {
     return mqtt_bridge_num_topics;
 }
 
 /**
- * @brief Prepares subscription details for an MQTT topic.
+ * @brief Builds subscription details for a topic.
  *
- * Constructs the full MQTT subscription topic string including the device unique ID,
- * and returns the QoS level for the subscription.
+ * Constructs the full MQTT subscription string including device ID (if required),
+ * and retrieves the associated QoS.
  *
- * @param mqtt_index Index of the MQTT topic in the bridge's topic list.
- * @param topic Pointer to an mqtt_buffer_st struct where the formatted subscription topic will be stored.
- * @param qos Pointer to a qos_et variable where the QoS level will be stored.
- * @return KERNEL_ERROR_NONE if successful;
- *         KERNEL_ERROR_INVALID_INDEX if mqtt_index is invalid;
- *         KERNEL_ERROR_MQTT_QUEUE_NULL if topic's queue is NULL;
- *         KERNEL_ERROR_MQTT_INVALID_DATA_DIRECTION if topic is not for subscription;
- *         KERNEL_ERROR_FORMATTING if topic buffer is too small.
+ * @param[in]  mqtt_index Index of the topic in the internal list.
+ * @param[out] topic      Pointer to buffer for the subscription topic string.
+ * @param[out] qos        Pointer to store QoS value.
+ *
+ * @return KERNEL_ERROR_NONE on success;
+ * @return KERNEL_ERROR_INVALID_INDEX if index is invalid;
+ * @return KERNEL_ERROR_MQTT_QUEUE_NULL if queue is NULL;
+ * @return KERNEL_ERROR_MQTT_INVALID_DATA_DIRECTION if topic is not SUBSCRIBE type;
+ * @return KERNEL_ERROR_MQTT_INVALID_MESSAGE_TYPE if message type is not supported;
+ * @return KERNEL_ERROR_FORMATTING if buffer is too small.
  */
-static kernel_error_st subscribe(uint8_t mqtt_index, mqtt_buffer_st *topic, qos_et *qos) {
+static kernel_error_st get_topic(uint8_t mqtt_index, mqtt_buffer_st *topic, qos_et *qos) {
     if (mqtt_index >= mqtt_bridge_num_topics) {
         return KERNEL_ERROR_INVALID_INDEX;
     }
@@ -269,12 +289,25 @@ static kernel_error_st subscribe(uint8_t mqtt_index, mqtt_buffer_st *topic, qos_
         return KERNEL_ERROR_MQTT_INVALID_DATA_DIRECTION;
     }
 
-    size_t channel_size = snprintf(
-        topic->buffer,
-        topic->size,
-        "iocloud/request/%s/%s",
-        device_info_get_id(),
-        current->info->topic);
+    size_t channel_size = 0;
+    if (current->info->message_type == MESSAGE_TYPE_TARGET) {
+        channel_size = snprintf(
+            topic->buffer,
+            topic->size,
+            "iocloud/request/%s/%s",
+            device_info_get_id(),
+            current->info->topic);
+
+    } else if (current->info->message_type == MESSAGE_TYPE_BROADCAST) {
+        channel_size = snprintf(
+            topic->buffer,
+            topic->size,
+            "iocloud/request/%s",
+            current->info->topic);
+
+    } else {
+        return KERNEL_ERROR_MQTT_INVALID_MESSAGE_TYPE;
+    }
 
     if (channel_size >= topic->size) {
         logger_print(WARN, TAG, "Channel buffer too small");
@@ -286,18 +319,22 @@ static kernel_error_st subscribe(uint8_t mqtt_index, mqtt_buffer_st *topic, qos_
     return KERNEL_ERROR_NONE;
 }
 
+
 /**
- * @brief Handles incoming MQTT event data for subscribed topics.
+ * @brief Initializes the MQTT bridge and registers topics.
  *
- * Matches the incoming topic string with registered topics and deserializes
- * the payload accordingly.
+ * Sets function pointers in the bridge instance, assigns the device unique ID,
+ * and registers all topics specified in the initialization structure.
  *
- * @param topic Pointer to the incoming MQTT topic string.
- * @param payload Pointer to the mqtt_buffer_st containing the incoming payload data.
+ * @param[in] mqtt_bridge_init_struct Pointer to initialization structure containing:
+ *            - Bridge instance
+ *            - List of topics
+ *            - Number of topics
+ *
  * @return KERNEL_ERROR_NONE on success;
- *         KERNEL_ERROR_NULL if pointers are NULL;
- *         KERNEL_ERROR_INVALID_SIZE if payload size is zero;
- *         Other error codes as returned by mqtt_deserialize_data.
+ * @return KERNEL_ERROR_NULL if pointers are invalid;
+ * @return KERNEL_ERROR_FORMATTING if device ID is too long;
+ * @return KERNEL_ERROR_MQTT_REGISTER_FAIL if topic registration fails.
  */
 static kernel_error_st handle_event_data(char *topic, mqtt_buffer_st *payload) {
     if ((topic == NULL) || (payload->buffer == NULL)) {
@@ -311,6 +348,13 @@ static kernel_error_st handle_event_data(char *topic, mqtt_buffer_st *payload) {
 
     for (uint8_t i = 0; i < mqtt_bridge_num_topics; i++) {
         mqtt_topic_st *current = &mqtt_topics[i];
+
+        // TODO: Currently, strstr works well for specific target commands, but it causes an issue 
+        // when processing broadcast commands. All target commands may be mistakenly identified 
+        // as broadcast commands. To improve this, a more robust check is needed. 
+        //
+        // As a temporary fix, we process all broadcast commands before target commands. 
+        // This ensures that target commands are not mistakenly handled as broadcast commands.
         if (strstr(topic, mqtt_topics[i].info->topic) != NULL) {
             err = mqtt_deserialize_data(
                 current,
@@ -352,7 +396,7 @@ kernel_error_st mqtt_bridge_initialize(mqtt_bridge_init_struct_st *mqtt_bridge_i
 
     mqtt_bridge->fetch_publish_data = fetch_publish_data;
     mqtt_bridge->get_topics_count   = get_topics_count;
-    mqtt_bridge->subscribe          = subscribe;
+    mqtt_bridge->get_topic          = get_topic;
     mqtt_bridge->handle_event_data  = handle_event_data;
 
     for (size_t i = 0; i < mqtt_bridge_init_struct->topic_count; i++) {
