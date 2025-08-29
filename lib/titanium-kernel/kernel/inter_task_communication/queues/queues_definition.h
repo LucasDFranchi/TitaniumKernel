@@ -6,9 +6,9 @@
 #include "kernel/error/error_num.h"
 
 typedef struct global_queues_s {
-    QueueHandle_t network_bridge_queue;  ///< Queue to receive network bridge configuration and events.
-    QueueHandle_t mqtt_bridge_queue;     ///< Queue to handle MQTT bridge messages and events.
-    QueueHandle_t credentials_queue;     ///< Queue for handling credentials (e.g., Wi-Fi SSID and password) updates.
+    QueueHandle_t network_bridge_queue; /**< Queue for receiving network bridge configuration and events. */
+    QueueHandle_t mqtt_bridge_queue;    /**< Queue for handling MQTT bridge messages, commands, and events. */
+    QueueHandle_t credentials_queue;    /**< Queue for managing credentials updates (e.g., Wi-Fi SSID, passwords, tokens). */
 } global_queues_st;
 
 /**

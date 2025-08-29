@@ -11,23 +11,17 @@
  */
 static global_structures_st global_structures = {0};
 
-task_interface_st app_task = {
-    .arg          = (void *)&global_structures,
-    .name         = "Application Task",
-    .priority     = 1,
-    .stack_size   = 1024 * 8,
-    .task_execute = app_task_execute,
-    .handle       = NULL,
-};
-
 void app_main() {
-    kernel_initialize(RELEASE_MODE_DEBUG, UDP, &global_structures);
+    kernel_initialize(RELEASE_MODE_DEBUG, SERIAL, &global_structures);
     kernel_enable_network(&global_structures);
     kernel_enable_http_server(&global_structures);
     kernel_enable_mqtt(&global_structures);
-
-    kernel_enqueue_task(&app_task);
-
     kernel_start_tasks();
+
+    kernel_error_st err = app_initialize(&global_structures);
+    if (err != KERNEL_ERROR_NONE) {
+        logger_print(ERR, "main", "Failed to initalized the application! - %d", err);
+    }
+
     logger_print(INFO, "main", "Application started successfully");
 }

@@ -23,10 +23,24 @@
  *   "offset": float
  * }
  */
-static const json_field_t calibration_schema[] = {
+static const json_field_t get_calibration_schema[] = {
     {"sensor_id", JSON_TYPE_INT},
     {"gain", JSON_TYPE_FLOAT},
     {"offset", JSON_TYPE_FLOAT}};
+
+/**
+ * @brief Schema definition for the CMD_GET_SYSTEM_INFO command.
+ *
+ * Expected payload structure:
+ * {
+ *   "user": string,
+ *   "password": string,
+ * }
+ */
+static const json_field_t get_system_info_schema[] = {
+    {"user", JSON_TYPE_STRING},
+    {"password", JSON_TYPE_STRING},
+};
 
 // Future command schemas can be added below:
 // static const json_field_t reboot_schema[] = {

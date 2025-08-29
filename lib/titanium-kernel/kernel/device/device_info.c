@@ -3,13 +3,18 @@
 #include <string.h>
 #include <time.h>
 
-#include "esp_log.h"
 #include "esp_mac.h"
+#include "esp_netif.h"
 #include "esp_system.h"
+#include "esp_timer.h"
+#include "esp_wifi.h"
+
+#include "kernel/logger/logger.h"
 
 static const char* TAG = "device_info";
 
-static char device_id[DEVICE_ID_LENGTH] = {0};
+static char device_id[DEVICE_ID_LENGTH]   = {0};
+static char ip_address[IP_ADDRESS_LENGTH] = {0};
 
 /**
  * @brief Set the device ID string to "UNKNOWN".
@@ -39,7 +44,7 @@ kernel_error_st device_info_init(void) {
     esp_err_t err = esp_efuse_mac_get_default(mac);
 
     if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to get MAC address: %d", err);
+        logger_print(ERR, TAG, "Failed to get MAC address: %d", err);
         device_info_set_unknown_id();
         return KERNEL_ERROR_UNKNOWN_MAC;
     }
@@ -51,7 +56,7 @@ kernel_error_st device_info_init(void) {
         return KERNEL_ERROR_FORMATTING;
     }
 
-    ESP_LOGI(TAG, "Device unique ID: %s", device_id);
+    logger_print(INFO, TAG, "Device unique ID: %s", device_id);
     return KERNEL_ERROR_NONE;
 }
 
@@ -105,4 +110,48 @@ kernel_error_st device_info_get_current_time(char* buffer, size_t buffer_size) {
     }
 
     return KERNEL_ERROR_NONE;
+}
+
+/**
+ * @brief Get the device uptime in milliseconds.
+ *
+ * This function uses the ESP-IDF high-resolution timer to calculate
+ * the system uptime since boot.
+ *
+ * @return int64_t Uptime in milliseconds.
+ */
+int64_t device_info_get_uptime(void) {
+    return esp_timer_get_time() / 1000;
+}
+
+/**
+ * @brief Set the device IP address.
+ *
+ * Converts the given IP address into a human-readable string and stores it
+ * internally for later retrieval. The stored value persists until the next call.
+ *
+ * @param[in] ip The IPv4 address to store (type: esp_ip4_addr_t).
+ *
+ * @return kernel_error_st
+ *         - KERNEL_ERROR_NONE if the IP was successfully stored.
+ *         - KERNEL_ERROR_INVALID_ARG if conversion failed (buffer too small).
+ */
+kernel_error_st device_info_set_ip_address(const esp_ip4_addr_t ip) {
+    if (esp_ip4addr_ntoa(&ip, ip_address, sizeof(ip_address)) == NULL) {
+        return KERNEL_ERROR_INVALID_SIZE;
+    }
+
+    return KERNEL_ERROR_NONE;
+}
+
+/**
+ * @brief Get the stored device identifier.
+ *
+ * Currently, the identifier is represented as the stored IP address string.
+ *
+ * @return const char* Pointer to the stored IP string (null-terminated).
+ *         The pointer remains valid until the next call to device_info_set_ip_address().
+ */
+const char* device_info_get_ip_address(void) {
+    return ip_address;
 }

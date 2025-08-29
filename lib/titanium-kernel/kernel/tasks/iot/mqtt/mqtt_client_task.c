@@ -200,10 +200,11 @@ static kernel_error_st subscribe(void) {
 
     mqtt_buffer_st mqtt_buffer_topic = {
         .buffer = topic,
-        .size   = sizeof(topic)};
+        .size   = sizeof(topic),
+    };
 
     for (size_t i = 0; i < mqtt_bridge.get_topics_count(); i++) {
-        kernel_error_st err = mqtt_bridge.subscribe(i, &mqtt_buffer_topic, &qos);
+        kernel_error_st err = mqtt_bridge.get_topic(i, &mqtt_buffer_topic, &qos);
 
         if ((err != KERNEL_ERROR_NONE) && (err != KERNEL_ERROR_EMPTY_QUEUE)) {
             logger_print(ERR, TAG, "Failed to subscribe to topic %s - %d", topic, err);

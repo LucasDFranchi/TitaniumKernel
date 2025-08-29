@@ -154,14 +154,14 @@ kernel_error_st kernel_initialize(release_mode_et release_mode, log_output_et lo
     }
 
     sntp_task.arg = (void *)global_structures;
-    ret           = task_manager_enqueue_task(&sntp_task);
+    ret           = task_handler_enqueue_task(&sntp_task);
 
     if (ret != KERNEL_ERROR_NONE) {
         return ret;
     }
 
     watchdog_task.arg = (void *)global_structures;
-    ret               = task_manager_enqueue_task(&watchdog_task);
+    ret               = task_handler_enqueue_task(&watchdog_task);
 
     if (ret != KERNEL_ERROR_NONE) {
         return ret;
@@ -185,7 +185,7 @@ kernel_error_st kernel_enable_network(global_structures_st *global_structures) {
     }
 
     network_task.arg = (void *)global_structures;
-    return task_manager_enqueue_task(&network_task);
+    return task_handler_enqueue_task(&network_task);
 }
 
 /**
@@ -203,7 +203,7 @@ kernel_error_st kernel_enable_http_server(global_structures_st *global_structure
     }
 
     http_server_task.arg = (void *)global_structures;
-    return task_manager_enqueue_task(&http_server_task);
+    return task_handler_enqueue_task(&http_server_task);
 }
 
 /**
@@ -221,7 +221,7 @@ kernel_error_st kernel_enable_mqtt(global_structures_st *global_structures) {
     }
 
     mqtt_task.arg = (void *)global_structures;
-    return task_manager_enqueue_task(&mqtt_task);
+    return task_handler_enqueue_task(&mqtt_task);
 }
 
 /**
@@ -234,7 +234,7 @@ kernel_error_st kernel_enable_mqtt(global_structures_st *global_structures) {
  * @return KERNEL_ERROR_NONE on success, or an error code if starting tasks fails.
  */
 kernel_error_st kernel_start_tasks(void) {
-    return task_manager_start_queued_tasks();
+    return task_handler_start_queued_tasks();
 }
 
 /**
@@ -254,5 +254,5 @@ kernel_error_st kernel_enqueue_task(task_interface_st *task) {
         return KERNEL_ERROR_NULL;
     }
 
-    return task_manager_enqueue_task(task);
+    return task_handler_enqueue_task(task);
 }

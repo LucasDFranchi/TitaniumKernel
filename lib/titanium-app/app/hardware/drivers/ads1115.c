@@ -38,10 +38,9 @@ static esp_err_t write_register(const ads1115_config_st *dev, uint16_t register_
     }
 
     uint8_t dev_addr = dev->hw_config.dev_address;
-    uint8_t value   = dev->config.value;
 
-    write_buffer[0] = (uint8_t)(value >> 8) & 0xFF;
-    write_buffer[1] = (uint8_t)value & 0xFF;
+    write_buffer[0] = (uint8_t)(dev->config.value >> 8) & 0xFF;
+    write_buffer[1] = (uint8_t)dev->config.value & 0xFF;
 
     return dev->i2c_interface.i2c_write_fn(dev->hw_config.port, dev_addr, register_address, sizeof(write_buffer), write_buffer);
 }

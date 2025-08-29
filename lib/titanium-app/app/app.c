@@ -1,12 +1,18 @@
 /**
  * @file app.c
- * @brief Temperature monitoring and logging for temperature and humidity data.
+ * @brief Main application initialization and task management.
  *
- * This module interfaces with the AHT10 temperature and humidity sensor,
- * reads the data, and logs the temperature and humidity values periodically.
- * It provides functions to initialize the sensor, execute continuous readings,
- * and log the results.
+ * This module is responsible for:
+ * - Initializing the network bridge (Ethernet) and MQTT bridge.
+ * - Setting up Sensor, Command, and Health Manager tasks.
+ * - Attaching tasks to the FreeRTOS scheduler.
+ * - Providing centralized configuration via global structures.
+ *
+ * It defines static configuration structures for bridges, tasks, and
+ * manager modules, which are initialized at runtime. Logging is
+ * integrated for initialization steps and error handling.
  */
+
 #include "app.h"
 
 #include "string.h"
@@ -16,16 +22,19 @@
 #include "math.h"
 
 #include "kernel/device/device_info.h"
-#include "kernel/inter_task_communication/inter_task_communication.h"
 #include "kernel/logger/logger.h"
 #include "kernel/tasks/interface/task_interface.h"
+#include "kernel/tasks/manager/task_handler.h"
 #include "kernel/utils/utils.h"
 
 #include "app/app_extern_types.h"
-#include "app/command_dispatcher/command_dispatcher.h"
+#include "app/app_tasks_config.h"
 #include "app/iot/mqtt_bridge.h"
-#include "app/sensors/sensor_manager.h"
 #include "app/system/network_bridge/network_bridge.h"
+// TODO: move to a managers folder
+#include "app/command_manager/command_manager.h"
+#include "app/health_manager/health_manager.h"
+#include "app/sensor_manager/sensor_manager.h"
 
 /**
  * @brief Network bridge interface with function pointers for Ethernet operations.
@@ -67,51 +76,48 @@ static network_bridge_init_st network_bridge_init_struct = {
     .network_bridge = &network_bridge,  ///< Pointer to the network bridge interface instance
 };
 
-/* MQTT Topics Definition */
-/**
- * @brief Enum listing the MQTT topic indexes.
- */
-typedef enum mqtt_topic_index_e {
-    DEVICE_REPORT = 0, /**< Sensor data reports */
-    COMMAND,           /**<*/
-    COMMAND_RESPONSE,  /**<*/
-    TOPIC_COUNT,       /**< Total number of defined topics */
-} mqtt_topic_index_et;
-
 /**
  * @brief Array of constant MQTT topic info structures.
  *
  * Each element defines topic string, QoS, direction, and queue parameters.
  */
 static const mqtt_topic_info_st mqtt_topic_infos[] = {
-    [DEVICE_REPORT] = {
+    [SENSOR_REPORT] = {
         .topic               = "sensor/report",
         .qos                 = QOS_1,
         .mqtt_data_direction = PUBLISH,
         .queue_length        = 10,
         .queue_item_size     = sizeof(device_report_st),
         .data_type           = DATA_TYPE_REPORT,
+        .message_type        = MESSAGE_TYPE_TARGET,
     },
-    [COMMAND] = {
+    [BROADCAST_COMMAND] = {
+        .topic               = "all/command",
+        .qos                 = QOS_1,
+        .mqtt_data_direction = SUBSCRIBE,
+        .queue_length        = 10,
+        .queue_item_size     = sizeof(command_st),
+        .data_type           = DATA_TYPE_COMMAND,
+        .message_type        = MESSAGE_TYPE_BROADCAST,
+    },
+    [TARGET_COMMAND] = {
         .topic               = "command",
         .qos                 = QOS_1,
         .mqtt_data_direction = SUBSCRIBE,
         .queue_length        = 10,
         .queue_item_size     = sizeof(command_st),
         .data_type           = DATA_TYPE_COMMAND,
+        .message_type        = MESSAGE_TYPE_TARGET,
     },
-    [COMMAND_RESPONSE] = {
+    [RESPONSE_COMMAND] = {
         .topic               = "command",
         .qos                 = QOS_1,
         .mqtt_data_direction = PUBLISH,
         .queue_length        = 10,
         .queue_item_size     = sizeof(command_response_st),
         .data_type           = DATA_TYPE_COMMAND_RESPONSE,
+        .message_type        = MESSAGE_TYPE_TARGET,
     },
-};
-
-sensor_manager_config_st sensor_manager_config = {
-    .sensor_manager_queue = NULL,
 };
 
 /**
@@ -119,17 +125,21 @@ sensor_manager_config_st sensor_manager_config = {
  *
  * Initialized with pointers to constant topic info and queue handles (NULL initially).
  */
-mqtt_topic_st mqtt_topics[MAX_MQTT_TOPICS] = {
-    [DEVICE_REPORT] = {
-        .info  = &mqtt_topic_infos[DEVICE_REPORT],
+mqtt_topic_st mqtt_topics[TOPIC_COUNT] = {
+    [SENSOR_REPORT] = {
+        .info  = &mqtt_topic_infos[SENSOR_REPORT],
         .queue = NULL,
     },
-    [COMMAND] = {
-        .info  = &mqtt_topic_infos[COMMAND],
+    [TARGET_COMMAND] = {
+        .info  = &mqtt_topic_infos[TARGET_COMMAND],
         .queue = NULL,
     },
-    [COMMAND_RESPONSE] = {
-        .info  = &mqtt_topic_infos[COMMAND_RESPONSE],
+    [BROADCAST_COMMAND] = {
+        .info  = &mqtt_topic_infos[BROADCAST_COMMAND],
+        .queue = NULL,
+    },
+    [RESPONSE_COMMAND] = {
+        .info  = &mqtt_topic_infos[RESPONSE_COMMAND],
         .queue = NULL,
     },
 };
@@ -141,7 +151,7 @@ mqtt_topic_st mqtt_topics[MAX_MQTT_TOPICS] = {
  */
 mqtt_bridge_st mqtt_bridge = {
     .fetch_publish_data = NULL, /**< Function pointer to fetch publish data */
-    .subscribe          = NULL, /**< Function pointer to subscribe to topics */
+    .get_topic          = NULL, /**< Function pointer to subscribe to topics */
     .handle_event_data  = NULL, /**< Function pointer to handle incoming MQTT data */
     .get_topics_count   = NULL, /**< Function pointer to get the number of registered topics */
 };
@@ -157,67 +167,136 @@ mqtt_bridge_init_struct_st mqtt_bridge_init_struct = {
     .topics      = mqtt_topics,  /**< Pointer to the mqtt_topics array */
 };
 
-/* Application Global Variables */
 /**
- * @brief Pointer to the global configuration structure.
+ * @brief Sensor Manager initialization structure.
  *
- * This variable is used to synchronize and manage all FreeRTOS events and queues
- * across the system. It provides a centralized configuration and state management
- * for consistent and efficient event handling. Ensure proper initialization before use.
+ * This instance holds the initial configuration parameters for the
+ * Sensor Manager module. It is zero-initialized here and should be
+ * populated at runtime before use.
  */
-static global_structures_st *_global_structures = NULL;                ///< Pointer to the global configuration structure.
-static const char *TAG                          = "Application Task";  ///< Tag used for logging.
+static sensor_manager_init_st sensor_manager_init = {0};
 
-static esp_err_t app_task_initialize() {
-    if (mqtt_bridge_initialize(&mqtt_bridge_init_struct) != KERNEL_ERROR_NONE) {
-        logger_print(INFO, TAG, "MQTT bridge installed failed!");
-        return ESP_FAIL;
+/**
+ * @brief Command Manager initialization structure.
+ *
+ * This instance holds the initial configuration parameters for the
+ * Command Manager module. It is zero-initialized here and should be
+ * set up by the system initialization sequence before being used
+ * by application tasks.
+ */
+static command_manager_init_st command_manager_init = {0};
+
+/**
+ * @brief Health Manager initialization structure.
+ *
+ * This instance holds the initial configuration parameters for the
+ * Health Manager module. It is zero-initialized here and should be
+ * set up by the system initialization sequence before being used
+ * by application tasks.
+ */
+static health_manager_init_st health_manager_init = {0};
+
+task_interface_st sensor_manager_task = {
+    .name         = SENSOR_MANAGER_TASK_NAME,
+    .stack_size   = SENSOR_MANAGER_TASK_STACK_SIZE,
+    .priority     = SENSOR_MANAGER_TASK_PRIORITY,
+    .task_execute = sensor_manager_loop,
+    .arg          = &sensor_manager_init,
+    .handle       = NULL,
+};
+
+task_interface_st command_manager_task = {
+    .name         = COMMAND_MANAGER_TASK_NAME,
+    .stack_size   = COMMAND_MANAGER_TASK_STACK_SIZE,
+    .priority     = COMMAND_MANAGER_TASK_PRIORITY,
+    .task_execute = command_manager_loop,
+    .arg          = &command_manager_init,
+    .handle       = NULL,
+};
+
+task_interface_st health_manager_task = {
+    .name         = HEALTH_MANAGER_TASK_NAME,
+    .stack_size   = HEALTH_MANAGER_TASK_STACK_SIZE,
+    .priority     = HEALTH_MANAGER_TASK_PRIORITY,
+    .task_execute = health_manager_loop,
+    .arg          = &health_manager_init,
+    .handle       = NULL,
+};
+
+static const char *TAG = "Application Task";  ///< Tag used for logging.
+
+/**
+ * @brief Initialize the application and attach core tasks.
+ *
+ * This function sets up the main application components:
+ * 1. Validates the global structure.
+ * 2. Initializes the network bridge and sends it to its queue.
+ * 3. Initializes the MQTT bridge and sends it to its queue.
+ * 4. Configures and attaches the Sensor Manager, Command Manager,
+ *    and Health Manager tasks to the task manager.
+ *
+ * @param[in] global_structures Pointer to the global configuration structure.
+ *                              Must contain valid queues for network and MQTT bridges.
+ *
+ * @return kernel_error_st
+ *         - KERNEL_ERROR_NONE on success
+ *         - KERNEL_ERROR_INVALID_ARG if the global structures are invalid
+ *         - KERNEL_ERROR_xxx if initialization of network bridge, MQTT bridge,
+ *           or any manager task fails
+ *
+ * @note The function must be called once during system startup before any tasks run.
+ *       It assumes FreeRTOS is initialized and queues are created.
+ */
+kernel_error_st app_initialize(global_structures_st *global_structures) {
+    logger_print(DEBUG, TAG, "Application initialization started");
+
+    kernel_error_st err = validate_global_structure(global_structures);
+    if (err != KERNEL_ERROR_NONE) {
+        logger_print(ERR, TAG, "Invalid global structure definitions");
+        return err;
     }
-    xQueueSend(_global_structures->global_queues.mqtt_bridge_queue,
-               mqtt_bridge_init_struct.mqtt_bridge,
-               pdMS_TO_TICKS(100));
 
-    if (network_bridge_initialize(&network_bridge_init_struct) != KERNEL_ERROR_NONE) {
+    err = network_bridge_initialize(&network_bridge_init_struct);
+    if (err != KERNEL_ERROR_NONE) {
         logger_print(INFO, TAG, "Network bridge installed failed!");
-        return ESP_FAIL;
+        return err;
     }
-    xQueueSend(_global_structures->global_queues.network_bridge_queue,
+    xQueueSend(global_structures->global_queues.network_bridge_queue,
                network_bridge_init_struct.network_bridge,
                pdMS_TO_TICKS(100));
 
-    if (mqtt_topics[DEVICE_REPORT].queue != NULL) {
-        sensor_manager_config.sensor_manager_queue = mqtt_topics[DEVICE_REPORT].queue;
+    err = mqtt_bridge_initialize(&mqtt_bridge_init_struct);
+    if (err != KERNEL_ERROR_NONE) {
+        logger_print(INFO, TAG, "MQTT bridge installed failed!");
+        return err;
     }
-    if (sensor_manager_initialize(&sensor_manager_config) != KERNEL_ERROR_NONE) {
-        logger_print(INFO, TAG, "Sensor manager initialization failed!");
-        return ESP_FAIL;
+    xQueueSend(global_structures->global_queues.mqtt_bridge_queue,
+               mqtt_bridge_init_struct.mqtt_bridge,
+               pdMS_TO_TICKS(100));
+
+    sensor_manager_init.sensor_manager_queue = mqtt_topics[SENSOR_REPORT].queue;
+
+    err = task_handler_attach_task(&sensor_manager_task);
+    if (err != KERNEL_ERROR_NONE) {
+        logger_print(ERR, TAG, "Failed to initialized Sensor Manager Task - %d", err);
+        return err;
     }
 
-    gpio_config_t io_conf = {
-        .pin_bit_mask = (1ULL << GPIO_NUM_32),
-        .mode         = GPIO_MODE_OUTPUT,
-        .pull_up_en   = GPIO_PULLUP_DISABLE,
-        .pull_down_en = GPIO_PULLDOWN_DISABLE,
-        .intr_type    = GPIO_INTR_DISABLE};
-    gpio_config(&io_conf);
+    command_manager_init.target_command_queue    = mqtt_topics[TARGET_COMMAND].queue;
+    command_manager_init.broadcast_command_queue = mqtt_topics[BROADCAST_COMMAND].queue;
+    command_manager_init.response_command_queue  = mqtt_topics[RESPONSE_COMMAND].queue;
 
-    return ESP_OK;
-}
-
-void app_task_execute(void *pvParameters) {
-    _global_structures = (global_structures_st *)pvParameters;
-    if ((app_task_initialize() != ESP_OK) || validate_global_structure(_global_structures)) {
-        logger_print(ERR, TAG, "Failed to initialize app task");
-        vTaskDelete(NULL);
+    err = task_handler_attach_task(&command_manager_task);
+    if (err != KERNEL_ERROR_NONE) {
+        logger_print(ERR, TAG, "Failed to initialized Command Manager Task - %d", err);
+        return err;
     }
-    static bool led_on = false;
 
-    while (1) {
-        handle_incoming_command(mqtt_topics[COMMAND].queue, mqtt_topics[COMMAND_RESPONSE].queue);
-        sensor_manager_loop();
-
-        led_on = !led_on;
-        gpio_set_level(GPIO_NUM_32, led_on);
-        vTaskDelay(pdMS_TO_TICKS(1000));
+    err = task_handler_attach_task(&health_manager_task);
+    if (err != KERNEL_ERROR_NONE) {
+        logger_print(ERR, TAG, "Failed to initialized Health Manager Task - %d", err);
+        return err;
     }
+    
+    return KERNEL_ERROR_NONE;
 }

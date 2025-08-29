@@ -7,7 +7,7 @@
  */
 #include "kernel/inter_task_communication/events/events_definition.h"
 #include "kernel/inter_task_communication/iot/mqtt/mqtt_client_external_types.h"
-#include "kernel/tasks/manager/task_manager.h"
+#include "kernel/tasks/manager/task_handler.h"
 #include "kernel/error/error_num.h"
 
 /**

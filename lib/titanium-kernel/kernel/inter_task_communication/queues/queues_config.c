@@ -6,6 +6,7 @@
 #include "app/app_extern_types.h"
 
 #define MQTT_QUEUE_SIZE 10        ///< Size of the MQTT queue for handling messages.
+#define NETWORK_QUEUE_SIZE 5      ///< Size of the queue for network bridge devices.
 #define CREDENTIALS_QUEUE_SIZE 1  ///< Size of the credentials queue for handling WiFi or other service credentials.
 
 /**
@@ -23,7 +24,7 @@ kernel_error_st global_queues_initialize(global_queues_st *config) {
         return KERNEL_ERROR_INVALID_ARG;
     }
 
-    config->network_bridge_queue = xQueueCreate(MQTT_QUEUE_SIZE, sizeof(network_bridge_st));
+    config->network_bridge_queue = xQueueCreate(NETWORK_QUEUE_SIZE, sizeof(network_bridge_st));
     if (config->network_bridge_queue == NULL) {
         return KERNEL_ERROR_NO_MEM;
     }
