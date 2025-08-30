@@ -10,6 +10,8 @@
  */
 #include <string.h>
 
+#include "stdio.h"
+
 #include "app/protocols/modbus/master/modbus_master.h"
 #include "app/protocols/modbus/common/modbus_utils.h"
 #include "app/protocols/modbus/common/modbus_types.h"
@@ -115,6 +117,7 @@ int decode_read_response(uint8_t *buffer, size_t bufsize,
     uint8_t reg_count = resp.byte_count / 2;
     if (regs_len < reg_count)
     {
+        printf("regs_len %d, reg_count %d\n", regs_len, reg_count);
         return -6;
     }
 
@@ -130,6 +133,7 @@ int decode_read_response(uint8_t *buffer, size_t bufsize,
 
     if (crc_calc != crc_recv)
     {
+        printf("crc_calc 0x%04X, crc_recv 0x%04X\n", crc_calc, crc_recv);
         return -7;
     }
 

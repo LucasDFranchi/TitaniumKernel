@@ -56,6 +56,7 @@ typedef enum kernel_error_s {
     KERNEL_ERROR_FORMATTING        = 0x0008,
     KERNEL_ERROR_UNKNOWN_MAC       = 0x0009,
     KERNEL_ERROR_FUNC_POINTER_NULL = 0x000A,
+    KERNEL_ERROR_TIMEOUT           = 0x000B,
 
     /* -------- Task/Queue (0x100) -------- */
     KERNEL_ERROR_TASK_CREATE     = 0x0100,

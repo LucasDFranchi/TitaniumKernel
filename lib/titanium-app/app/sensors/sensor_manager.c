@@ -464,13 +464,13 @@ void sensor_manager_loop() {
     device_info_get_current_time(device_report.timestamp, sizeof(device_report.timestamp));
     device_report.num_of_channels = NUM_OF_CHANNEL_SENSORS;
 
-    for (int i = 0; i < 12; i++) {
-        device_report.sensors[i].sensor_type = sensor_interface[i].type;
-        if (sensor_interface[i].read) {
-            kernel_error_st err             = sensor_interface[i].read(&sensor_interface[i], i, &device_report.sensors[i].value);
-            device_report.sensors[i].active = err == KERNEL_ERROR_NONE;
+    // for (int i = 0; i < NUM_OF_CHANNEL_SENSORS; i++) {
+    //     device_report.sensors[i].sensor_type = sensor_interface[i].type;
+        if (sensor_interface[SENSOR_CH_22].read) {
+            kernel_error_st err             = sensor_interface[SENSOR_CH_22].read(&sensor_interface[SENSOR_CH_22], SENSOR_CH_22, &device_report.sensors[SENSOR_CH_22].value);
+            // device_report.sensors[i].active = err == KERNEL_ERROR_NONE;
         }
-    }
+    // }
 
     if (xQueueSend(sensor_manager_config.sensor_manager_queue, &device_report, pdMS_TO_TICKS(100)) != pdPASS) {
         logger_print(ERR, TAG, "Failed to send sensor report to queue");
