@@ -421,7 +421,6 @@ kernel_error_st sensor_manager_initialize(sensor_manager_config_st *config) {
                 sensor_interface[i].adc_controller = &adc_controller;
                 sensor_interface[i].mux_controller = &mux_controller;
                 sensor_interface[i].read           = ntc_sensor_read;
-                printf("Sensor %d is temperature\n", i);
                 break;
             case SENSOR_TYPE_PRESSURE:
                 sensor_interface[i].adc_controller = &adc_controller;
