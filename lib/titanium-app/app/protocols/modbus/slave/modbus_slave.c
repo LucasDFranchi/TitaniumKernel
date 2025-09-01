@@ -52,7 +52,7 @@ uint16_t encode_read_response(uint8_t slave_id,
 
     read_holding_registers_header_response_st resp = {0};
     resp.slave_id = slave_id;
-    resp.function_code = MODBUS_READ_HOLDING_REG;
+    resp.function_code = MODBUS_READ_INPUT_REG;
     resp.byte_count = qty * sizeof(uint16_t);
 
     memcpy(buffer, &resp, sizeof(resp));
@@ -110,7 +110,7 @@ int decode_read_request(uint8_t *buffer, size_t bufsize, uint8_t *slave_id, uint
         return -4;
     }
 
-    if (req.function_code != MODBUS_READ_HOLDING_REG) {
+    if (req.function_code != MODBUS_READ_INPUT_REG) {
         return -5;
     }
 

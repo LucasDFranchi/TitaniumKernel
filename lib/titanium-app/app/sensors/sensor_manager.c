@@ -135,21 +135,12 @@ static sensor_hw_st sensor_hw[NUM_OF_CHANNEL_SENSORS] = {
         .adc_sensor_branch = {0},
         .mux_hw_config     = {0},
     },
-    [SENSOR_CH_23] = {
-        .adc_ref_branch    = {0},
-        .adc_sensor_branch = {0},
-        .mux_hw_config     = {0},
-    },
-    [SENSOR_CH_24] = {
-        .adc_ref_branch    = {0},
-        .adc_sensor_branch = {0},
-        .mux_hw_config     = {0},
-    },
 };
 
-static sensor_interface_st sensor_interface[NUM_OF_CHANNEL_SENSORS] = {
-    [SENSOR_CH_00] = {
+static sensor_interface_st sensor_interface[NUM_OF_SENSORS] = {
+    [SENSOR_ID_00] = {
         .type            = SENSOR_TYPE_TEMPERATURE,
+        .index           = SENSOR_ID_00,
         .hw              = &sensor_hw[SENSOR_CH_00],
         .adc_controller  = NULL,
         .mux_controller  = NULL,
@@ -157,8 +148,9 @@ static sensor_interface_st sensor_interface[NUM_OF_CHANNEL_SENSORS] = {
         .conversion_gain = 1.0f,
         .offset          = 0.0f,
     },
-    [SENSOR_CH_01] = {
+    [SENSOR_ID_01] = {
         .type            = SENSOR_TYPE_TEMPERATURE,
+        .index           = SENSOR_ID_01,
         .hw              = &sensor_hw[SENSOR_CH_01],
         .adc_controller  = NULL,
         .mux_controller  = NULL,
@@ -166,8 +158,9 @@ static sensor_interface_st sensor_interface[NUM_OF_CHANNEL_SENSORS] = {
         .conversion_gain = 1.0f,
         .offset          = 0.0f,
     },
-    [SENSOR_CH_02] = {
+    [SENSOR_ID_02] = {
         .type            = SENSOR_TYPE_TEMPERATURE,
+        .index           = SENSOR_ID_02,
         .hw              = &sensor_hw[SENSOR_CH_02],
         .adc_controller  = NULL,
         .mux_controller  = NULL,
@@ -175,8 +168,9 @@ static sensor_interface_st sensor_interface[NUM_OF_CHANNEL_SENSORS] = {
         .conversion_gain = 1.0f,
         .offset          = 0.0f,
     },
-    [SENSOR_CH_03] = {
+    [SENSOR_ID_03] = {
         .type            = SENSOR_TYPE_TEMPERATURE,
+        .index           = SENSOR_ID_03,
         .hw              = &sensor_hw[SENSOR_CH_03],
         .adc_controller  = NULL,
         .mux_controller  = NULL,
@@ -184,8 +178,9 @@ static sensor_interface_st sensor_interface[NUM_OF_CHANNEL_SENSORS] = {
         .conversion_gain = 1.0f,
         .offset          = 0.0f,
     },
-    [SENSOR_CH_04] = {
+    [SENSOR_ID_04] = {
         .type            = SENSOR_TYPE_TEMPERATURE,
+        .index           = SENSOR_ID_04,
         .hw              = &sensor_hw[SENSOR_CH_04],
         .adc_controller  = NULL,
         .mux_controller  = NULL,
@@ -193,8 +188,9 @@ static sensor_interface_st sensor_interface[NUM_OF_CHANNEL_SENSORS] = {
         .conversion_gain = 1.0f,
         .offset          = 0.0f,
     },
-    [SENSOR_CH_05] = {
+    [SENSOR_ID_05] = {
         .type            = SENSOR_TYPE_TEMPERATURE,
+        .index           = SENSOR_ID_05,
         .hw              = &sensor_hw[SENSOR_CH_05],
         .adc_controller  = NULL,
         .mux_controller  = NULL,
@@ -202,8 +198,9 @@ static sensor_interface_st sensor_interface[NUM_OF_CHANNEL_SENSORS] = {
         .conversion_gain = 1.0f,
         .offset          = 0.0f,
     },
-    [SENSOR_CH_06] = {
+    [SENSOR_ID_06] = {
         .type            = SENSOR_TYPE_TEMPERATURE,
+        .index           = SENSOR_ID_06,
         .hw              = &sensor_hw[SENSOR_CH_06],
         .adc_controller  = NULL,
         .mux_controller  = NULL,
@@ -211,8 +208,9 @@ static sensor_interface_st sensor_interface[NUM_OF_CHANNEL_SENSORS] = {
         .conversion_gain = 1.0f,
         .offset          = 0.0f,
     },
-    [SENSOR_CH_07] = {
+    [SENSOR_ID_07] = {
         .type            = SENSOR_TYPE_TEMPERATURE,
+        .index           = SENSOR_ID_07,
         .hw              = &sensor_hw[SENSOR_CH_07],
         .adc_controller  = NULL,
         .mux_controller  = NULL,
@@ -220,8 +218,9 @@ static sensor_interface_st sensor_interface[NUM_OF_CHANNEL_SENSORS] = {
         .conversion_gain = 1.0f,
         .offset          = 0.0f,
     },
-    [SENSOR_CH_08] = {
+    [SENSOR_ID_08] = {
         .type            = SENSOR_TYPE_TEMPERATURE,
+        .index           = SENSOR_ID_08,
         .hw              = &sensor_hw[SENSOR_CH_08],
         .adc_controller  = NULL,
         .mux_controller  = NULL,
@@ -229,8 +228,9 @@ static sensor_interface_st sensor_interface[NUM_OF_CHANNEL_SENSORS] = {
         .conversion_gain = 1.0f,
         .offset          = 0.0f,
     },
-    [SENSOR_CH_09] = {
+    [SENSOR_ID_09] = {
         .type            = SENSOR_TYPE_TEMPERATURE,
+        .index           = SENSOR_ID_09,
         .hw              = &sensor_hw[SENSOR_CH_09],
         .adc_controller  = NULL,
         .mux_controller  = NULL,
@@ -238,8 +238,9 @@ static sensor_interface_st sensor_interface[NUM_OF_CHANNEL_SENSORS] = {
         .conversion_gain = 1.0f,
         .offset          = 0.0f,
     },
-    [SENSOR_CH_10] = {
+    [SENSOR_ID_10] = {
         .type            = SENSOR_TYPE_TEMPERATURE,
+        .index           = SENSOR_ID_10,
         .hw              = &sensor_hw[SENSOR_CH_10],
         .adc_controller  = NULL,
         .mux_controller  = NULL,
@@ -247,8 +248,9 @@ static sensor_interface_st sensor_interface[NUM_OF_CHANNEL_SENSORS] = {
         .conversion_gain = 1.0f,
         .offset          = 0.0f,
     },
-    [SENSOR_CH_11] = {
+    [SENSOR_ID_11] = {
         .type            = SENSOR_TYPE_TEMPERATURE,
+        .index           = SENSOR_ID_11,
         .hw              = &sensor_hw[SENSOR_CH_11],
         .adc_controller  = NULL,
         .mux_controller  = NULL,
@@ -256,8 +258,9 @@ static sensor_interface_st sensor_interface[NUM_OF_CHANNEL_SENSORS] = {
         .conversion_gain = 1.0f,
         .offset          = 0.0f,
     },
-    [SENSOR_CH_12] = {
+    [SENSOR_ID_12] = {
         .type            = SENSOR_TYPE_TEMPERATURE,
+        .index           = SENSOR_ID_12,
         .hw              = &sensor_hw[SENSOR_CH_12],
         .adc_controller  = NULL,
         .mux_controller  = NULL,
@@ -265,8 +268,9 @@ static sensor_interface_st sensor_interface[NUM_OF_CHANNEL_SENSORS] = {
         .conversion_gain = 1.0f,
         .offset          = 0.0f,
     },
-    [SENSOR_CH_13] = {
+    [SENSOR_ID_13] = {
         .type            = SENSOR_TYPE_TEMPERATURE,
+        .index           = SENSOR_ID_13,
         .hw              = &sensor_hw[SENSOR_CH_13],
         .adc_controller  = NULL,
         .mux_controller  = NULL,
@@ -274,8 +278,9 @@ static sensor_interface_st sensor_interface[NUM_OF_CHANNEL_SENSORS] = {
         .conversion_gain = 1.0f,
         .offset          = 0.0f,
     },
-    [SENSOR_CH_14] = {
+    [SENSOR_ID_14] = {
         .type            = SENSOR_TYPE_TEMPERATURE,
+        .index           = SENSOR_ID_14,
         .hw              = &sensor_hw[SENSOR_CH_14],
         .adc_controller  = NULL,
         .mux_controller  = NULL,
@@ -283,8 +288,9 @@ static sensor_interface_st sensor_interface[NUM_OF_CHANNEL_SENSORS] = {
         .conversion_gain = 1.0f,
         .offset          = 0.0f,
     },
-    [SENSOR_CH_15] = {
+    [SENSOR_ID_15] = {
         .type            = SENSOR_TYPE_TEMPERATURE,
+        .index           = SENSOR_ID_15,
         .hw              = &sensor_hw[SENSOR_CH_15],
         .adc_controller  = NULL,
         .mux_controller  = NULL,
@@ -292,8 +298,9 @@ static sensor_interface_st sensor_interface[NUM_OF_CHANNEL_SENSORS] = {
         .conversion_gain = 1.0f,
         .offset          = 0.0f,
     },
-    [SENSOR_CH_16] = {
+    [SENSOR_ID_16] = {
         .type            = SENSOR_TYPE_TEMPERATURE,
+        .index           = SENSOR_ID_16,
         .hw              = &sensor_hw[SENSOR_CH_16],
         .adc_controller  = NULL,
         .mux_controller  = NULL,
@@ -301,8 +308,9 @@ static sensor_interface_st sensor_interface[NUM_OF_CHANNEL_SENSORS] = {
         .conversion_gain = 1.0f,
         .offset          = 0.0f,
     },
-    [SENSOR_CH_17] = {
+    [SENSOR_ID_17] = {
         .type            = SENSOR_TYPE_TEMPERATURE,
+        .index           = SENSOR_ID_17,
         .hw              = &sensor_hw[SENSOR_CH_17],
         .adc_controller  = NULL,
         .mux_controller  = NULL,
@@ -310,8 +318,9 @@ static sensor_interface_st sensor_interface[NUM_OF_CHANNEL_SENSORS] = {
         .conversion_gain = 1.0f,
         .offset          = 0.0f,
     },
-    [SENSOR_CH_18] = {
+    [SENSOR_ID_18] = {
         .type            = SENSOR_TYPE_TEMPERATURE,
+        .index           = SENSOR_ID_18,
         .hw              = &sensor_hw[SENSOR_CH_18],
         .adc_controller  = NULL,
         .mux_controller  = NULL,
@@ -319,8 +328,9 @@ static sensor_interface_st sensor_interface[NUM_OF_CHANNEL_SENSORS] = {
         .conversion_gain = 1.0f,
         .offset          = 0.0f,
     },
-    [SENSOR_CH_19] = {
+    [SENSOR_ID_19] = {
         .type            = SENSOR_TYPE_TEMPERATURE,
+        .index           = SENSOR_ID_19,
         .hw              = &sensor_hw[SENSOR_CH_19],
         .adc_controller  = NULL,
         .mux_controller  = NULL,
@@ -328,8 +338,9 @@ static sensor_interface_st sensor_interface[NUM_OF_CHANNEL_SENSORS] = {
         .conversion_gain = 1.0f,
         .offset          = 0.0f,
     },
-    [SENSOR_CH_20] = {
+    [SENSOR_ID_20] = {
         .type            = SENSOR_TYPE_PRESSURE,
+        .index           = SENSOR_ID_20,
         .hw              = &sensor_hw[SENSOR_CH_20],
         .adc_controller  = NULL,
         .mux_controller  = NULL,
@@ -337,8 +348,9 @@ static sensor_interface_st sensor_interface[NUM_OF_CHANNEL_SENSORS] = {
         .conversion_gain = 1.0f,
         .offset          = 0.0f,
     },
-    [SENSOR_CH_21] = {
+    [SENSOR_ID_21] = {
         .type            = SENSOR_TYPE_PRESSURE,
+        .index           = SENSOR_ID_21,
         .hw              = &sensor_hw[SENSOR_CH_21],
         .adc_controller  = NULL,
         .mux_controller  = NULL,
@@ -346,8 +358,9 @@ static sensor_interface_st sensor_interface[NUM_OF_CHANNEL_SENSORS] = {
         .conversion_gain = 1.0f,
         .offset          = 0.0f,
     },
-    [SENSOR_CH_22] = {
+    [SENSOR_ID_22] = {
         .type            = SENSOR_TYPE_VOLTAGE,
+        .index           = SENSOR_ID_22,
         .hw              = &sensor_hw[SENSOR_CH_22],
         .adc_controller  = NULL,
         .mux_controller  = NULL,
@@ -355,18 +368,30 @@ static sensor_interface_st sensor_interface[NUM_OF_CHANNEL_SENSORS] = {
         .conversion_gain = 1.0f,
         .offset          = 0.0f,
     },
-    [SENSOR_CH_23] = {
+    [SENSOR_ID_23] = {
         .type            = SENSOR_TYPE_CURRENT,
-        .hw              = &sensor_hw[SENSOR_CH_23],
+        .index           = SENSOR_ID_23,
+        .hw              = &sensor_hw[SENSOR_CH_22],
         .adc_controller  = NULL,
         .mux_controller  = NULL,
         .read            = NULL,
         .conversion_gain = 1.0f,
         .offset          = 0.0f,
     },
-    [SENSOR_CH_24] = {
+    [SENSOR_ID_24] = {
+        .type            = SENSOR_TYPE_POWER,
+        .index           = SENSOR_ID_24,
+        .hw              = &sensor_hw[SENSOR_CH_22],
+        .adc_controller  = NULL,
+        .mux_controller  = NULL,
+        .read            = NULL,
+        .conversion_gain = 1.0f,
+        .offset          = 0.0f,
+    },
+    [SENSOR_ID_25] = {
         .type            = SENSOR_TYPE_POWER_FACTOR,
-        .hw              = &sensor_hw[SENSOR_CH_24],
+        .index           = SENSOR_ID_25,
+        .hw              = &sensor_hw[SENSOR_CH_22],
         .adc_controller  = NULL,
         .mux_controller  = NULL,
         .read            = NULL,
@@ -416,11 +441,11 @@ kernel_error_st sensor_manager_initialize(sensor_manager_config_st *config) {
     }
 
     for (int i = 0; i < NUM_OF_CHANNEL_SENSORS; i++) {
-        switch(sensor_interface[i].type) {
+        switch (sensor_interface[i].type) {
             case SENSOR_TYPE_TEMPERATURE:
                 sensor_interface[i].adc_controller = &adc_controller;
                 sensor_interface[i].mux_controller = &mux_controller;
-                sensor_interface[i].read           = ntc_sensor_read;
+                sensor_interface[i].read           = temperature_sensor_read;
                 break;
             case SENSOR_TYPE_PRESSURE:
                 sensor_interface[i].adc_controller = &adc_controller;
@@ -429,6 +454,7 @@ kernel_error_st sensor_manager_initialize(sensor_manager_config_st *config) {
                 break;
             case SENSOR_TYPE_VOLTAGE:
             case SENSOR_TYPE_CURRENT:
+            case SENSOR_TYPE_POWER:
             case SENSOR_TYPE_POWER_FACTOR:
                 sensor_interface[i].adc_controller = NULL;
                 sensor_interface[i].mux_controller = NULL;
@@ -461,16 +487,17 @@ void sensor_manager_loop() {
     device_report_st device_report = {0};
 
     device_info_get_current_time(device_report.timestamp, sizeof(device_report.timestamp));
-    device_report.num_of_channels = NUM_OF_CHANNEL_SENSORS;
+    device_report.num_of_channels = NUM_OF_SENSORS;
 
-    // for (int i = 0; i < NUM_OF_CHANNEL_SENSORS; i++) {
-    //     device_report.sensors[i].sensor_type = sensor_interface[i].type;
-        if (sensor_interface[SENSOR_CH_22].read) {
-            kernel_error_st err             = sensor_interface[SENSOR_CH_22].read(&sensor_interface[SENSOR_CH_22], SENSOR_CH_22, &device_report.sensors[SENSOR_CH_22].value);
-            // device_report.sensors[i].active = err == KERNEL_ERROR_NONE;
+    for (int i = 0; i < NUM_OF_CHANNEL_SENSORS; i++) {
+        if (sensor_interface[i].read) {
+            kernel_error_st err = sensor_interface[i].read(&sensor_interface[i], device_report.sensors);
+            if (err != KERNEL_ERROR_NONE) {
+                logger_print(ERR, TAG, "Failed to read sensor at index %d: error %d", i, err);
+            }
         }
-    // }
-
+    }
+    logger_print(DEBUG, TAG, "Sensor report generated, sending to queue");
     if (xQueueSend(sensor_manager_config.sensor_manager_queue, &device_report, pdMS_TO_TICKS(100)) != pdPASS) {
         logger_print(ERR, TAG, "Failed to send sensor report to queue");
     }

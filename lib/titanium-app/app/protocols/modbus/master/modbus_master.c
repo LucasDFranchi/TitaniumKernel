@@ -46,7 +46,7 @@ uint16_t encode_read_request(uint8_t slave_id, uint16_t addr, uint16_t qty, uint
 
     read_holding_registers_request_st r = {0};
     r.slave_id = slave_id;
-    r.function_code = MODBUS_READ_HOLDING_REG;
+    r.function_code = MODBUS_READ_INPUT_REG;
     r.starting_address = MODBUS_HTONS(addr);
     r.qty = MODBUS_HTONS(qty);
 
@@ -98,7 +98,7 @@ int decode_read_response(uint8_t *buffer, size_t bufsize,
         return -2;
     }
 
-    if (resp.function_code != MODBUS_READ_HOLDING_REG)
+    if (resp.function_code != MODBUS_READ_INPUT_REG)
     {
         return -3;
     }

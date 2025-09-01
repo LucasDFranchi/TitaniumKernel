@@ -3,21 +3,7 @@
 #include "app/hardware/controllers/adc_controller.h"
 #include "app/hardware/controllers/mux_controller.h"
 
-/**
- * @enum sensor_type_et
- * @brief Enumerates the types of supported sensors.
- *
- * Used to categorize sensors by their measurement domain. This type is also
- * embedded in sensor reports to indicate how the raw value should be interpreted.
- */
-typedef enum sensor_type_e {
-    SENSOR_TYPE_TEMPERATURE = 0, /**< Temperature sensor (e.g., NTC thermistor) */
-    SENSOR_TYPE_PRESSURE,        /**< Pressure sensor */
-    SENSOR_TYPE_VOLTAGE,         /**< Direct voltage measurement */
-    SENSOR_TYPE_CURRENT,         /**< Current measurement */
-    SENSOR_TYPE_POWER_FACTOR,    /**< Power factor measurement */
-    SENSOR_TYPE_UNDEFINED,       /**< Unknown or unsupported sensor */
-} sensor_type_et;
+#include "app/sensors/sensor_manager.h"
 
 typedef struct sensor_interface_s sensor_interface_st;
 
@@ -30,14 +16,13 @@ typedef struct sensor_interface_s sensor_interface_st;
  * returns a floating-point value in physical units.
  *
  * @param[in] ctx          Pointer to the sensor interface instance.
- * @param[in] sensor_index Logical index of the sensor in the system.
- * @param[out] out_value   Pointer to store the resulting measurement.
+ * @param[out] sensor_report   Pointer to store the resulting measurement.
  *
  * @return
  *     - KERNEL_ERROR_NONE on success
  *     - Appropriate kernel_error_st code on failure
  */
-typedef kernel_error_st (*sensor_read_fn)(sensor_interface_st *ctx, uint8_t sensor_index, float *out_value);
+typedef kernel_error_st (*sensor_read_fn)(sensor_interface_st *ctx, sensor_report_st *sensor_report);
 
 /**
  * @brief Hardware configuration structure for a sensor channel.
@@ -62,18 +47,10 @@ typedef struct {
  * Represents one logical sensor in the system. It associates hardware
  * configuration with shared controller instances and a driver-specific
  * read function.
- *
- * Members:
- * - @c type : The sensor type (temperature, voltage, etc.).
- * - @c hw   : Hardware configuration for this sensor channel.
- * - @c adc_controller : Shared ADC controller instance.
- * - @c mux_controller : Shared multiplexer controller instance.
- * - @c read : Function pointer to the driver’s read routine.
- * - @c conversion_gain : Calibration gain applied after measurement.
- * - @c offset : Calibration offset subtracted from the raw value.
  */
 struct sensor_interface_s {
     sensor_type_et type;
+    sensor_index_et index;
     sensor_hw_st *hw;                  /*!< Per-sensor hardware config */
     adc_controller_st *adc_controller; /*!< Pointer to shared ADC controller */
     mux_controller_st *mux_controller; /*!< Pointer to shared MUX controller */

@@ -23,54 +23,11 @@
 #include "stdbool.h"
 #include "stdint.h"
 
-#include "app/sensors/sensor_interface/sensor_interface.h"
+// #include "app/sensors/sensor_interface/sensor_interface.h"
+#include "app/sensors/sensor_types.h"
 
 #include "kernel/error/error_num.h"
 #include "kernel/inter_task_communication/inter_task_communication.h"
-
-/**
- * @enum sensor_channel_et
- * @brief Logical enumeration for supported sensor channels.
- *
- * Includes a constant 'NUM_OF_SENSORS' that indicates the total number of sensors.
- */
-typedef enum sensor_channel_e {
-    SENSOR_CH_00 = 0,
-    SENSOR_CH_01,
-    SENSOR_CH_02,
-    SENSOR_CH_03,
-    SENSOR_CH_04,
-    SENSOR_CH_05,
-    SENSOR_CH_06,
-    SENSOR_CH_07,
-    SENSOR_CH_08,
-    SENSOR_CH_09,
-    SENSOR_CH_10,
-    SENSOR_CH_11,
-    SENSOR_CH_12,
-    SENSOR_CH_13,
-    SENSOR_CH_14,
-    SENSOR_CH_15,
-    SENSOR_CH_16,
-    SENSOR_CH_17,
-    SENSOR_CH_18,
-    SENSOR_CH_19,
-    SENSOR_CH_20,
-    SENSOR_CH_21,
-    SENSOR_CH_22,
-    SENSOR_CH_23,
-    SENSOR_CH_24,
-    NUM_OF_CHANNEL_SENSORS
-} sensor_channel_et;
-
-/**
- * @brief Structure representing a single sensor's report.
- */
-typedef struct sensor_report_s {
-    float value;                /**< Measured value from the sensor */
-    bool active;                /**< Indicates whether the sensor is currently active */
-    sensor_type_et sensor_type; /**< Indicates the sensor type */
-} sensor_report_st;
 
 typedef struct sensor_manager_config_s {
     QueueHandle_t sensor_manager_queue; /**< Queue for sensor manager tasks */

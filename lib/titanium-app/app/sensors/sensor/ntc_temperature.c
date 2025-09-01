@@ -165,19 +165,23 @@ static float voltage_to_temperature(uint16_t v_ref, uint16_t v_ntc, int sensor_i
  *  - Converts raw ADC readings into voltages, then into resistance and finally temperature.
  *
  * @param ctx Sensor interface context containing hardware configuration and driver callbacks.
- * @param sensor_index Index of the sensor to be read.
  * @param[out] out_value Pointer to store the resulting temperature in Celsius.
  * @return kernel_error_st Error code indicating success or failure.
  */
-kernel_error_st ntc_sensor_read(sensor_interface_st *ctx, uint8_t sensor_index, float *out_value) {
+kernel_error_st temperature_sensor_read(sensor_interface_st *ctx, sensor_report_st *sensor_report) {
+    kernel_error_st err       = KERNEL_ERROR_NONE;
     int16_t reference_raw_adc = 0;
     int16_t sensor_raw_adc    = 0;
 
-    if ((!out_value) || (!ctx)) {
+    if ((!sensor_report) || (!ctx)) {
         return KERNEL_ERROR_NULL;
     }
 
-    kernel_error_st err = KERNEL_ERROR_NONE;
+    uint8_t sensor_index = ctx->index;
+
+    sensor_report[sensor_index].value       = 0;
+    sensor_report[sensor_index].sensor_type = 0;
+    sensor_report[sensor_index].active      = false;
 
     err = ctx->mux_controller->select_channel(&ctx->hw->mux_hw_config);
     if (err != KERNEL_ERROR_NONE) {
@@ -238,7 +242,9 @@ kernel_error_st ntc_sensor_read(sensor_interface_st *ctx, uint8_t sensor_index, 
                  "Sensor %d: Reference ADC: %d, Sensor ADC: %d, Reference Voltage: %d mV, Sensor Voltage: %d mV",
                  sensor_index, reference_raw_adc, sensor_raw_adc, voltage_reference, voltage_sensor);
 
-    *out_value = voltage_to_temperature(voltage_reference, voltage_sensor, sensor_index);
+    sensor_report[sensor_index].value       = voltage_to_temperature(voltage_reference, voltage_sensor, sensor_index);
+    sensor_report[sensor_index].sensor_type = ctx->type;
+    sensor_report[sensor_index].active      = true;
 
     return KERNEL_ERROR_NONE;
 }

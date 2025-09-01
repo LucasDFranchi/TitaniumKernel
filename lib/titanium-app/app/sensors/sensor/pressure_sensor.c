@@ -5,8 +5,8 @@
 static const char *TAG = "Pressure Sensor";
 
 static float voltage_to_pressure(uint16_t voltage, int sensor_index) {
-    const float minimal_mili_voltage = 0.6f;
-    const float maximal_mili_voltage = 3.0f;
+    const float minimal_mili_voltage  = 0.6f;
+    const float maximal_mili_voltage  = 3.0f;
     const float conversion_curve_gain = 2.4f;
 
     if (voltage < minimal_mili_voltage) {
@@ -22,14 +22,19 @@ static float voltage_to_pressure(uint16_t voltage, int sensor_index) {
     return minimal_mili_voltage + (conversion_curve_gain * voltage) / 100.0f;
 }
 
-kernel_error_st pressure_sensor_read(sensor_interface_st *ctx, uint8_t sensor_index, float *out_value) {
-    int16_t sensor_raw_adc    = 0;
+kernel_error_st pressure_sensor_read(sensor_interface_st *ctx, sensor_report_st *sensor_report) {
+    kernel_error_st err    = KERNEL_ERROR_NONE;
+    int16_t sensor_raw_adc = 0;
 
-    if ((!out_value) || (!ctx)) {
+    uint8_t sensor_index = ctx->index;
+
+    if ((!sensor_report) || (!ctx)) {
         return KERNEL_ERROR_NULL;
     }
 
-    kernel_error_st err = KERNEL_ERROR_NONE;
+    sensor_report[sensor_index].value       = 0;
+    sensor_report[sensor_index].sensor_type = 0;
+    sensor_report[sensor_index].active      = false;
 
     err = ctx->mux_controller->select_channel(&ctx->hw->mux_hw_config);
     if (err != KERNEL_ERROR_NONE) {
@@ -49,10 +54,12 @@ kernel_error_st pressure_sensor_read(sensor_interface_st *ctx, uint8_t sensor_in
     }
 
     // This part needs improvement to handle the voltage conversion
-    float pga_sensor_branch   = ctx->adc_controller->get_lsb_size(ctx->hw->adc_sensor_branch.pga_gain);
-    int16_t voltage_sensor    = (int16_t)((sensor_raw_adc * pga_sensor_branch));
+    float pga_sensor_branch = ctx->adc_controller->get_lsb_size(ctx->hw->adc_sensor_branch.pga_gain);
+    int16_t voltage_sensor  = (int16_t)((sensor_raw_adc * pga_sensor_branch));
 
-    *out_value = voltage_to_pressure(voltage_sensor, sensor_index);
+    sensor_report[sensor_index].value       = voltage_to_pressure(voltage_sensor, sensor_index);
+    sensor_report[sensor_index].sensor_type = ctx->type;
+    sensor_report[sensor_index].active      = true;
 
     return KERNEL_ERROR_NONE;
 }

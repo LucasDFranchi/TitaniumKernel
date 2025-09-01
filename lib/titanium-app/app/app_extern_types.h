@@ -38,9 +38,9 @@ typedef enum app_data_type_e {
  * Includes a timestamp and an array of sensor data for each active channel.
  */
 typedef struct device_report_s {
-    char timestamp[21];                               /**< Timestamp in ISO 8601 format (e.g., "2025-06-29T15:20:00") */
-    sensor_report_st sensors[NUM_OF_CHANNEL_SENSORS]; /**< Sensor readings per channel */
-    uint8_t num_of_channels;                          /**< Number of active/valid channels in the report */
+    char timestamp[21];                       /**< Timestamp in ISO 8601 format (e.g., "2025-06-29T15:20:00") */
+    sensor_report_st sensors[NUM_OF_SENSORS]; /**< Sensor readings per channel */
+    uint8_t num_of_channels;                  /**< Number of active/valid channels in the report */
 } device_report_st;
 
 /* === Command Definitions === */
