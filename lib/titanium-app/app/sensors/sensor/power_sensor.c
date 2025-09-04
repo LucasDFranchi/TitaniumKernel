@@ -8,7 +8,7 @@
 static const char *TAG                    = "Power Sensor";
 static const uint8_t SLAVE_ADDRESS        = 0x01;  // Modbus slave address
 static const uint16_t TRANSMIT_TIMEOUT_MS = 100;
-static const uint16_t RECEIVE_TIMEOUT_MS  = 100;
+static const uint16_t RECEIVE_TIMEOUT_MS  = 2000;
 
 static uart_interface_st uart_interface = {0};
 
@@ -59,6 +59,13 @@ static kernel_error_st request_power_data(sensor_interface_st *ctx, uint8_t *tra
         return KERNEL_ERROR_FAILED_TO_ENCODE_PACKET;
     }
 
+    logger_print(DEBUG, TAG, "Sending Modbus request to slave: %d", SLAVE_ADDRESS);
+    logger_print(DEBUG, TAG, "Requesting %d registers starting at address 0x%04X", register_qty, register_address);
+    logger_print(DEBUG, TAG, "Encoded request size: %d bytes", message_size);
+    for (int i = 0; i < message_size; i++) {
+        logger_print(DEBUG, TAG, "Request[%d]: 0x%02X", i, transmit_buffer[i]);
+    }
+    
     esp_err_t err = uart_interface.uart_write_fn(UART_NUM_2, transmit_buffer, message_size, TRANSMIT_TIMEOUT_MS);
 
     return err == ESP_OK ? KERNEL_ERROR_NONE : KERNEL_ERROR_FAIL;
@@ -73,6 +80,10 @@ static kernel_error_st receive_power_data(sensor_interface_st *ctx, uint8_t *res
     if (len <= 0) {
         logger_print(ERR, TAG, "No response from slave: %d", SLAVE_ADDRESS);
         return KERNEL_ERROR_TIMEOUT;
+    }
+
+    for (int i = 0; i < len; i++) {
+        logger_print(DEBUG, TAG, "Response[%d]: 0x%02X", i, response_buffer[i]);
     }
 
     uint16_t registers[10] = {0};

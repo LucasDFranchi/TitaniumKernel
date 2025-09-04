@@ -8,7 +8,7 @@ import time
 
 # Serial port configuration
 PORT = "COM8"          # Change to your port
-BAUDRATE = 115200
+BAUDRATE = 9600
 TIMEOUT = 0.1          # seconds
 
 # PZEM holding registers (16-bit)

@@ -146,7 +146,7 @@ static esp_err_t uart_handle_write(uart_port_t port, uint8_t* buffer, size_t buf
     }
 
     int bytes_written = uart_write_bytes(port, (const char*)buffer, buffer_size);
-    uart_wait_tx_done(UART_NUM_2, pdMS_TO_TICKS(ticks_to_wait));
+    uart_wait_tx_done(UART_NUM_2, pdMS_TO_TICKS(ticks_to_wait * 10));
     xSemaphoreGive(uart_instance[port].mutex);
 
     if (uart_set_transmit_mode(port, false) != ESP_OK) {
@@ -188,7 +188,7 @@ static int32_t uart_handle_read(uart_port_t port, uint8_t* buffer, size_t buffer
         return ESP_ERR_TIMEOUT;
     }
 
-    int32_t bytes_read = uart_read_bytes(port, buffer, buffer_size, ticks_to_wait);
+    int32_t bytes_read = uart_read_bytes(port, buffer, buffer_size, pdMS_TO_TICKS(ticks_to_wait));
     xSemaphoreGive(uart_instance[port].mutex);
 
     return bytes_read;
@@ -229,7 +229,7 @@ static esp_err_t uart_init_once(uart_port_t port) {
         .baud_rate  = UART_DEFAULT_BAUDRATE,
         .data_bits  = UART_DATA_8_BITS,
         .parity     = UART_PARITY_DISABLE,
-        .stop_bits  = UART_STOP_BITS_1,
+        .stop_bits  = UART_STOP_BITS_2,
         .flow_ctrl  = UART_HW_FLOWCTRL_DISABLE,
         .source_clk = UART_SCLK_APB,
     };
