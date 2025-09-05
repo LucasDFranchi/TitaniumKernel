@@ -74,8 +74,11 @@ kernel_error_st serialize_data_report(QueueHandle_t queue, char *out_buffer, siz
             case SENSOR_TYPE_VOLTAGE:
                 sensor["unit"] = "V";
                 break;
-            case SENSOR_TYPE_CURRENT:
+                case SENSOR_TYPE_CURRENT:
                 sensor["unit"] = "A";
+                break;
+                case SENSOR_TYPE_POWER:
+                sensor["unit"] = "W";
                 break;
             case SENSOR_TYPE_POWER_FACTOR:
                 sensor["unit"] = "%";

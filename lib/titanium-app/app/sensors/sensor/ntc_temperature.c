@@ -242,7 +242,8 @@ kernel_error_st temperature_sensor_read(sensor_interface_st *ctx, sensor_report_
                  "Sensor %d: Reference ADC: %d, Sensor ADC: %d, Reference Voltage: %d mV, Sensor Voltage: %d mV",
                  sensor_index, reference_raw_adc, sensor_raw_adc, voltage_reference, voltage_sensor);
 
-    sensor_report[sensor_index].value       = voltage_to_temperature(voltage_reference, voltage_sensor, sensor_index);
+    float temperature_c                     = voltage_to_temperature(voltage_reference, voltage_sensor, sensor_index);
+    sensor_report[sensor_index].value       = (temperature_c * ctx->conversion_gain) + ctx->offset;
     sensor_report[sensor_index].sensor_type = ctx->type;
     sensor_report[sensor_index].active      = true;
 

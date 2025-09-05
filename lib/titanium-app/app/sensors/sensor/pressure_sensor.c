@@ -57,7 +57,8 @@ kernel_error_st pressure_sensor_read(sensor_interface_st *ctx, sensor_report_st 
     float pga_sensor_branch = ctx->adc_controller->get_lsb_size(ctx->hw->adc_sensor_branch.pga_gain);
     int16_t voltage_sensor  = (int16_t)((sensor_raw_adc * pga_sensor_branch));
 
-    sensor_report[sensor_index].value       = voltage_to_pressure(voltage_sensor, sensor_index);
+    float pressure                          = voltage_to_pressure(voltage_sensor, sensor_index);
+    sensor_report[sensor_index].value       = pressure * ctx->conversion_gain + ctx->offset;
     sensor_report[sensor_index].sensor_type = ctx->type;
     sensor_report[sensor_index].active      = true;
 
