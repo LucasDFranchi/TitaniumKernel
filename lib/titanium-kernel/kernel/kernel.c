@@ -90,21 +90,21 @@ static kernel_error_st kernel_initialize_nvs(void) {
 }
 
 kernel_error_st kernel_global_events_initialize(global_events_st *global_events) {
-    if (global_events_initialize(global_events) != KERNEL_ERROR_NONE) {
+    if (global_events_initialize(global_events) != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to initialize global events");
         return KERNEL_ERROR_GLOBAL_EVENTS_INIT;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 kernel_error_st kernel_global_queues_initialize(global_queues_st *global_queue) {
-    if (global_queues_initialize(global_queue) != KERNEL_ERROR_NONE) {
+    if (global_queues_initialize(global_queue) != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to initialize global queues");
         return KERNEL_ERROR_GLOBAL_QUEUES_INIT;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -124,10 +124,10 @@ kernel_error_st kernel_global_queues_initialize(global_queues_st *global_queue) 
  * @param log_output          The log output backend (e.g., SERIAL or UDP).
  * @param global_structures   Pointer to the global system state structure. Must not be NULL.
  *
- * @return KERNEL_ERROR_NONE on success, or an appropriate error code if initialization fails.
+ * @return KERNEL_SUCCESS on success, or an appropriate error code if initialization fails.
  */
 kernel_error_st kernel_initialize(release_mode_et release_mode, log_output_et log_output, global_structures_st *global_structures) {
-    kernel_error_st ret = KERNEL_ERROR_NONE;
+    kernel_error_st ret = KERNEL_SUCCESS;
 
     if ((global_structures == NULL)) {
         return KERNEL_ERROR_INVALID_ARG;
@@ -135,19 +135,19 @@ kernel_error_st kernel_initialize(release_mode_et release_mode, log_output_et lo
 
     device_info_init();
 
-    if (kernel_initialize_nvs() != KERNEL_ERROR_NONE) {
+    if (kernel_initialize_nvs() != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to initialize NVS");
         kernel_restart();
         return KERNEL_ERROR_NVS_INIT;
     }
     logger_initialize(release_mode, log_output, global_structures);
 
-    if (kernel_global_events_initialize(&global_structures->global_events) != KERNEL_ERROR_NONE) {
+    if (kernel_global_events_initialize(&global_structures->global_events) != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to initialize global events");
         kernel_restart();
         return KERNEL_ERROR_GLOBAL_EVENTS_INIT;
     }
-    if (kernel_global_queues_initialize(&global_structures->global_queues) != KERNEL_ERROR_NONE) {
+    if (kernel_global_queues_initialize(&global_structures->global_queues) != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to initialize global queues");
         kernel_restart();
         return KERNEL_ERROR_GLOBAL_QUEUES_INIT;
@@ -156,18 +156,18 @@ kernel_error_st kernel_initialize(release_mode_et release_mode, log_output_et lo
     sntp_task.arg = (void *)global_structures;
     ret           = task_handler_enqueue_task(&sntp_task);
 
-    if (ret != KERNEL_ERROR_NONE) {
+    if (ret != KERNEL_SUCCESS) {
         return ret;
     }
 
     watchdog_task.arg = (void *)global_structures;
     ret               = task_handler_enqueue_task(&watchdog_task);
 
-    if (ret != KERNEL_ERROR_NONE) {
+    if (ret != KERNEL_SUCCESS) {
         return ret;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -176,7 +176,7 @@ kernel_error_st kernel_initialize(release_mode_et release_mode, log_output_et lo
  * This function spawns a task to handle network operations.
  *
  * @param global_events Pointer to the global configuration structure.
- * @return KERNEL_ERROR_NONE on success, KERNEL_ERROR_TASK_CREATE if task creation fails,
+ * @return KERNEL_SUCCESS on success, KERNEL_ERROR_TASK_CREATE if task creation fails,
  *         or KERNEL_ERROR_NULL if global_events is NULL.
  */
 kernel_error_st kernel_enable_network(global_structures_st *global_structures) {
@@ -194,7 +194,7 @@ kernel_error_st kernel_enable_network(global_structures_st *global_structures) {
  * This function spawns a task to handle HTTP server operations.
  *
  * @param global_events Pointer to the global configuration structure.
- * @return KERNEL_ERROR_NONE on success, KERNEL_ERROR_TASK_CREATE if task creation fails,
+ * @return KERNEL_SUCCESS on success, KERNEL_ERROR_TASK_CREATE if task creation fails,
  *         or KERNEL_ERROR_NULL if global_events is NULL.
  */
 kernel_error_st kernel_enable_http_server(global_structures_st *global_structures) {
@@ -212,7 +212,7 @@ kernel_error_st kernel_enable_http_server(global_structures_st *global_structure
  * This function spawns a task to handle MQTT client operations.
  *
  * @param global_events Pointer to the global configuration structure.
- * @return KERNEL_ERROR_NONE on success, KERNEL_ERROR_TASK_CREATE if task creation fails,
+ * @return KERNEL_SUCCESS on success, KERNEL_ERROR_TASK_CREATE if task creation fails,
  *         or KERNEL_ERROR_NULL if global_events is NULL.
  */
 kernel_error_st kernel_enable_mqtt(global_structures_st *global_structures) {
@@ -231,7 +231,7 @@ kernel_error_st kernel_enable_mqtt(global_structures_st *global_structures) {
  * It should be called after all necessary tasks have been enqueued and
  * the system is ready to start multitasking.
  *
- * @return KERNEL_ERROR_NONE on success, or an error code if starting tasks fails.
+ * @return KERNEL_SUCCESS on success, or an error code if starting tasks fails.
  */
 kernel_error_st kernel_start_tasks(void) {
     return task_handler_start_queued_tasks();
@@ -245,7 +245,7 @@ kernel_error_st kernel_start_tasks(void) {
  *
  * @param task Pointer to the task interface structure to enqueue. Must not be NULL.
  *
- * @return KERNEL_ERROR_NONE on success,
+ * @return KERNEL_SUCCESS on success,
  *         KERNEL_ERROR_NULL if the task pointer is NULL,
  *         or other task manager specific error codes.
  */

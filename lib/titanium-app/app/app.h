@@ -31,7 +31,7 @@
  *                              Must contain valid queues for network and MQTT bridges.
  *
  * @return kernel_error_st
- *         - KERNEL_ERROR_NONE on success
+ *         - KERNEL_SUCCESS on success
  *         - KERNEL_ERROR_INVALID_ARG if the global structures are invalid
  *         - KERNEL_ERROR_xxx if initialization of network bridge, MQTT bridge,
  *           or any manager task fails

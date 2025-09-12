@@ -17,7 +17,7 @@
  * network bridge events, MQTT bridge messages, and credential updates.
  *
  * @param[out] config Pointer to the global_queues_st structure to initialize.
- * @return KERNEL_ERROR_NONE on success, or an error code if queue creation fails.
+ * @return KERNEL_SUCCESS on success, or an error code if queue creation fails.
  */
 kernel_error_st global_queues_initialize(global_queues_st *config) {
     if (config == NULL) {
@@ -39,5 +39,5 @@ kernel_error_st global_queues_initialize(global_queues_st *config) {
         return KERNEL_ERROR_NO_MEM;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }

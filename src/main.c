@@ -19,7 +19,7 @@ void app_main() {
     kernel_start_tasks();
 
     kernel_error_st err = app_initialize(&global_structures);
-    if (err != KERNEL_ERROR_NONE) {
+    if (err != KERNEL_SUCCESS) {
         logger_print(ERR, "main", "Failed to initalized the application! - %d", err);
     }
 

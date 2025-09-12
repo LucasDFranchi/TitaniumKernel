@@ -21,7 +21,7 @@
  * @code
  * sensor_report_st report[4];
  * sensor_interface_st ctx = {.index = 0};
- * if (power_sensor_read(&ctx, report) == KERNEL_ERROR_NONE) {
+ * if (power_sensor_read(&ctx, report) == KERNEL_SUCCESS) {
  *     printf("Voltage: %.2f V\n", report[0].value);
  *     printf("Current: %.3f A\n", report[1].value);
  * }
@@ -31,7 +31,7 @@
  * @param[out] sensor_report Array where measurement values will be stored.
  *
  * @return kernel_error_st
- *         - KERNEL_ERROR_NONE on success
+ *         - KERNEL_SUCCESS on success
  *         - KERNEL_ERROR_NULL if ctx or sensor_report is NULL
  *         - KERNEL_ERROR_UART_NOT_INITIALIZED if UART interface is unavailable
  *         - KERNEL_ERROR_FAILED_TO_ENCODE_PACKET if Modbus request failed

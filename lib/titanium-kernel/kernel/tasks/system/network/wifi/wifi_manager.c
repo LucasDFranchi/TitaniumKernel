@@ -141,7 +141,7 @@ static kernel_error_st set_access_point_mode(void) {
         return KERNEL_ERROR_AP_SET_PS;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -241,7 +241,7 @@ bool wifi_status_get_sta(void) {
  * code indicating success or failure.
  *
  * @return kernel_error_st
- *  - KERNEL_ERROR_NONE if configuration applied successfully.
+ *  - KERNEL_SUCCESS if configuration applied successfully.
  *  - KERNEL_ERROR_STA_CONFIG if `esp_wifi_set_config` fails.
  */
 static kernel_error_st set_station_mode(void) {
@@ -256,7 +256,7 @@ static kernel_error_st set_station_mode(void) {
         return KERNEL_ERROR_STA_CONFIG;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -277,7 +277,7 @@ static kernel_error_st set_station_mode(void) {
  *       and configures the station mode. A connection should be triggered separately.
  *
  * @return kernel_error_st
- *  - KERNEL_ERROR_NONE if credentials are successfully stored and station mode configured.
+ *  - KERNEL_SUCCESS if credentials are successfully stored and station mode configured.
  *  - KERNEL_ERROR_NULL if `ssid` or `password` is NULL.
  *  - KERNEL_ERROR_STA_SSID_TOO_LONG if SSID string exceeds buffer size.
  *  - KERNEL_ERROR_STA_PASSWORD_TOO_LONG if password string exceeds buffer size.
@@ -311,11 +311,11 @@ kernel_error_st wifi_manager_set_credentials(const char *ssid, const char *passw
     is_retry_limit_exceeded  = false;
     connection_retry_counter = 0;
 
-    if (set_station_mode() != KERNEL_ERROR_NONE) {
+    if (set_station_mode() != KERNEL_SUCCESS) {
         return KERNEL_ERROR_STA_CREDENTIALS;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -333,7 +333,7 @@ kernel_error_st wifi_manager_set_credentials(const char *ssid, const char *passw
  *  - KERNEL_ERROR_WIFI_SET_MODE if setting Wi-Fi mode fails.
  *  - Errors returned by `set_access_point_mode()` if AP configuration fails.
  *  - KERNEL_ERROR_WIFI_START if starting the Wi-Fi driver fails.
- *  - KERNEL_ERROR_NONE on successful initialization.
+ *  - KERNEL_SUCCESS on successful initialization.
  */
 kernel_error_st wifi_manager_initialize() {
     esp_err_t result = ESP_OK;
@@ -372,7 +372,7 @@ kernel_error_st wifi_manager_initialize() {
     }
 
     kernel_error_st ap_result = set_access_point_mode();
-    if (ap_result != KERNEL_ERROR_NONE) {
+    if (ap_result != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to configure access point mode: %d", ap_result);
         return ap_result;
     }
@@ -383,27 +383,27 @@ kernel_error_st wifi_manager_initialize() {
         return KERNEL_ERROR_WIFI_START;
     }
 
-    kernel_error_st err_ssid = KERNEL_ERROR_NONE;
-    kernel_error_st err_pwd  = KERNEL_ERROR_NONE;
+    kernel_error_st err_ssid = KERNEL_SUCCESS;
+    kernel_error_st err_pwd  = KERNEL_SUCCESS;
 
     err_ssid = nvs_util_load_str("wifi", "ssid", cred.ssid, sizeof(cred.ssid));
-    if (err_ssid != KERNEL_ERROR_NONE) {
+    if (err_ssid != KERNEL_SUCCESS) {
         logger_print(WARN, TAG, "Failed to load SSID from NVS: %d", err_ssid);
     }
 
     err_pwd = nvs_util_load_str("wifi", "pwd", cred.password, sizeof(cred.password));
-    if (err_pwd != KERNEL_ERROR_NONE) {
+    if (err_pwd != KERNEL_SUCCESS) {
         logger_print(WARN, TAG, "Failed to load password from NVS: %d", err_pwd);
     }
 
-    if (err_ssid == KERNEL_ERROR_NONE && err_pwd == KERNEL_ERROR_NONE) {
+    if (err_ssid == KERNEL_SUCCESS && err_pwd == KERNEL_SUCCESS) {
         logger_print(INFO, TAG, "Loaded credentials from NVS: SSID='%s'", cred.ssid);
         wifi_manager_set_credentials(cred.ssid, cred.password);
     } else {
         logger_print(INFO, TAG, "Credentials not fully available in NVS. Skipping set.");
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -489,20 +489,20 @@ void wifi_manager_sta_got_ip(int32_t event_id, void *event_data) {
     bool ssid_changed = true;
     bool pwd_changed  = true;
 
-    if (nvs_util_load_str("wifi", "ssid", stored_ssid, sizeof(stored_ssid)) == KERNEL_ERROR_NONE &&
+    if (nvs_util_load_str("wifi", "ssid", stored_ssid, sizeof(stored_ssid)) == KERNEL_SUCCESS &&
         strcmp(stored_ssid, cred.ssid) == 0) {
         ssid_changed = false;
     }
 
-    if (nvs_util_load_str("wifi", "pwd", stored_password, sizeof(stored_password)) == KERNEL_ERROR_NONE &&
+    if (nvs_util_load_str("wifi", "pwd", stored_password, sizeof(stored_password)) == KERNEL_SUCCESS &&
         strcmp(stored_password, cred.password) == 0) {
         pwd_changed = false;
     }
 
-    kernel_error_st result = KERNEL_ERROR_NONE;
+    kernel_error_st result = KERNEL_SUCCESS;
     if (ssid_changed) {
         result = nvs_util_save_str("wifi", "ssid", cred.ssid);
-        if (result != KERNEL_ERROR_NONE) {
+        if (result != KERNEL_SUCCESS) {
             logger_print(WARN, TAG, "Failed to save SSID to NVS: %d", result);
         } else {
             logger_print(INFO, TAG, "SSID updated in NVS");
@@ -511,7 +511,7 @@ void wifi_manager_sta_got_ip(int32_t event_id, void *event_data) {
 
     if (pwd_changed) {
         result = nvs_util_save_str("wifi", "pwd", cred.password);
-        if (result != KERNEL_ERROR_NONE) {
+        if (result != KERNEL_SUCCESS) {
             logger_print(WARN, TAG, "Failed to save password to NVS: %d", result);
         } else {
             logger_print(INFO, TAG, "Password updated in NVS");

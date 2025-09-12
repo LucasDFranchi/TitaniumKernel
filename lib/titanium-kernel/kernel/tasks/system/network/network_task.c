@@ -97,7 +97,7 @@ static void network_task_event_handler(void *arg, esp_event_base_t event_base,
  * using the configured bridge initializer, starts the DHCP client, and starts
  * the Ethernet interface.
  *
- * @return KERNEL_ERROR_NONE on success, or a specific kernel error on failure.
+ * @return KERNEL_SUCCESS on success, or a specific kernel error on failure.
  */
 static kernel_error_st register_network_device(void) {
     esp_netif_config_t cfg = ESP_NETIF_DEFAULT_ETH();
@@ -108,7 +108,7 @@ static kernel_error_st register_network_device(void) {
     }
 
     kernel_error_st err = network_bridge.initialize_driver(&eth_handle);
-    if (err != KERNEL_ERROR_NONE) {
+    if (err != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to install ethernet driver: %d", err);
     }
 
@@ -132,7 +132,7 @@ static kernel_error_st register_network_device(void) {
         return KERNEL_ERROR_ETHERNET_START;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -142,18 +142,18 @@ static kernel_error_st register_network_device(void) {
  * if successful, registers the Ethernet device. Ensures the installation
  * is performed only once.
  *
- * @return KERNEL_ERROR_NONE on success or if already installed, or a specific error code on failure.
+ * @return KERNEL_SUCCESS on success or if already installed, or a specific error code on failure.
  */
 static kernel_error_st network_install_bridge(void) {
     static bool is_external_device_installed = false;
 
     if (is_external_device_installed) {
-        return KERNEL_ERROR_NONE;
+        return KERNEL_SUCCESS;
     }
 
     if (xQueueReceive(_global_structures->global_queues.network_bridge_queue, &network_bridge, pdMS_TO_TICKS(100)) == pdTRUE) {
         kernel_error_st err = register_network_device();
-        if (err != KERNEL_ERROR_NONE) {
+        if (err != KERNEL_SUCCESS) {
             logger_print(INFO, TAG, "Failed to install external ethernet device: %d", err);
             return err;
         }
@@ -163,7 +163,7 @@ static kernel_error_st network_install_bridge(void) {
         logger_print(DEBUG, TAG, "No network bridge configuration available yet. Will retry later.");
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -224,7 +224,7 @@ static kernel_error_st network_task_initialize(void) {
     }
 
     kernel_error_st err = wifi_manager_initialize();
-    if (err != KERNEL_ERROR_NONE) {
+    if (err != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to initalized the WiFi Manager");
         return err;
     }

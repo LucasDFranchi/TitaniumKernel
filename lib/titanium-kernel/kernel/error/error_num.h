@@ -19,7 +19,7 @@
  */
 typedef enum kernel_error_s {
     /* -------- General (0x000) -------- */
-    KERNEL_ERROR_NONE              = 0x0000,
+    KERNEL_SUCCESS                 = 0x0000,
     KERNEL_ERROR_FAIL              = 0x0001,
     KERNEL_ERROR_NULL              = 0x0002,
     KERNEL_ERROR_INVALID_ARG       = 0x0003,
@@ -134,6 +134,10 @@ typedef enum kernel_error_s {
     KERNEL_ERROR_ADC_READ_ERROR            = 0x0906,
     KERNEL_ERROR_FAILED_TO_ENCODE_PACKET   = 0x0907,
     KERNEL_ERROR_FAILED_TO_DECODE_PACKET   = 0x0908,
+    KERNEL_ERROR_ADC_INVALID_CMP_MODE      = 0x0909,
+    KERNEL_ERROR_ADC_INVALID_CMP_POLARITY  = 0x090A,
+    KERNEL_ERROR_ADC_INVALID_CMP_LATCHING  = 0x090B,
+    KERNEL_ERROR_ADC_INVALID_CMP_QUEUE     = 0x090C,
 
     /* -------- Drivers (0x1000) -------- */
     KERNEL_ERROR_FAIL_INSTALL_ISR     = 0x1000,
@@ -148,6 +152,16 @@ typedef enum kernel_error_s {
     KERNEL_ERROR_MUX_INIT_ERROR       = 0x1009,
     KERNEL_ERROR_ADC_INIT_ERROR       = 0x100A,
     KERNEL_ERROR_UART_NOT_INITIALIZED = 0x100B,
+    KERNEL_ERROR_I2C_START            = 0x100C,
+    KERNEL_ERROR_I2C_WRITE_BYTE       = 0x100D,
+    KERNEL_ERROR_I2C_STOP             = 0x100E,
+    KERNEL_ERROR_I2C_EXEC             = 0x100F,
+    KERNEL_ERROR_I2C_READ             = 0x1010,
+    KERNEL_ERROR_INVALID_I2C_PORT     = 0x1011,
+    KERNEL_ERROR_I2C_CONFIG           = 0x1012,
+    KERNEL_ERROR_I2C_DRIVER_INSTALL   = 0x1013,
+    KERNEL_ERROR_I2C_NOT_INITALIZED   = 0x1014,
+    KERNEL_ERROR_INVALID_GPIO         = 0x1015,
 
     /* -------- Hardware (0x1000) ------- */
     KERNEL_ERROR_GPIO_CONFIG_FAIL    = 0x1100,

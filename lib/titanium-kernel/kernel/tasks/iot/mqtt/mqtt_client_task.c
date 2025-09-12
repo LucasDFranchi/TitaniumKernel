@@ -32,7 +32,7 @@ static mqtt_bridge_st mqtt_bridge               = {0};          ///< Pointer to 
  * and the associated queue are valid. Any errors encountered are logged for
  * debugging purposes.
  *
- * @return KERNEL_ERROR_NONE if successful, or an appropriate error code if not.
+ * @return KERNEL_SUCCESS if successful, or an appropriate error code if not.
  */
 static kernel_error_st subscribe(void);
 
@@ -44,7 +44,7 @@ static kernel_error_st subscribe(void);
  *
  * @param topic Pointer to the incoming MQTT topic string.
  * @param payload Pointer to the mqtt_buffer_st containing the incoming payload data.
- * @return KERNEL_ERROR_NONE on success;
+ * @return KERNEL_SUCCESS on success;
  *         KERNEL_ERROR_NULL if pointers are NULL;
  *         KERNEL_ERROR_INVALID_SIZE if payload size is zero;
  *         Other error codes as returned by mqtt_deserialize_data.
@@ -170,7 +170,7 @@ static void publish(void) {
             continue;
         }
 
-        if (err != KERNEL_ERROR_NONE) {
+        if (err != KERNEL_SUCCESS) {
             logger_print(ERR, TAG, "Failed to publish to topic %s - %d", topic, err);
             continue;
         }
@@ -192,7 +192,7 @@ static void publish(void) {
  * and the associated queue are valid. Any errors encountered are logged for
  * debugging purposes.
  *
- * @return KERNEL_ERROR_NONE if successful, or an appropriate error code if not.
+ * @return KERNEL_SUCCESS if successful, or an appropriate error code if not.
  */
 static kernel_error_st subscribe(void) {
     char topic[MQTT_MAXIMUM_TOPIC_LENGTH] = {0};
@@ -206,7 +206,7 @@ static kernel_error_st subscribe(void) {
     for (size_t i = 0; i < mqtt_bridge.get_topics_count(); i++) {
         kernel_error_st err = mqtt_bridge.get_topic(i, &mqtt_buffer_topic, &qos);
 
-        if ((err != KERNEL_ERROR_NONE) && (err != KERNEL_ERROR_EMPTY_QUEUE)) {
+        if ((err != KERNEL_SUCCESS) && (err != KERNEL_ERROR_EMPTY_QUEUE)) {
             logger_print(ERR, TAG, "Failed to subscribe to topic %s - %d", topic, err);
             continue;
         }
@@ -220,7 +220,7 @@ static kernel_error_st subscribe(void) {
         logger_print(DEBUG, TAG, "Subscribed to topic %s, msg_id=%d", mqtt_buffer_topic.buffer, msg_id);
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -231,7 +231,7 @@ static kernel_error_st subscribe(void) {
  *
  * @param topic Pointer to the incoming MQTT topic string.
  * @param payload Pointer to the mqtt_buffer_st containing the incoming payload data.
- * @return KERNEL_ERROR_NONE on success;
+ * @return KERNEL_SUCCESS on success;
  *         KERNEL_ERROR_NULL if pointers are NULL;
  *         KERNEL_ERROR_INVALID_SIZE if payload size is zero;
  *         Other error codes as returned by mqtt_deserialize_data.
@@ -266,7 +266,7 @@ static kernel_error_st handle_event_data(char* topic, char* data, size_t data_le
  * @note This function expects `_global_structures->global_queues.mqtt_bridge_queue` to be
  *       initialized and populated elsewhere in the system.
  *
- * @retval KERNEL_ERROR_NONE         Bridge installed successfully.
+ * @retval KERNEL_SUCCESS         Bridge installed successfully.
  * @retval KERNEL_ERROR_NULL         Global structures or queue is NULL.
  * @retval KERNEL_ERROR_EMPTY_QUEUE  Queue did not return a valid bridge within timeout.
  */
@@ -277,7 +277,7 @@ kernel_error_st mqtt_install_bridge(void) {
         return KERNEL_ERROR_EMPTY_QUEUE;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -312,7 +312,7 @@ static kernel_error_st mqtt_client_task_initialize(void) {
         return KERNEL_ERROR_MQTT_CONFIG_FAIL;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -327,12 +327,12 @@ static kernel_error_st mqtt_client_task_initialize(void) {
 void mqtt_client_task_execute(void* pvParameters) {
     _global_structures = (global_structures_st*)pvParameters;
 
-    if ((mqtt_client_task_initialize() != KERNEL_ERROR_NONE) || validate_global_structure(_global_structures)) {
+    if ((mqtt_client_task_initialize() != KERNEL_SUCCESS) || validate_global_structure(_global_structures)) {
         logger_print(ERR, TAG, "Failed to initialize MQTT task");
         vTaskDelete(NULL);
     }
 
-    while (mqtt_install_bridge() != KERNEL_ERROR_NONE) {
+    while (mqtt_install_bridge() != KERNEL_SUCCESS) {
         logger_print(WARN, TAG, "Waiting for MQTT bridge to be available...");
         vTaskDelay(pdMS_TO_TICKS(500));
     }

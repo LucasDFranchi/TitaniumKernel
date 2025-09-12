@@ -19,7 +19,7 @@ typedef struct sensor_interface_s sensor_interface_st;
  * @param[out] sensor_report   Pointer to store the resulting measurement.
  *
  * @return
- *     - KERNEL_ERROR_NONE on success
+ *     - KERNEL_SUCCESS on success
  *     - Appropriate kernel_error_st code on failure
  */
 typedef kernel_error_st (*sensor_read_fn)(sensor_interface_st *ctx, sensor_report_st *sensor_report);

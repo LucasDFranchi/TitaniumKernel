@@ -24,6 +24,6 @@ typedef struct network_bridge_init_s {
  *
  * @param[in,out] network_bridge_init Pointer to initialization structure containing
  *                                    Ethernet device and network bridge references.
- * @return KERNEL_ERROR_NONE on success, or KERNEL_ERROR_NULL if input is NULL.
+ * @return KERNEL_SUCCESS on success, or KERNEL_ERROR_NULL if input is NULL.
  */
 kernel_error_st network_bridge_initialize(network_bridge_init_st *network_bridge_init);

@@ -23,7 +23,7 @@
  * have their critical members properly initialized (i.e., non-NULL).
  *
  * @param global_structures Pointer to the global_structures_st instance to validate.
- * @return KERNEL_ERROR_NONE if all validations pass.
+ * @return KERNEL_SUCCESS if all validations pass.
  * @return KERNEL_ERROR_NULL if `global_structures` is NULL or any required member inside the
  *         embedded structures is NULL.
  */

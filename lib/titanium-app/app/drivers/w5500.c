@@ -14,7 +14,7 @@
  * indicated by the return code `ESP_ERR_INVALID_STATE`, the function treats
  * it as a successful outcome.
  *
- * @return KERNEL_ERROR_NONE if the service is successfully installed or already present.
+ * @return KERNEL_SUCCESS if the service is successfully installed or already present.
  *         KERNEL_ERROR_FAIL_INSTALL_ISR on any other installation failure.
  */
 static kernel_error_st install_isr_service(void) {
@@ -22,11 +22,11 @@ static kernel_error_st install_isr_service(void) {
     esp_err_t result                 = gpio_install_isr_service(GPIO_ISR_FLAGS_DEFAULT);
 
     if (result == ESP_OK) {
-        return KERNEL_ERROR_NONE;
+        return KERNEL_SUCCESS;
     }
 
     if (result == ESP_ERR_INVALID_STATE) {
-        return KERNEL_ERROR_NONE;
+        return KERNEL_SUCCESS;
     }
 
     return KERNEL_ERROR_FAIL_INSTALL_ISR;
@@ -43,7 +43,7 @@ static kernel_error_st install_isr_service(void) {
  *
  * @param ethernet_spi_config Pointer to the SPI configuration structure.
  *
- * @return KERNEL_ERROR_NONE on success.
+ * @return KERNEL_SUCCESS on success.
  *         KERNEL_ERROR_NULL if the config pointer is NULL.
  *         KERNEL_ERROR_FAIL_INSTALL_ISR if ISR installation fails.
  *         KERNEL_ERROR_FAIL_SPI_BUS_INIT if SPI bus initialization fails.
@@ -54,7 +54,7 @@ static kernel_error_st ethernet_spi_bus_init(ethernet_spi_config_st *ethernet_sp
     }
 
     kernel_error_st err = install_isr_service();
-    if (err != KERNEL_ERROR_NONE) {
+    if (err != KERNEL_SUCCESS) {
         return err;
     }
 
@@ -73,7 +73,7 @@ static kernel_error_st ethernet_spi_bus_init(ethernet_spi_config_st *ethernet_sp
         return KERNEL_ERROR_FAIL_SPI_BUS_INIT;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -94,7 +94,7 @@ static kernel_error_st ethernet_spi_bus_init(ethernet_spi_config_st *ethernet_sp
  *
  * @param[in,out] local_mac_address Pointer to a 6-byte array to receive the generated MAC address.
  *
- * @return KERNEL_ERROR_NONE on success.
+ * @return KERNEL_SUCCESS on success.
  * @return KERNEL_ERROR_NULL if the input pointer is NULL.
  * @return KERNEL_ERROR_GETTING_DEFAULT_MAC if reading the base MAC from efuse fails.
  * @return KERNEL_ERROR_DERIVE_LOCAL_MAC if deriving the local MAC fails.
@@ -116,7 +116,7 @@ kernel_error_st ethernet_assign_local_mac(uint8_t *local_mac_address) {
         return KERNEL_ERROR_DERIVE_LOCAL_MAC;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -128,7 +128,7 @@ kernel_error_st ethernet_assign_local_mac(uint8_t *local_mac_address) {
  * @param ethernet_device Pointer to the Ethernet device structure.
  *                        Must be initialized with hardware config and MAC address.
  *
- * @return KERNEL_ERROR_NONE on success.
+ * @return KERNEL_SUCCESS on success.
  * @return KERNEL_ERROR_NULL if the pointer is NULL.
  * @return KERNEL_ERROR_ALLOC_ETH_MAC if MAC allocation fails.
  * @return KERNEL_ERROR_ALLOC_ETH_PHY if PHY allocation fails.
@@ -180,7 +180,7 @@ static kernel_error_st ethernet_init_spi(ethernet_device_st *ethernet_device, es
         return KERNEL_ERROR_BURNING_MAC_ADDRESS;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -198,7 +198,7 @@ static kernel_error_st ethernet_init_spi(ethernet_device_st *ethernet_device, es
  *                                On success, the MAC and PHY handles are populated.
  *
  * @return kernel_error_st
- *         - KERNEL_ERROR_NONE: Initialization successful.
+ *         - KERNEL_SUCCESS: Initialization successful.
  *         - KERNEL_ERROR_NULL: Null pointer passed as parameter.
  *         - KERNEL_ERROR_SPI_INIT: Failed to initialize SPI bus.
  *         - KERNEL_ERROR_ASSIGN_MAC: Failed to assign MAC address.
@@ -212,19 +212,19 @@ kernel_error_st w5500_initialize(ethernet_device_st *ethernet_device, esp_eth_ha
     }
     
     kernel_error_st err = ethernet_spi_bus_init(&ethernet_device->ethernet_hardware_config.ethernet_spi_config);
-    if (err != KERNEL_ERROR_NONE) {
+    if (err != KERNEL_SUCCESS) {
         return err;
     }
     
     err = ethernet_assign_local_mac(ethernet_device->mac_addr);
-    if (err != KERNEL_ERROR_NONE) {
+    if (err != KERNEL_SUCCESS) {
         return err;
     }
     
     err = ethernet_init_spi(ethernet_device, eth_handle);
-    if (err != KERNEL_ERROR_NONE) {
+    if (err != KERNEL_SUCCESS) {
         return err;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }

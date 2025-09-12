@@ -33,7 +33,7 @@ extern "C" {
  * @param schema_len   Number of elements in the schema array.
  *
  * @return kernel_error_st
- *         - KERNEL_ERROR_NONE if all fields are present and types match
+ *         - KERNEL_SUCCESS if all fields are present and types match
  *         - KERNEL_ERROR_MISSING_FIELD if any required key is missing
  *         - KERNEL_ERROR_INVALID_TYPE if any value has the wrong type or schema contains unknown type
  */

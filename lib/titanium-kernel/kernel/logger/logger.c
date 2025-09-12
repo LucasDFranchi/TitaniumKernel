@@ -47,7 +47,7 @@ static kernel_error_st send_udp_packet(const char* packet) {
         }
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -67,7 +67,7 @@ static kernel_error_st send_serial_packet(const char* packet) {
         printf("%s\n", packet);
         xSemaphoreGive(logger_mutex);
     }
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -120,7 +120,7 @@ static kernel_error_st open_udp_socket(void) {
         return KERNEL_ERROR_SOCK_CREATE_FAIL;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -178,7 +178,7 @@ static kernel_error_st logger_send_message(const char* level, const char* tag, c
  * @param log_output         The desired logging output channel (e.g., SERIAL, UDP).
  * @param global_structures  Pointer to the global system structures; must not be NULL.
  *
- * @return KERNEL_ERROR_NONE on successful initialization,
+ * @return KERNEL_SUCCESS on successful initialization,
  *         KERNEL_ERROR_INVALID_ARG if global_structures is NULL,
  *         KERNEL_ERROR_MUTEX_INIT_FAIL if mutex creation fails.
  */
@@ -200,7 +200,7 @@ kernel_error_st logger_initialize(release_mode_et release_mode, log_output_et lo
         return KERNEL_ERROR_MUTEX_INIT_FAIL;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -253,5 +253,5 @@ kernel_error_st logger_print(log_level_et log_level, const char* tag, const char
             return KERNEL_ERROR_INVALID_ARG;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }

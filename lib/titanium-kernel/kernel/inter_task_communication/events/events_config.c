@@ -27,5 +27,5 @@ kernel_error_st global_events_initialize(global_events_st *config) {
         return KERNEL_ERROR_NULL;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }

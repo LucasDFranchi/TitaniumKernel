@@ -77,7 +77,7 @@ static bool get_ethernet_status(void) {
  * Calls the W5500 driver initialization function and logs any errors.
  *
  * @param[out] eth_handle  Pointer to store the initialized Ethernet handle.
- * @return KERNEL_ERROR_NONE on success, or an error code on failure.
+ * @return KERNEL_SUCCESS on success, or an error code on failure.
  */
 static kernel_error_st initialize_driver(esp_eth_handle_t *eth_handle) {
     if (eth_handle == NULL) {
@@ -85,12 +85,12 @@ static kernel_error_st initialize_driver(esp_eth_handle_t *eth_handle) {
     }
 
     kernel_error_st err = w5500_initialize(ethernet_device, eth_handle);
-    if (err != KERNEL_ERROR_NONE) {
+    if (err != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "W5500 driver initialization failed: %d", err);
         return err;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -101,7 +101,7 @@ static kernel_error_st initialize_driver(esp_eth_handle_t *eth_handle) {
  *
  * @param[in,out] network_bridge_init Pointer to initialization structure containing
  *                                    Ethernet device and network bridge references.
- * @return KERNEL_ERROR_NONE on success, or KERNEL_ERROR_NULL if input is NULL.
+ * @return KERNEL_SUCCESS on success, or KERNEL_ERROR_NULL if input is NULL.
  */
 kernel_error_st network_bridge_initialize(network_bridge_init_st *network_bridge_init) {
     if (network_bridge_init == NULL) {
@@ -114,5 +114,5 @@ kernel_error_st network_bridge_initialize(network_bridge_init_st *network_bridge
     network_bridge_init->network_bridge->got_ip                 = got_ip;
     network_bridge_init->network_bridge->get_ethernet_status    = get_ethernet_status;
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }

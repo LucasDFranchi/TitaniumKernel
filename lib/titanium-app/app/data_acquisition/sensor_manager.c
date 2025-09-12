@@ -426,7 +426,7 @@ static sensor_interface_st sensor_interface[NUM_OF_SENSORS] = {
  * This function must be called once before using any sensor operations.
  *
  * @return
- *     - KERNEL_ERROR_NONE on success
+ *     - KERNEL_SUCCESS on success
  *     - KERNEL_ERROR_INVALID_ARG if the input is invalid
  *     - KERNEL_ERROR_MUX_INIT_ERROR if the multiplexer initialization fails
  *     - KERNEL_ERROR_ADC_INIT_ERROR if the ADC initialization fails
@@ -446,12 +446,12 @@ static kernel_error_st sensor_manager_initialize(void *args) {
         return KERNEL_ERROR_QUEUE_NULL;
     }
 
-    if (adc_controller_init(&adc_controller) != KERNEL_ERROR_NONE) {
+    if (adc_controller_init(&adc_controller) != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to initialize ADC manager");
         return KERNEL_ERROR_MUX_INIT_ERROR;
     }
 
-    if (mux_controller_init(&mux_controller) != KERNEL_ERROR_NONE) {
+    if (mux_controller_init(&mux_controller) != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to initialize MUX manager");
         return KERNEL_ERROR_ADC_INIT_ERROR;
     }
@@ -488,7 +488,7 @@ static kernel_error_st sensor_manager_initialize(void *args) {
         }
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -616,7 +616,7 @@ sensor_state_et sensor_get_state(uint8_t sensor_index) {
  * @param offset       Offset value to subtract from the raw measured voltage.
  * @param gain         Gain factor to apply after offset adjustment.
  * @return kernel_error_st
- *         - KERNEL_ERROR_NONE on success
+ *         - KERNEL_SUCCESS on success
  *         - KERNEL_ERROR_INVALID_ARG if the sensor index is out of range
  */
 kernel_error_st sensor_calibrate(uint8_t sensor_index, float offset, float gain) {
@@ -632,7 +632,7 @@ kernel_error_st sensor_calibrate(uint8_t sensor_index, float offset, float gain)
         xSemaphoreGive(sensor->mutex);
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -649,7 +649,7 @@ kernel_error_st sensor_calibrate(uint8_t sensor_index, float offset, float gain)
  */
 void sensor_manager_loop(void *args) {
     kernel_error_st err = sensor_manager_initialize(args);
-    if (err != KERNEL_ERROR_NONE) {
+    if (err != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to initialize the sensor manager! - %d", err);
         return;
     }
@@ -668,7 +668,7 @@ void sensor_manager_loop(void *args) {
                 continue;
             }
             kernel_error_st err = sensor_interface[i].read(&sensor_interface[i], device_report.sensors);
-            if (err != KERNEL_ERROR_NONE) {
+            if (err != KERNEL_SUCCESS) {
                 logger_print(ERR, TAG, "Failed to read sensor at index %d: error %d", i, err);
             }
             vTaskDelay(pdMS_TO_TICKS(100));

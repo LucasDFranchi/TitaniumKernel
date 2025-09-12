@@ -239,7 +239,7 @@ static const char *TAG = "Application Task";  ///< Tag used for logging.
  *                              Must contain valid queues for network and MQTT bridges.
  *
  * @return kernel_error_st
- *         - KERNEL_ERROR_NONE on success
+ *         - KERNEL_SUCCESS on success
  *         - KERNEL_ERROR_INVALID_ARG if the global structures are invalid
  *         - KERNEL_ERROR_xxx if initialization of network bridge, MQTT bridge,
  *           or any manager task fails
@@ -251,13 +251,13 @@ kernel_error_st app_initialize(global_structures_st *global_structures) {
     logger_print(DEBUG, TAG, "Application initialization started");
 
     kernel_error_st err = validate_global_structure(global_structures);
-    if (err != KERNEL_ERROR_NONE) {
+    if (err != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Invalid global structure definitions");
         return err;
     }
 
     err = network_bridge_initialize(&network_bridge_init_struct);
-    if (err != KERNEL_ERROR_NONE) {
+    if (err != KERNEL_SUCCESS) {
         logger_print(INFO, TAG, "Network bridge installed failed!");
         return err;
     }
@@ -266,7 +266,7 @@ kernel_error_st app_initialize(global_structures_st *global_structures) {
                pdMS_TO_TICKS(100));
 
     err = mqtt_bridge_initialize(&mqtt_bridge_init_struct);
-    if (err != KERNEL_ERROR_NONE) {
+    if (err != KERNEL_SUCCESS) {
         logger_print(INFO, TAG, "MQTT bridge installed failed!");
         return err;
     }
@@ -277,7 +277,7 @@ kernel_error_st app_initialize(global_structures_st *global_structures) {
     sensor_manager_init.sensor_manager_queue = mqtt_topics[SENSOR_REPORT].queue;
 
     err = task_handler_attach_task(&sensor_manager_task);
-    if (err != KERNEL_ERROR_NONE) {
+    if (err != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to initialized Sensor Manager Task - %d", err);
         return err;
     }
@@ -287,16 +287,16 @@ kernel_error_st app_initialize(global_structures_st *global_structures) {
     command_manager_init.response_command_queue  = mqtt_topics[RESPONSE_COMMAND].queue;
 
     err = task_handler_attach_task(&command_manager_task);
-    if (err != KERNEL_ERROR_NONE) {
+    if (err != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to initialized Command Manager Task - %d", err);
         return err;
     }
 
     err = task_handler_attach_task(&health_manager_task);
-    if (err != KERNEL_ERROR_NONE) {
+    if (err != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to initialized Health Manager Task - %d", err);
         return err;
     }
     
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }

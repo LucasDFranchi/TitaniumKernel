@@ -28,7 +28,7 @@ typedef struct mqtt_bridge_init_struct_s {
  * @param mqtt_bridge_init_struct Pointer to the MQTT bridge init struct containing bridge instance, topics, and topic count.
  * @param device_unique_id Null-terminated string containing the device unique identifier (max 12 chars).
  *
- * @return KERNEL_ERROR_NONE on successful initialization.
+ * @return KERNEL_SUCCESS on successful initialization.
  * @return KERNEL_ERROR_NULL if any pointer arguments are NULL.
  * @return KERNEL_ERROR_FORMATTING if the unique ID string is too long to fit in the internal buffer.
  * @return ESP_FAIL if any topic registration fails.
