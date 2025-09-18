@@ -1,8 +1,8 @@
 /*
- * @file Ads1115Driver.cc
- * @brief Ads1115Driver ADC driver implementation using ESP-IDF I2C APIs.
+ * @file ADS1115.cc
+ * @brief ADS1115 ADC driver implementation using ESP-IDF I2C APIs.
  *
- * This file provides functions for configuring and using the Ads1115Driver ADC
+ * This file provides functions for configuring and using the ADS1115 ADC
  * over I2C, including register-level control and data acquisition.
  *
  * @license Apache License 2.0
@@ -24,7 +24,7 @@
  *         - KERNEL_ERROR_NULL: I2C handler not initialized
  *         - Other codes returned by the underlying I2C write function
  */
-kernel_error_st Ads1115Driver::write_register(register_address register_address, uint16_t value) {
+kernel_error_st ADS1115::write_register(register_address_e register_address, uint16_t value) {
     if (this->i2c_handler_ == nullptr) {
         return KERNEL_ERROR_NULL;
     }
@@ -54,7 +54,7 @@ kernel_error_st Ads1115Driver::write_register(register_address register_address,
  *         - KERNEL_ERROR_NULL: I2C handler not initialized
  *         - Other codes returned by the underlying I2C read function
  */
-kernel_error_st Ads1115Driver::read_register(register_address register_address, uint16_t &value) {
+kernel_error_st ADS1115::read_register(register_address_e register_address, uint16_t &value) {
     if (this->i2c_handler_ == nullptr) {
         return KERNEL_ERROR_NULL;
     }
@@ -75,11 +75,11 @@ kernel_error_st Ads1115Driver::read_register(register_address register_address, 
     return KERNEL_SUCCESS;
 }
 
-kernel_error_st Ads1115Driver::configure(void) {
+kernel_error_st ADS1115::configure(void) {
     return this->write_register(register_address::config, this->config_.value);
 }
 
-kernel_error_st Ads1115Driver::get_raw_value(int16_t &raw_value) {
+kernel_error_st ADS1115::get_raw_value(int16_t &raw_value) {
     uint16_t reg_value  = 0;
     kernel_error_st err = this->read_register(register_address::conversion, reg_value);
     if (err != KERNEL_SUCCESS) {
@@ -100,7 +100,7 @@ kernel_error_st Ads1115Driver::get_raw_value(int16_t &raw_value) {
  * @return true  If conversion is complete (data ready).
  * @return false If conversion is still in progress or I2C read failed.
  */
-bool Ads1115Driver::is_conversion_complete(void) {
+bool ADS1115::is_conversion_complete(void) {
     register_config reg_config{};
 
     if (this->read_register(register_address::config, reg_config.value) != ESP_OK) {
@@ -115,7 +115,7 @@ bool Ads1115Driver::is_conversion_complete(void) {
  * @param mux The input channel configuration to use.
  * @return kernel_error_st KERNEL_SUCCESS if valid, KERNEL_ERROR_INVALID_ARG otherwise.
  */
-kernel_error_st Ads1115Driver::set_mux(mux_config mux) {
+kernel_error_st ADS1115::set_mux(mux_config mux) {
     if (mux < mux_config::diff_a0_a1 || mux > mux_config::single_a3) {
         return KERNEL_ERROR_INVALID_ARG;
     }
@@ -129,7 +129,7 @@ kernel_error_st Ads1115Driver::set_mux(mux_config mux) {
  * @param gain The PGA gain to use.
  * @return kernel_error_st KERNEL_SUCCESS if valid, KERNEL_ERROR_INVALID_ARG otherwise.
  */
-kernel_error_st Ads1115Driver::set_pga(pga_gain gain) {
+kernel_error_st ADS1115::set_pga(pga_gain gain) {
     if (gain < pga_gain::v6_144 || gain > pga_gain::v0_256_3) {
         return KERNEL_ERROR_INVALID_ARG;
     }
@@ -143,7 +143,7 @@ kernel_error_st Ads1115Driver::set_pga(pga_gain gain) {
  * @param m The operating mode (continuous or single-shot).
  * @return kernel_error_st KERNEL_SUCCESS if valid, KERNEL_ERROR_INVALID_ARG otherwise.
  */
-kernel_error_st Ads1115Driver::set_mode(mode m) {
+kernel_error_st ADS1115::set_mode(mode m) {
     if (m != mode::continuous && m != mode::single_shot) {
         return KERNEL_ERROR_INVALID_ARG;
     }
@@ -157,7 +157,7 @@ kernel_error_st Ads1115Driver::set_mode(mode m) {
  * @param rate The data rate setting.
  * @return kernel_error_st KERNEL_SUCCESS if valid, KERNEL_ERROR_INVALID_ARG otherwise.
  */
-kernel_error_st Ads1115Driver::set_data_rate(data_rate rate) {
+kernel_error_st ADS1115::set_data_rate(data_rate rate) {
     if (rate < data_rate::sps_8 || rate > data_rate::sps_860) {
         return KERNEL_ERROR_INVALID_ARG;
     }
@@ -175,7 +175,7 @@ kernel_error_st Ads1115Driver::set_data_rate(data_rate rate) {
  * @return kernel_error_st KERNEL_SUCCESS if all parameters are valid,
  *                         otherwise a specific error code for the invalid parameter.
  */
-kernel_error_st Ads1115Driver::set_comparator(comparator_mode comp_mode,
+kernel_error_st ADS1115::set_comparator(comparator_mode comp_mode,
                                         comparator_polarity pol,
                                         comparator_latching latch,
                                         comparator_queue queue) {

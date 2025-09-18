@@ -26,7 +26,7 @@ kernel_error_st I2CHandler::write(uint8_t dev_adr,
                                   uint8_t w_len,
                                   uint8_t *buff) {
     if (!this->is_initialized_) {
-        return KERNEL_ERROR_I2C_NOT_INITALIZED;
+        return KERNEL_ERROR_RESOURCE_NOT_INITIALIZED;
     }
     
     if (!buff || w_len == 0) {
@@ -104,7 +104,7 @@ kernel_error_st I2CHandler::read(uint8_t dev_adr,
                                  uint8_t r_len,
                                  uint8_t *buff) {
     if (!this->is_initialized_) {
-        return KERNEL_ERROR_I2C_NOT_INITALIZED;
+        return KERNEL_ERROR_RESOURCE_NOT_INITIALIZED;
     }
 
     if (!buff || r_len == 0) {

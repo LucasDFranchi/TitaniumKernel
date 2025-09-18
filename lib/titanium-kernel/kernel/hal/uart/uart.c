@@ -35,7 +35,7 @@ typedef struct uart_hw_config_t {
  * @brief Runtime state and configuration for a UART instance.
  */
 typedef struct uart_instance_t {
-    bool is_initialized;         /**< True if the UART is already initialized. */
+    bool is_initialized_;         /**< True if the UART is already initialized. */
     size_t buffer_size;          /**< RX buffer size in bytes. */
     uart_hw_config_st hw_config; /**< Hardware pin configuration. */
     SemaphoreHandle_t mutex;     /**< Mutex for thread-safe read/write. */
@@ -50,7 +50,7 @@ typedef struct uart_instance_t {
  */
 static uart_instance_st uart_instance[UART_NUM_MAX] = {
     [UART_NUM_0] = {
-        .is_initialized = false,
+        .is_initialized_ = false,
         .buffer_size    = 0,
         .hw_config      = {
                  .tx_pin  = GPIO_NUM_NC,
@@ -59,7 +59,7 @@ static uart_instance_st uart_instance[UART_NUM_MAX] = {
         },
     },
     [UART_NUM_1] = {
-        .is_initialized = false,
+        .is_initialized_ = false,
         .buffer_size    = 0,
         .hw_config      = {
                  .tx_pin  = GPIO_NUM_NC,
@@ -68,7 +68,7 @@ static uart_instance_st uart_instance[UART_NUM_MAX] = {
         },
     },
     [UART_NUM_2] = {
-        .is_initialized = false,
+        .is_initialized_ = false,
         .buffer_size    = 1024,
         .hw_config      = {
                  .tx_pin  = GPIO_NUM_17,
@@ -99,7 +99,7 @@ static esp_err_t uart_set_transmit_mode(uart_port_t port, bool enable) {
         return ESP_ERR_INVALID_ARG;
     }
 
-    if (!uart_instance[port].is_initialized) {
+    if (!uart_instance[port].is_initialized_) {
         return ESP_ERR_INVALID_STATE;
     }
 
@@ -133,7 +133,7 @@ static esp_err_t uart_handle_write(uart_port_t port, uint8_t* buffer, size_t buf
         return ESP_ERR_INVALID_ARG;
     }
 
-    if (!uart_instance[port].is_initialized) {
+    if (!uart_instance[port].is_initialized_) {
         return ESP_ERR_INVALID_STATE;
     }
 
@@ -180,7 +180,7 @@ static int32_t uart_handle_read(uart_port_t port, uint8_t* buffer, size_t buffer
         return ESP_ERR_INVALID_ARG;
     }
 
-    if (!uart_instance[port].is_initialized) {
+    if (!uart_instance[port].is_initialized_) {
         return ESP_ERR_INVALID_STATE;
     }
 
@@ -207,7 +207,7 @@ static int32_t uart_handle_read(uart_port_t port, uint8_t* buffer, size_t buffer
  * - Other ESP-IDF UART driver error codes
  */
 static esp_err_t uart_init_once(uart_port_t port) {
-    if (uart_instance[port].is_initialized) {
+    if (uart_instance[port].is_initialized_) {
         return ESP_OK;
     }
 
@@ -255,7 +255,7 @@ static esp_err_t uart_init_once(uart_port_t port) {
         gpio_set_level(uart_instance[port].hw_config.dir_pin, 0);
     }
 
-    uart_instance[port].is_initialized = true;
+    uart_instance[port].is_initialized_ = true;
 
     return ESP_OK;
 }
