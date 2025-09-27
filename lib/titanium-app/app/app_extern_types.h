@@ -104,12 +104,12 @@ typedef enum command_status_e {
     COMMAND_AUTHENTICATION_FAIL = -3, /**< Calibration-specific failure */
 } command_status_et;
 
-typedef struct app_queues_s {
-    QueueHandle_t sensor_report_queue;
-    QueueHandle_t target_command_queue;
-    QueueHandle_t broadcast_command_queue;
-    QueueHandle_t command_response_queue;
-} app_queues_st;
+// typedef struct app_queues_s {
+//     QueueHandle_t sensor_report_queue;
+//     QueueHandle_t target_command_queue;
+//     QueueHandle_t broadcast_command_queue;
+//     QueueHandle_t command_response_queue;
+// } app_queues_st;
 
 /**
  * @struct device_report_st
