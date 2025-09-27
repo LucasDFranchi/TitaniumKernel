@@ -1,5 +1,8 @@
-#ifndef LOGGER_H
-#define LOGGER_H
+#pragma once
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #include "kernel/error/error_num.h"
 #include "kernel/inter_task_communication/inter_task_communication.h"
@@ -70,4 +73,6 @@ kernel_error_st logger_initialize(release_mode_et release_mode, log_output_et lo
  */
 kernel_error_st logger_print(log_level_et log_level, const char* tag, const char* format, ...);
 
-#endif  // LOGGER_H
+#ifdef __cplusplus
+}
+#endif

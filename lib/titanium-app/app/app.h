@@ -22,6 +22,8 @@ public:
      */
     Application() = default;
 
+    static constexpr char TAG[] = "Application";  ///< Tag used for logging.
+
     /**
      * @brief Initialize the application and attach core tasks.
      *

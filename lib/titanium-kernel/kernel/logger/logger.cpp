@@ -15,8 +15,8 @@ static log_output_et _log_output                = SERIAL;                ///< Lo
 static release_mode_et _release_mode            = RELEASE_MODE_RELEASE;  ///< Current release mode of the system.
 static global_structures_st* _global_structures = NULL;                  ///< Pointer to the global configuration structure.
 static SemaphoreHandle_t logger_mutex           = NULL;                  ///< Mutex used for ensuring thread safety during UDP packet send operations.
-static struct sockaddr_in dest_addr             = {0};                   ///< Destination address structure for the UDP server.
 static int sock                                 = -1;                    ///< UDP socket descriptor used for sending data.
+static struct sockaddr_in dest_addr{};                                   ///< Destination address structure for the UDP server.
 
 /**
  * @brief Sends a UDP packet to the specified destination.
@@ -95,9 +95,10 @@ static bool is_station_connected(void) {
  * @return ESP_OK on success, ESP_FAIL on failure.
  */
 static kernel_error_st open_udp_socket(void) {
-    struct addrinfo hints = {0}, *res;
-    hints.ai_family       = AF_INET;
-    hints.ai_socktype     = SOCK_DGRAM;
+    struct addrinfo hints{};
+    struct addrinfo* res = nullptr;
+    hints.ai_family      = AF_INET;
+    hints.ai_socktype    = SOCK_DGRAM;
 
     // Resolve hostname to IP
     if (getaddrinfo(LOGGER_UDP_HOST, NULL, &hints, &res) != 0) {
@@ -142,12 +143,12 @@ static kernel_error_st logger_send_message(const char* level, const char* tag, c
     char final_message[LOGGER_MAX_PACKET_LEN];
 
     if (!level || !tag || !message) {
-        return ESP_ERR_INVALID_ARG;
+        return KERNEL_ERROR_NULL;
     }
 
     int message_size = snprintf(final_message, sizeof(final_message), "%s %s: %s", level, tag, message);
     if (message_size >= LOGGER_MAX_MSG_BODY_LEN) {
-        return ESP_ERR_INVALID_SIZE;
+        return KERNEL_ERROR_INVALID_SIZE;
     }
 
     if (!is_station_connected() || _log_output == SERIAL) {
@@ -221,7 +222,7 @@ kernel_error_st logger_initialize(release_mode_et release_mode, log_output_et lo
  */
 kernel_error_st logger_print(log_level_et log_level, const char* tag, const char* format, ...) {
     if ((!tag) || (!_global_structures) || !_global_structures->global_events.firmware_event_group) {
-        return ESP_FAIL;
+        return KERNEL_ERROR_NULL;
     }
 
     va_list args;

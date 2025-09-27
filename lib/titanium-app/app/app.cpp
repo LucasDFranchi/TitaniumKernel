@@ -1,5 +1,6 @@
 #include "app.h"
-// #include "kernel/logger/logger.h"
+
+#include "kernel/logger/logger.h"
 // #include "kernel/utils/utils.h"
 // #include "kernel/tasks/interface/task_interface.h"
 
@@ -12,9 +13,8 @@
  * @brief Initialize the application and attach tasks.
  */
 kernel_error_st Application::initialize(global_structures_st* global_structures) {
-
+    logger_print(DEBUG, TAG, "Application initialization started");
     sensors::SensorManager sensor_manager;
-    // logger_print(DEBUG, TAG, "Application initialization started");
 
     // kernel_error_st err = validate_global_structure(global_structures);
     // if (err != KERNEL_SUCCESS) {
@@ -45,6 +45,9 @@ kernel_error_st Application::initialize(global_structures_st* global_structures)
     // if (err != KERNEL_SUCCESS) return err;
     // err = task_handler_attach_task(&health_manager_task_);
     // if (err != KERNEL_SUCCESS) return err;
+
+    sensor_manager.initialize();
+    sensor_manager.start("Sensor Manager", 4096, 5);
 
     return KERNEL_SUCCESS;
 }
