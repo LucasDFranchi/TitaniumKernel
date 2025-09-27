@@ -1,8 +1,8 @@
 #include "app.h"
 
 #include "kernel/logger/logger.h"
-// #include "kernel/utils/utils.h"
-// #include "kernel/tasks/interface/task_interface.h"
+#include "kernel/utils/utils.h"
+#include "kernel/tasks/interface/task_interface.h"
 
 // #include "driver/gpio.h"
 // #include "driver/i2c.h"
@@ -16,17 +16,18 @@ kernel_error_st Application::initialize(global_structures_st* global_structures)
     logger_print(DEBUG, TAG, "Application initialization started");
     sensors::SensorManager sensor_manager;
 
-    // kernel_error_st err = validate_global_structure(global_structures);
-    // if (err != KERNEL_SUCCESS) {
-    //     logger_print(ERR, TAG, "Invalid global structure definitions");
-    //     return err;
-    // }
+    kernel_error_st err = validate_global_structure(global_structures);
+    if (err != KERNEL_SUCCESS) {
+        logger_print(ERR, TAG, "Invalid global structure definitions");
+        return err;
+    }
 
-    // configure_network_bridge();
-    // err = network_bridge_initialize(&network_bridge_init_);
-    // if (err != KERNEL_SUCCESS) return err;
+    // // configure_network_bridge();
+    // err = network_bridge_initialize(&this->network_bridge_init_struct_);
+    // if (err != KERNEL_SUCCESS)
+    //     return err;
     // xQueueSend(global_structures->global_queues.network_bridge_queue,
-    //            network_bridge_init_.network_bridge,
+    //            network_bridge_init_struct_.network_bridge,
     //            pdMS_TO_TICKS(100));
 
     // configure_mqtt_bridge();
@@ -52,31 +53,6 @@ kernel_error_st Application::initialize(global_structures_st* global_structures)
     return KERNEL_SUCCESS;
 }
 
-// /**
-//  * @brief Configure the network bridge initialization struct.
-//  */
-// void Application::configure_network_bridge() {
-//     // Fill network_bridge_init_ with SPI, PHY, MAC, etc.
-//     network_bridge_init_.ethernet_device = {
-//         .ethernet_hardware_config = {
-//             .ethernet_spi_config = {
-//                 .miso          = GPIO_NUM_19,
-//                 .mosi          = GPIO_NUM_23,
-//                 .sclk          = GPIO_NUM_18,
-//                 .cs            = GPIO_NUM_5,
-//                 .spi_host      = SPI3_HOST,
-//                 .spi_clock_mhz = 10,
-//             },
-//             .irq_gpio       = -1,
-//             .phy_reset_gpio = GPIO_NUM_26,
-//         },
-//         .poll_period_ms = 10,
-//         .rx_stack_size  = (2048 * 4),
-//         .phy_addr       = 1,
-//         .mac_addr       = {0},
-//     };
-//     network_bridge_init_.network_bridge = &network_bridge_;
-// }
 
 // /**
 //  * @brief Configure MQTT bridge and topics.

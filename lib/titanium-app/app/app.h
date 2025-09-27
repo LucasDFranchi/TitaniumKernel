@@ -1,10 +1,10 @@
 #pragma once
 
-#include "kernel/error/error_num.h"
 #include "app/app_extern_types.h"
+#include "app/health_manager/health_manager.h"
 #include "app/iot/mqtt_bridge.h"
 #include "app/network/network_bridge.h"
-#include "app/health_manager/health_manager.h"
+#include "kernel/error/error_num.h"
 #include "kernel/tasks/manager/task_handler.h"
 
 /**
@@ -14,7 +14,7 @@
  * All previous static global structs are moved into private members.
  */
 class Application {
-public:
+   public:
     /**
      * @brief Construct a new Application instance.
      *
@@ -34,10 +34,33 @@ public:
      */
     kernel_error_st initialize(global_structures_st* global_structures);
 
-private:
+   private:
     // // Bridges
     // network_bridge_st network_bridge_{};
-    // network_bridge_init_st network_bridge_init_{};
+    // network_bridge_init_st network_bridge_init_struct_ = {
+    //     {
+    //         // ethernet_device
+    //         {
+    //             // ethernet_hardware_config
+    //             {
+    //                 // ethernet_spi_config
+    //                 GPIO_NUM_19,  // miso          - SPI MISO pin number
+    //                 GPIO_NUM_23,  // mosi          - SPI MOSI pin number
+    //                 GPIO_NUM_18,  // sclk          - SPI Clock pin number
+    //                 GPIO_NUM_5,   // cs            - SPI Chip Select pin number
+    //                 SPI3_HOST,    // spi_host      - SPI host to use (SPI3)
+    //                 10            // spi_clock_mhz - SPI clock frequency in MHz
+    //             },
+    //             -1,          // irq_gpio       - IRQ GPIO pin (-1 if unused)
+    //             GPIO_NUM_26  // phy_reset_gpio - PHY reset GPIO pin number
+    //         },
+    //         10,       // poll_period_ms - Polling period in milliseconds
+    //         1,        // phy_addr       - PHY address on the MDIO bus
+    //         {0},      // mac_addr       - MAC address placeholder (initialized to zero)
+    //         2048 * 4  // rx_stack_size  - RX stack size in bytes
+    //     },
+    //     &network_bridge_  // network_bridge   - Pointer to the network bridge interface instance
+    // };
     // mqtt_bridge_st mqtt_bridge_{};
     // mqtt_bridge_init_struct_st mqtt_bridge_init_{};
 
@@ -59,7 +82,7 @@ private:
     // static constexpr const char* TAG = "Application";
 
     // // Helpers
-    // void configure_network_bridge();
+    void configure_network_bridge();
     // void configure_mqtt_bridge();
     // void configure_tasks();
 };

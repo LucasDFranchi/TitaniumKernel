@@ -8,9 +8,10 @@
  * The utility functions provided are designed to be modular and reusable,
  * enhancing code maintainability and reducing redundancy across projects.
  */
-#ifndef UTILS_H
-#define UTILS_H
-
+#pragma once
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include "kernel/error/error_num.h"
 #include "kernel/inter_task_communication/inter_task_communication.h"
@@ -29,4 +30,6 @@
  */
 kernel_error_st validate_global_structure(global_structures_st* global_structures);
 
-#endif  // UTILS_H
+#ifdef __cplusplus
+}
+#endif
