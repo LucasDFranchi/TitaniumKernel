@@ -30,11 +30,11 @@
 #include "app/app_extern_types.h"
 #include "app/app_tasks_config.h"
 #include "app/iot/mqtt_bridge.h"
-#include "app/system/network_bridge/network_bridge.h"
-// TODO: move to a managers folder
-#include "app/command_manager/command_manager.h"
+#include "app/network/network_bridge.h"
+// // TODO: move to a managers folder
+// #include "app/command_manager/command_manager.h"
 #include "app/health_manager/health_manager.h"
-#include "app/sensor_manager/sensor_manager.h"
+// #include "app/sensor_manager/sensor_manager.h"
 
 /**
  * @brief Network bridge interface with function pointers for Ethernet operations.
@@ -200,7 +200,7 @@ task_interface_st sensor_manager_task = {
     .name         = SENSOR_MANAGER_TASK_NAME,
     .stack_size   = SENSOR_MANAGER_TASK_STACK_SIZE,
     .priority     = SENSOR_MANAGER_TASK_PRIORITY,
-    .task_execute = sensor_manager_loop,
+    .task_execute = NULL,
     .arg          = &sensor_manager_init,
     .handle       = NULL,
 };
@@ -209,7 +209,7 @@ task_interface_st command_manager_task = {
     .name         = COMMAND_MANAGER_TASK_NAME,
     .stack_size   = COMMAND_MANAGER_TASK_STACK_SIZE,
     .priority     = COMMAND_MANAGER_TASK_PRIORITY,
-    .task_execute = command_manager_loop,
+    .task_execute = NULL,
     .arg          = &command_manager_init,
     .handle       = NULL,
 };
@@ -218,7 +218,7 @@ task_interface_st health_manager_task = {
     .name         = HEALTH_MANAGER_TASK_NAME,
     .stack_size   = HEALTH_MANAGER_TASK_STACK_SIZE,
     .priority     = HEALTH_MANAGER_TASK_PRIORITY,
-    .task_execute = health_manager_loop,
+    .task_execute = NULL,
     .arg          = &health_manager_init,
     .handle       = NULL,
 };

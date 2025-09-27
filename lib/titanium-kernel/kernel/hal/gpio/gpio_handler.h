@@ -16,9 +16,9 @@ class GPIOHandler {
      * @brief Hardware pin configuration for GPIO.
      */
     struct GPIOHardwareConfig {
-        gpio_num_t pin;         ///< GPIO pin number
-        gpio_mode_t mode;       ///< GPIO mode (input/output/etc.)
-        gpio_pull_mode_t pull;  ///< Pull-up / pull-down configuration
+        gpio_num_t pin;      ///< GPIO pin number
+        gpio_mode_t mode;    ///< GPIO mode (input/output/etc.)
+        gpio_pullup_t pull;  ///< Pull-up / pull-down configuration
     };
 
     /**
@@ -31,7 +31,7 @@ class GPIOHandler {
      * @param mode Pin mode (e.g., GPIO_MODE_INPUT, GPIO_MODE_OUTPUT).
      * @param pull Pull-up/pull-down configuration (e.g., GPIO_PULLUP_ONLY).
      */
-    GPIOHandler(gpio_num_t pin, gpio_mode_t mode, gpio_pull_mode_t pull)
+    GPIOHandler(gpio_num_t pin, gpio_mode_t mode, gpio_pullup_t pull)
         : pin_(pin), mode_(mode), pull_(pull) {}
 
     /**
@@ -48,7 +48,7 @@ class GPIOHandler {
      * This must be called once before using set_level(), get_level(),
      * or toggle().
      *
-     * @return ::KERNEL_ERROR_NONE on success, error code otherwise.
+     * @return ::KERNEL_SUCCESS on success, error code otherwise.
      */
     kernel_error_st initialize();
 
@@ -56,7 +56,7 @@ class GPIOHandler {
      * @brief Set the pin to logical high or low.
      *
      * @param level true = high, false = low.
-     * @return ::KERNEL_ERROR_NONE on success, error code otherwise.
+     * @return ::KERNEL_SUCCESS on success, error code otherwise.
      */
     kernel_error_st set_level(bool level);
 
@@ -64,7 +64,7 @@ class GPIOHandler {
      * @brief Read the current logic level from the pin.
      *
      * @param level Reference to store pin state (true = high, false = low).
-     * @return ::KERNEL_ERROR_NONE on success, error code otherwise.
+     * @return ::KERNEL_SUCCESS on success, error code otherwise.
      */
     kernel_error_st get_level(bool &level);
 
@@ -73,13 +73,13 @@ class GPIOHandler {
      *
      * Only valid if the pin was configured as output.
      *
-     * @return ::KERNEL_ERROR_NONE on success, error code otherwise.
+     * @return ::KERNEL_SUCCESS on success, error code otherwise.
      */
     kernel_error_st toggle();
 
    private:
     gpio_num_t pin_;              ///< ESP-IDF pin identifier (GPIO number).
     gpio_mode_t mode_;            ///< ESP-IDF pin mode configuration.
-    gpio_pull_mode_t pull_;       ///< ESP-IDF pull-up/pull-down configuration.
+    gpio_pullup_t pull_;          ///< ESP-IDF pull-up/pull-down configuration.
     bool is_initialized_{false};  ///< Tracks whether initialize() has been called.
 };

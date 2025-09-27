@@ -56,7 +56,7 @@ class I2CHandler {
      * Configures pins, clock speed, and installs the I²C driver
      * with mutex protection.
      *
-     * @return kernel_error_st ::KERNEL_ERROR_NONE on success, error code otherwise.
+     * @return kernel_error_st ::KERNEL_SUCCESS on success, error code otherwise.
      */
     kernel_error_st initialize();
 
@@ -67,7 +67,7 @@ class I2CHandler {
      * @param w_adr Register address to write.
      * @param w_len Number of bytes to write.
      * @param buff Pointer to buffer containing data.
-     * @return kernel_error_st ::KERNEL_ERROR_NONE on success, error code otherwise.
+     * @return kernel_error_st ::KERNEL_SUCCESS on success, error code otherwise.
      */
     kernel_error_st write(uint8_t dev_adr, uint8_t w_adr, uint8_t w_len, uint8_t *buff);
 
@@ -78,7 +78,7 @@ class I2CHandler {
      * @param r_adr Register address to read.
      * @param r_len Number of bytes to read.
      * @param buff Pointer to buffer where data will be stored.
-     * @return kernel_error_st ::KERNEL_ERROR_NONE on success, error code otherwise.
+     * @return kernel_error_st ::KERNEL_SUCCESS on success, error code otherwise.
      */
     kernel_error_st read(uint8_t dev_adr, uint8_t r_adr, uint8_t r_len, uint8_t *buff);
 

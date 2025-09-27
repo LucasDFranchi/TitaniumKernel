@@ -32,7 +32,7 @@ class TCA9548A {
     /**
      * @brief Possible I2C addresses of the TCA9548A (A0/A1/A2 pins).
      */
-    enum class mux_address_e {
+    enum class mux_address_e : size_t{
         MUX_ADDRESS_0 = 0x70, /*!< TCA9548A I2C address 0x70 */
         MUX_ADDRESS_1 = 0x71, /*!< TCA9548A I2C address 0x71 */
         MUX_ADDRESS_2 = 0x72, /*!< TCA9548A I2C address 0x72 */
@@ -92,7 +92,7 @@ class TCA9548A {
      *
      * Configures the device into a known state and disables all channels.
      *
-     * @return ::KERNEL_ERROR_NONE on success, error code otherwise.
+     * @return ::KERNEL_SUCCESS on success, error code otherwise.
      */
     kernel_error_st initialize(void);
 
@@ -100,21 +100,21 @@ class TCA9548A {
      * @brief Enable a specific channel.
      *
      * @param channel_index Channel index (0–7).
-     * @return ::KERNEL_ERROR_NONE on success, error code otherwise.
+     * @return ::KERNEL_SUCCESS on success, error code otherwise.
      */
     kernel_error_st enable_channel(channel_index_e channel_index);
 
     /**
      * @brief Disable all channels.
      *
-     * @return ::KERNEL_ERROR_NONE on success, error code otherwise.
+     * @return ::KERNEL_SUCCESS on success, error code otherwise.
      */
     kernel_error_st disable(void);
 
     /**
      * @brief Reset the multiplexer using the external reset pin.
      *
-     * @return ::KERNEL_ERROR_NONE on success, error code otherwise.
+     * @return ::KERNEL_SUCCESS on success, error code otherwise.
      */
     kernel_error_st reset(void);
 
@@ -128,7 +128,7 @@ class TCA9548A {
      * @brief Write a value to the control register.
      *
      * @param value Value to write.
-     * @return ::KERNEL_ERROR_NONE on success, error code otherwise.
+     * @return ::KERNEL_SUCCESS on success, error code otherwise.
      */
     kernel_error_st write_register(uint8_t value);
 };

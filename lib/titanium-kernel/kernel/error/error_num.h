@@ -32,6 +32,7 @@ typedef enum kernel_error_s {
     KERNEL_ERROR_FUNC_POINTER_NULL = 0x000A,
     KERNEL_ERROR_TIMEOUT           = 0x000B,
     KERNEL_ERROR_FORMAT            = 0x000C,
+    KERNEL_ERROR_INVALID_STATE     = 0x000D,
 
     /* -------- Task/Queue (0x100) -------- */
     KERNEL_ERROR_TASK_CREATE     = 0x0100,
@@ -138,6 +139,8 @@ typedef enum kernel_error_s {
     KERNEL_ERROR_ADC_INVALID_CMP_POLARITY  = 0x090A,
     KERNEL_ERROR_ADC_INVALID_CMP_LATCHING  = 0x090B,
     KERNEL_ERROR_ADC_INVALID_CMP_QUEUE     = 0x090C,
+    KERNEL_ERROR_SENSOR_NOT_INITIALIZED    = 0x090D,
+    KERNEL_ERROR_CHANNEL_FULL              = 0x090E,
 
     /* -------- Drivers (0x1000) -------- */
     KERNEL_ERROR_FAIL_INSTALL_ISR         = 0x1000,
@@ -163,6 +166,8 @@ typedef enum kernel_error_s {
     KERNEL_ERROR_RESOURCE_NOT_INITIALIZED = 0x1014,
     KERNEL_ERROR_INVALID_GPIO             = 0x1015,
     KERNEL_ERROR_INVALID_MUX_CHANNEL      = 0x1016,
+    KERNEL_ERROR_INITIALIZE_GPIO          = 0x1017,
+    KERNEL_ERROR_INVALID_MUX_ADDRESS      = 0x1018,
 
     /* -------- Hardware (0x1000) ------- */
     KERNEL_ERROR_GPIO_CONFIG_FAIL    = 0x1100,

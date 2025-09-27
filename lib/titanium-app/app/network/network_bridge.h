@@ -3,7 +3,7 @@
 #include "kernel/error/error_num.h"
 #include "kernel/inter_task_communication/inter_task_communication.h"
 
-#include "app/hardware/drivers/w5500.h"
+#include "app/hal/drivers/w5500.h"
 
 /**
  * @brief Initialization parameters for the network bridge module.

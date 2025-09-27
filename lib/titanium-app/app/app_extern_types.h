@@ -2,7 +2,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "app/sensor_manager/sensor_manager.h"
+// #include "app/sensor_manager/sensor_manager.h"
+
+#include "app/input_manager/sensor_types.h"
 
 //
 // NOTE: This file should be auto-generated from a JSON schema defined in the API repository.

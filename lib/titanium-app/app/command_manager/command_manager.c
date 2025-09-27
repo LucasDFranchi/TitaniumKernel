@@ -45,22 +45,22 @@ command_manager_init_st command_manager_init = {0};
 kernel_error_st process_set_calibration_command(command_st* command, command_response_st* command_response) {
     kernel_error_st result = KERNEL_SUCCESS;
 
-    if ((command == NULL) || (command_response == NULL)) {
-        return KERNEL_ERROR_NULL;
-    }
+    // if ((command == NULL) || (command_response == NULL)) {
+    //     return KERNEL_ERROR_NULL;
+    // }
 
-    cmd_set_calibration_st cmd = command->command_u.set_calibration;
-    result                     = sensor_calibrate(cmd.sensor_index, cmd.offset, cmd.gain);
+    // cmd_set_calibration_st cmd = command->command_u.set_calibration;
+    // result                     = sensor_calibrate(cmd.sensor_index, cmd.offset, cmd.gain);
 
-    command_response->command_index  = CMD_SET_CALIBRATION;
-    command_response->command_status = result == KERNEL_SUCCESS ? COMMAND_SUCCESS : COMMAND_CALIBRATION_FAIL;
+    // command_response->command_index  = CMD_SET_CALIBRATION;
+    // command_response->command_status = result == KERNEL_SUCCESS ? COMMAND_SUCCESS : COMMAND_CALIBRATION_FAIL;
 
-    if (command_response->command_status == COMMAND_SUCCESS) {
-        command_response->command_u.cmd_sensor_response.sensor_index = cmd.sensor_index;
-        command_response->command_u.cmd_sensor_response.sensor_type  = sensor_get_type(cmd.sensor_index);
-        command_response->command_u.cmd_sensor_response.gain         = cmd.gain;
-        command_response->command_u.cmd_sensor_response.offset       = cmd.offset;
-    }
+    // if (command_response->command_status == COMMAND_SUCCESS) {
+    //     command_response->command_u.cmd_sensor_response.sensor_index = cmd.sensor_index;
+    //     command_response->command_u.cmd_sensor_response.sensor_type  = sensor_get_type(cmd.sensor_index);
+    //     command_response->command_u.cmd_sensor_response.gain         = cmd.gain;
+    //     command_response->command_u.cmd_sensor_response.offset       = cmd.offset;
+    // }
 
     return result;
 }
@@ -82,55 +82,55 @@ kernel_error_st process_set_calibration_command(command_st* command, command_res
  */
 kernel_error_st process_get_system_info_command(command_st* command, command_response_st* command_response) {
     kernel_error_st result                = KERNEL_SUCCESS;
-    static const char expected_user[]     = "root";
-    static const char expected_password[] = "root";
+    // static const char expected_user[]     = "root";
+    // static const char expected_password[] = "root";
 
-    if ((command == NULL) || (command_response == NULL)) {
-        return KERNEL_ERROR_NULL;
-    }
+    // if ((command == NULL) || (command_response == NULL)) {
+    //     return KERNEL_ERROR_NULL;
+    // }
 
-    cmd_get_system_info_st cmd = command->command_u.cmd_get_system_info;
+    // cmd_get_system_info_st cmd = command->command_u.cmd_get_system_info;
 
-    if (memcmp(cmd.user, expected_user, sizeof(expected_user)) != 0) {
-        result = KERNEL_ERROR_INVALID_USER;
-    }
+    // if (memcmp(cmd.user, expected_user, sizeof(expected_user)) != 0) {
+    //     result = KERNEL_ERROR_INVALID_USER;
+    // }
 
-    if (memcmp(cmd.password, expected_password, sizeof(expected_password)) != 0) {
-        result = KERNEL_ERROR_INVALID_PASSWORD;
-    }
+    // if (memcmp(cmd.password, expected_password, sizeof(expected_password)) != 0) {
+    //     result = KERNEL_ERROR_INVALID_PASSWORD;
+    // }
 
-    command_response->command_index  = CMD_GET_SYSTEM_INFO;
-    command_response->command_status = result == KERNEL_SUCCESS ? COMMAND_SUCCESS : COMMAND_AUTHENTICATION_FAIL;
+    // command_response->command_index  = CMD_GET_SYSTEM_INFO;
+    // command_response->command_status = result == KERNEL_SUCCESS ? COMMAND_SUCCESS : COMMAND_AUTHENTICATION_FAIL;
 
-    if (command_response->command_status == COMMAND_SUCCESS) {
-        size_t device_id_size = snprintf(command_response->command_u.cmd_system_info_response.device_id,
-                                         sizeof(command_response->command_u.cmd_system_info_response.device_id),
-                                         "%s",
-                                         device_info_get_id());
+    // if (command_response->command_status == COMMAND_SUCCESS) {
+    //     size_t device_id_size = snprintf(command_response->command_u.cmd_system_info_response.device_id,
+    //                                      sizeof(command_response->command_u.cmd_system_info_response.device_id),
+    //                                      "%s",
+    //                                      device_info_get_id());
 
-        if (device_id_size >= sizeof(command_response->command_u.cmd_system_info_response.device_id)) {
-            return KERNEL_ERROR_INVALID_SIZE;
-        }
+    //     if (device_id_size >= sizeof(command_response->command_u.cmd_system_info_response.device_id)) {
+    //         return KERNEL_ERROR_INVALID_SIZE;
+    //     }
 
-        size_t ip_address_size = snprintf(command_response->command_u.cmd_system_info_response.ip_address,
-                                          sizeof(command_response->command_u.cmd_system_info_response.ip_address),
-                                          "%s",
-                                          device_info_get_ip_address());
+    //     size_t ip_address_size = snprintf(command_response->command_u.cmd_system_info_response.ip_address,
+    //                                       sizeof(command_response->command_u.cmd_system_info_response.ip_address),
+    //                                       "%s",
+    //                                       device_info_get_ip_address());
 
-        if (ip_address_size >= sizeof(command_response->command_u.cmd_system_info_response.ip_address)) {
-            return KERNEL_ERROR_INVALID_SIZE;
-        }
+    //     if (ip_address_size >= sizeof(command_response->command_u.cmd_system_info_response.ip_address)) {
+    //         return KERNEL_ERROR_INVALID_SIZE;
+    //     }
 
-        command_response->command_u.cmd_system_info_response.uptime = device_info_get_uptime();
+    //     command_response->command_u.cmd_system_info_response.uptime = device_info_get_uptime();
 
-        for (int i = 0; i < NUM_OF_SENSORS; i++) {
-            command_response->command_u.cmd_system_info_response.sensor_calibration_status[i].sensor_index = i;
-            command_response->command_u.cmd_system_info_response.sensor_calibration_status[i].sensor_type  = sensor_get_type(i);
-            command_response->command_u.cmd_system_info_response.sensor_calibration_status[i].gain         = sensor_get_gain(i);
-            command_response->command_u.cmd_system_info_response.sensor_calibration_status[i].offset       = sensor_get_offset(i);
-            command_response->command_u.cmd_system_info_response.sensor_calibration_status[i].state        = sensor_get_state(i);
-        }
-    }
+    //     for (int i = 0; i < NUM_OF_SENSORS; i++) {
+    //         command_response->command_u.cmd_system_info_response.sensor_calibration_status[i].sensor_index = i;
+    //         command_response->command_u.cmd_system_info_response.sensor_calibration_status[i].sensor_type  = sensor_get_type(i);
+    //         command_response->command_u.cmd_system_info_response.sensor_calibration_status[i].gain         = sensor_get_gain(i);
+    //         command_response->command_u.cmd_system_info_response.sensor_calibration_status[i].offset       = sensor_get_offset(i);
+    //         command_response->command_u.cmd_system_info_response.sensor_calibration_status[i].state        = sensor_get_state(i);
+    //     }
+    // }
     return result;
 }
 

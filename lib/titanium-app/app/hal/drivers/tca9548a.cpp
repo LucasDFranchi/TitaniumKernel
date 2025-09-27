@@ -3,7 +3,7 @@
  * @brief Write a value to the control register.
  *
  * @param value Value to write.
- * @return ::KERNEL_ERROR_NONE on success, error code otherwise.
+ * @return ::KERNEL_SUCCESS on success, error code otherwise.
  */
 kernel_error_st TCA9548A::write_register(uint8_t value) {
     if (!this->is_initialized_) {
@@ -38,7 +38,7 @@ kernel_error_st TCA9548A::initialize() {
  * @brief Enable a specific channel.
  *
  * @param channel_index Channel index (0–7).
- * @return ::KERNEL_ERROR_NONE on success, error code otherwise.
+ * @return ::KERNEL_SUCCESS on success, error code otherwise.
  */
 kernel_error_st TCA9548A::enable_channel(channel_index_e channel_index) {
     if (!this->is_initialized_) {
@@ -55,7 +55,7 @@ kernel_error_st TCA9548A::enable_channel(channel_index_e channel_index) {
 /**
  * @brief Disable all channels.
  *
- * @return ::KERNEL_ERROR_NONE on success, error code otherwise.
+ * @return ::KERNEL_SUCCESS on success, error code otherwise.
  */
 kernel_error_st TCA9548A::disable(void) {
     if (!this->is_initialized_) {
@@ -68,7 +68,7 @@ kernel_error_st TCA9548A::disable(void) {
 /**
  * @brief Reset the multiplexer using the external reset pin.
  *
- * @return ::KERNEL_ERROR_NONE on success, error code otherwise.
+ * @return ::KERNEL_SUCCESS on success, error code otherwise.
  */
 kernel_error_st TCA9548A::reset(void) {
     if (!this->is_initialized_) {
