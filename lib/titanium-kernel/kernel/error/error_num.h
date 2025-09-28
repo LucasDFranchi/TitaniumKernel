@@ -114,6 +114,7 @@ typedef enum kernel_error_s {
     KERNEL_ERROR_ETHERNET_START           = 0x061C,
     KERNEL_ERROR_FAILED_GET_IPV4          = 0x061D,
     KERNEL_ERROR_FAILED_GET_NETIF_HANDLE  = 0x061E,
+    KERNEL_ERROR_ETHERNET_INSTALL         = 0x061F,
 
     /* -------- System Init (0x700) -------- */
     KERNEL_ERROR_INITIALIZATION_FAIL      = 0x0700,

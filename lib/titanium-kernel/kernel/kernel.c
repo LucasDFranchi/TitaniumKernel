@@ -1,6 +1,7 @@
 #include "kernel.h"
 
 #include "kernel/device/device_info.h"
+#include "kernel/inter_task_communication/queues/queue_manager.h"
 #include "kernel/utils/nvs_util.h"
 
 task_interface_st sntp_task = {
@@ -98,11 +99,28 @@ kernel_error_st kernel_global_events_initialize(global_events_st *global_events)
     return KERNEL_SUCCESS;
 }
 
-kernel_error_st kernel_global_queues_initialize(global_queues_st *global_queue) {
-    if (global_queues_initialize(global_queue) != KERNEL_SUCCESS) {
-        logger_print(ERR, TAG, "Failed to initialize global queues");
+kernel_error_st kernel_global_queues_initialize() {
+    kernel_error_st err = queue_manager_init();
+    if (err != KERNEL_SUCCESS) {
+        logger_print(ERR, TAG, "Failed to initialize global queues - %d", err);
         return KERNEL_ERROR_GLOBAL_QUEUES_INIT;
     }
+
+    err = queue_manager_register(NETWORK_BRIDGE_QUEUE_ID, 2, sizeof(network_bridge_st));
+    if (err != KERNEL_SUCCESS) {
+        logger_print(ERR, TAG, "Failed to register network bridge queue - %d", err);
+        return err;
+    }
+    err = queue_manager_register(MQTT_BRIDGE_QUEUE_ID, 10, sizeof(mqtt_bridge_st));
+    if (err != KERNEL_SUCCESS) {
+        logger_print(ERR, TAG, "Failed to register network bridge queue - %d", err);
+        return err;
+    }
+    err = queue_manager_register(CREDENTIALS_QUEUE_ID, 1, sizeof(credentials_st));
+    if (err != KERNEL_SUCCESS) {
+        logger_print(ERR, TAG, "Failed to register network bridge queue - %d", err);
+        return err;
+    };
 
     return KERNEL_SUCCESS;
 }
@@ -133,8 +151,6 @@ kernel_error_st kernel_initialize(release_mode_et release_mode, log_output_et lo
         return KERNEL_ERROR_INVALID_ARG;
     }
 
-    device_info_init();
-
     if (kernel_initialize_nvs() != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to initialize NVS");
         kernel_restart();
@@ -142,12 +158,14 @@ kernel_error_st kernel_initialize(release_mode_et release_mode, log_output_et lo
     }
     logger_initialize(release_mode, log_output, global_structures);
 
+    device_info_init();
+
     if (kernel_global_events_initialize(&global_structures->global_events) != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to initialize global events");
         kernel_restart();
         return KERNEL_ERROR_GLOBAL_EVENTS_INIT;
     }
-    if (kernel_global_queues_initialize(&global_structures->global_queues) != KERNEL_SUCCESS) {
+    if (kernel_global_queues_initialize() != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to initialize global queues");
         kernel_restart();
         return KERNEL_ERROR_GLOBAL_QUEUES_INIT;

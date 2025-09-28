@@ -18,6 +18,7 @@
 #include "kernel/device/device_info.h"
 #include "kernel/error/error_num.h"
 #include "kernel/hal/i2c/i2c.h"
+#include "kernel/inter_task_communication/inter_task_communication.h"
 #include "kernel/logger/logger.h"
 
 #include "app/app_extern_types.h"
@@ -30,120 +31,119 @@
 #include "app/sensor_manager/sensor_interface/sensor_interface.h"
 
 /* Global Variables */
-static const char *TAG                            = "Sensor Manager"; /*!< Tag used for logging */
-static sensor_manager_init_st sensor_manager_init = {0};
-static mux_controller_st mux_controller           = {0};
-static adc_controller_st adc_controller           = {0};
+static const char *TAG                  = "Sensor Manager"; /*!< Tag used for logging */
+static mux_controller_st mux_controller = {0};
+static adc_controller_st adc_controller = {0};
 
 static sensor_hw_st sensor_hw[NUM_OF_CHANNEL_SENSORS] = {
     [SENSOR_CH_00] = {
-        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A2},
-        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A3},
+        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A2},
+        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A3},
         .mux_hw_config     = {.mux_address = MUX_ADDRESS_0, .mux_channel = MUX_CHANNEL_4},
     },
     [SENSOR_CH_01] = {
-        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A0},
-        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A1},
+        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A0},
+        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A1},
         .mux_hw_config     = {.mux_address = MUX_ADDRESS_0, .mux_channel = MUX_CHANNEL_4},
     },
     [SENSOR_CH_02] = {
-        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A2},
-        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A3},
+        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A2},
+        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A3},
         .mux_hw_config     = {.mux_address = MUX_ADDRESS_0, .mux_channel = MUX_CHANNEL_5},
     },
     [SENSOR_CH_03] = {
-        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A0},
-        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A1},
+        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A0},
+        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A1},
         .mux_hw_config     = {.mux_address = MUX_ADDRESS_0, .mux_channel = MUX_CHANNEL_5},
     },
     [SENSOR_CH_04] = {
-        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A2},
-        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A3},
+        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A2},
+        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A3},
         .mux_hw_config     = {.mux_address = MUX_ADDRESS_0, .mux_channel = MUX_CHANNEL_6},
     },
     [SENSOR_CH_05] = {
-        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A0},
-        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A1},
+        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A0},
+        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A1},
         .mux_hw_config     = {.mux_address = MUX_ADDRESS_0, .mux_channel = MUX_CHANNEL_6},
     },
     [SENSOR_CH_06] = {
-        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A2},
-        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A3},
+        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A2},
+        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A3},
         .mux_hw_config     = {.mux_address = MUX_ADDRESS_0, .mux_channel = MUX_CHANNEL_7},
     },
     [SENSOR_CH_07] = {
-        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A0},
-        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A1},
+        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A0},
+        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A1},
         .mux_hw_config     = {.mux_address = MUX_ADDRESS_0, .mux_channel = MUX_CHANNEL_7},
     },
     [SENSOR_CH_08] = {
-        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A2},
-        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A3},
+        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A2},
+        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A3},
         .mux_hw_config     = {.mux_address = MUX_ADDRESS_1, .mux_channel = MUX_CHANNEL_6},
     },
     [SENSOR_CH_09] = {
-        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A0},
-        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A1},
+        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A0},
+        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A1},
         .mux_hw_config     = {.mux_address = MUX_ADDRESS_1, .mux_channel = MUX_CHANNEL_6},
     },
     [SENSOR_CH_10] = {
-        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A2},
-        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A3},
+        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A2},
+        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A3},
         .mux_hw_config     = {.mux_address = MUX_ADDRESS_1, .mux_channel = MUX_CHANNEL_7},
     },
     [SENSOR_CH_11] = {
-        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A0},
-        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A1},
+        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A0},
+        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A1},
         .mux_hw_config     = {.mux_address = MUX_ADDRESS_1, .mux_channel = MUX_CHANNEL_7},
     },
     [SENSOR_CH_12] = {
-        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A0},
-        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A1},
+        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A0},
+        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A1},
         .mux_hw_config     = {.mux_address = MUX_ADDRESS_0, .mux_channel = MUX_CHANNEL_3},
     },
     [SENSOR_CH_13] = {
-        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A2},
-        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A3},
+        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A2},
+        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A3},
         .mux_hw_config     = {.mux_address = MUX_ADDRESS_0, .mux_channel = MUX_CHANNEL_3},
     },
     [SENSOR_CH_14] = {
-        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A0},
-        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A1},
+        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A0},
+        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A1},
         .mux_hw_config     = {.mux_address = MUX_ADDRESS_0, .mux_channel = MUX_CHANNEL_2},
     },
     [SENSOR_CH_15] = {
-        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A2},
-        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A3},
+        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A2},
+        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A3},
         .mux_hw_config     = {.mux_address = MUX_ADDRESS_0, .mux_channel = MUX_CHANNEL_2},
     },
     [SENSOR_CH_16] = {
-        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A0},
-        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A1},
+        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A0},
+        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A1},
         .mux_hw_config     = {.mux_address = MUX_ADDRESS_0, .mux_channel = MUX_CHANNEL_1},
     },
     [SENSOR_CH_17] = {
-        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A2},
-        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A3},
+        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A2},
+        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A3},
         .mux_hw_config     = {.mux_address = MUX_ADDRESS_0, .mux_channel = MUX_CHANNEL_1},
     },
     [SENSOR_CH_18] = {
-        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A0},
-        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A1},
+        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A0},
+        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A1},
         .mux_hw_config     = {.mux_address = MUX_ADDRESS_0, .mux_channel = MUX_CHANNEL_0},
     },
     [SENSOR_CH_19] = {
-        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A2},
-        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A3},
+        .adc_ref_branch    = {.pga_gain = PGA_2_048V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A2},
+        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A3},
         .mux_hw_config     = {.mux_address = MUX_ADDRESS_0, .mux_channel = MUX_CHANNEL_0},
     },
     [SENSOR_CH_20] = {
         .adc_ref_branch    = {0},
-        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A1},
+        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A1},
         .mux_hw_config     = {.mux_address = MUX_ADDRESS_1, .mux_channel = MUX_CHANNEL_0},
     },
     [SENSOR_CH_21] = {
         .adc_ref_branch    = {0},
-        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_8SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A0},
+        .adc_sensor_branch = {.pga_gain = PGA_4_096V, .data_rate = DR_128SPS, .adc_mux_config = ADC_CONFIG_SINGLE_ENDED_A0},
         .mux_hw_config     = {.mux_address = MUX_ADDRESS_1, .mux_channel = MUX_CHANNEL_0},
     },
     [SENSOR_CH_22] = {
@@ -435,16 +435,10 @@ static sensor_interface_st sensor_interface[NUM_OF_SENSORS] = {
  *       at system startup.
  */
 static kernel_error_st sensor_manager_initialize(void *args) {
-    if (args == NULL) {
-        logger_print(ERR, TAG, "Sensor Manager Loop received NULL args!");
-        return KERNEL_ERROR_NULL;
-    }
-
-    sensor_manager_init.sensor_manager_queue = ((sensor_manager_init_st *)args)->sensor_manager_queue;
-    if (sensor_manager_init.sensor_manager_queue == NULL) {
-        logger_print(ERR, TAG, "Sensor Manager Loop received NULL queue!");
-        return KERNEL_ERROR_QUEUE_NULL;
-    }
+    // if (args == NULL) {
+    //     logger_print(ERR, TAG, "Sensor Manager Loop received NULL args!");
+    //     return KERNEL_ERROR_NULL;
+    // }
 
     if (adc_controller_init(&adc_controller) != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to initialize ADC manager");
@@ -654,11 +648,18 @@ void sensor_manager_loop(void *args) {
         return;
     }
 
+    QueueHandle_t sensor_queue = queue_manager_get(SENSOR_REPORT_QUEUE_ID);
+    if (sensor_queue == NULL) {
+        logger_print(ERR, TAG, "Sensor report queue is NULL");
+        vTaskDelete(NULL);
+        return;
+    }
+
     while (1) {
         device_report_st device_report = {0};
 
         TickType_t last_wake_time       = xTaskGetTickCount();
-        const TickType_t interval_ticks = pdMS_TO_TICKS(60000);
+        const TickType_t interval_ticks = pdMS_TO_TICKS(5000);
 
         device_info_get_current_time(device_report.timestamp, sizeof(device_report.timestamp));
         device_report.num_of_channels = NUM_OF_SENSORS;
@@ -676,7 +677,7 @@ void sensor_manager_loop(void *args) {
 
         logger_print(DEBUG, TAG, "Sensor report generated, sending to queue");
 
-        if (xQueueSend(sensor_manager_init.sensor_manager_queue, &device_report, pdMS_TO_TICKS(100)) != pdPASS) {
+        if (xQueueSend(sensor_queue, &device_report, pdMS_TO_TICKS(100)) != pdPASS) {
             logger_print(ERR, TAG, "Failed to send sensor report to queue");
         }
 

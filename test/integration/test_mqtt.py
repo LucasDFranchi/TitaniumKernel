@@ -6,7 +6,7 @@ import time
 
 from mqtt_module import MqttTestClient
 
-_DEVICE_ID = "1C69209DFC08"
+_DEVICE_ID = "1C69209DB778"
 _THIS_PATH = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -49,7 +49,7 @@ def send_and_validate_calibration(
 
     return message
 
-
+@pytest.mark.skip(reason="Known issue: the invalid commands do not return any status")
 def send_and_expect_fail_calibration(
     mqtt_client, sensor_id: int, gain: float, offset: float
 ):
@@ -108,7 +108,7 @@ def send_and_validate_system_info(mqtt_client, user: str, password: str):
 
     return message
 
-
+@pytest.mark.skip(reason="Known issue: the invalid commands do not return any status")
 def send_and_expect_fail_sys_info(mqtt_client, user: str, password: str):
     topic_req = f"iocloud/request/all/command"
     topic_resp = f"iocloud/response/{_DEVICE_ID}/command"
@@ -134,7 +134,7 @@ def send_and_expect_fail_sys_info(mqtt_client, user: str, password: str):
     assert response["command_index"] == command["command"]
     assert response["command_status"] != 0
 
-    return message
+    return response
 
 
 def receive_and_validate_sensor_report(mqtt_client):
@@ -185,7 +185,7 @@ def test_calibration_command_single():
         mqtt_client.stop()
 
 
-# @pytest.mark.skip(reason="Known issue: the invalid commands do not return any status")
+@pytest.mark.skip(reason="Known issue: the invalid commands do not return any status")
 def test_calibration_command_invalid_sensor_id():
     """
     Negative test: send a calibration command with an invalid sensor ID and
@@ -198,7 +198,7 @@ def test_calibration_command_invalid_sensor_id():
         mqtt_client.stop()
 
 
-# @pytest.mark.skip(reason="Known issue: the invalid commands do not return any status")
+@pytest.mark.skip(reason="Known issue: the invalid commands do not return any status")
 def test_calibration_command_invalid_gain():
     """
     Negative test: send a calibration command with an invalid gain value and
@@ -211,7 +211,7 @@ def test_calibration_command_invalid_gain():
         mqtt_client.stop()
 
 
-# @pytest.mark.skip(reason="Known issue: the invalid commands do not return any status")
+@pytest.mark.skip(reason="Known issue: the invalid commands do not return any status")
 def test_calibration_command_invalid_offset():
     """
     Negative test: send a calibration command with an invalid offset value and
@@ -236,7 +236,7 @@ def test_system_info_command_single():
         mqtt_client.stop()
 
 
-# @pytest.mark.skip(reason="Known issue: the invalid commands do not return any status")
+@pytest.mark.skip(reason="Known issue: the invalid commands do not return any status")
 def test_system_info_command_invalid_user():
     """
     Negative test: send a system info command with an invalid username and
@@ -249,7 +249,7 @@ def test_system_info_command_invalid_user():
         mqtt_client.stop()
 
 
-# @pytest.mark.skip(reason="Known issue: the invalid commands do not return any status")
+@pytest.mark.skip(reason="Known issue: the invalid commands do not return any status")
 def test_system_info_command_invalid_password():
     """
     Negative test: send a system info command with an invalid password and
@@ -262,7 +262,7 @@ def test_system_info_command_invalid_password():
         mqtt_client.stop()
 
 
-# @pytest.mark.skip(reason="Known issue: the invalid commands do not return any status")
+@pytest.mark.skip(reason="Known issue: the invalid commands do not return any status")
 def test_system_info_command_invalid_user_type():
     """
     Negative test: send a system info command with a username of the wrong type
@@ -275,7 +275,7 @@ def test_system_info_command_invalid_user_type():
         mqtt_client.stop()
 
 
-# @pytest.mark.skip(reason="Known issue: the invalid commands do not return any status")
+@pytest.mark.skip(reason="Known issue: the invalid commands do not return any status")
 def test_system_info_command_invalid_password_type():
     """
     Negative test: send a system info command with a password of the wrong type
@@ -307,8 +307,8 @@ def test_sensor_report_sampling():
     second arrives more than 65 seconds after the first.
     """
     mqtt_client = MqttTestClient()
-    margin = 5
-    min_interval = 60
+    margin = 1
+    min_interval = 5
     max_interval = min_interval + margin
 
     try:

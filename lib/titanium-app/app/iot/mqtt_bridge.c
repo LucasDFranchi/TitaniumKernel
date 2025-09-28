@@ -4,6 +4,7 @@
 #include "mqtt_bridge.h"
 
 #include "kernel/device/device_info.h"
+#include "kernel/inter_task_communication/inter_task_communication.h"
 #include "kernel/logger/logger.h"
 
 #include "app/iot/mqtt_serializer.h"
@@ -146,9 +147,10 @@ kernel_error_st register_topic(mqtt_topic_st *topic) {
         return KERNEL_ERROR_MQTT_REGISTER_FAIL;
     }
 
-    topic->queue = xQueueCreate(topic->info->queue_length, topic->info->queue_item_size);
-
-    if (topic->queue == NULL) {
+    kernel_error_st err = queue_manager_register(topic->queue_index,
+                                                 topic->info->queue_length,
+                                                 topic->info->queue_item_size);
+    if (err != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to create queue for topic %s", topic->info->topic);
         return KERNEL_ERROR_QUEUE_NULL;
     }
@@ -169,10 +171,16 @@ kernel_error_st register_topic(mqtt_topic_st *topic) {
  * @retval false if topic or queue is NULL, or no messages are waiting.
  */
 bool has_data_to_publish(const mqtt_topic_st *topic) {
-    if (topic == NULL || topic->queue == NULL) {
+    if (topic == NULL) {
         return false;
     }
-    return (uxQueueMessagesWaiting(topic->queue) > 0);
+
+    QueueHandle_t queue = queue_manager_get(topic->queue_index);
+    if (queue == NULL) {
+        return false;
+    }
+    
+    return (uxQueueMessagesWaiting(queue) > 0);
 }
 
 /**
@@ -205,11 +213,6 @@ kernel_error_st fetch_publish_data(uint8_t mqtt_index, mqtt_buffer_st *topic, mq
     }
 
     mqtt_topic_st *current = &mqtt_topics[mqtt_index];
-
-    if (current->queue == NULL) {
-        logger_print(ERR, TAG, "Queue for topic %s is NULL", current->info->topic);
-        return KERNEL_ERROR_MQTT_QUEUE_NULL;
-    }
 
     if (current->info->mqtt_data_direction != PUBLISH) {
         return KERNEL_ERROR_MQTT_INVALID_DATA_DIRECTION;
@@ -246,7 +249,6 @@ kernel_error_st fetch_publish_data(uint8_t mqtt_index, mqtt_buffer_st *topic, mq
     return KERNEL_SUCCESS;
 }
 
-
 /**
  * @brief Gets the number of topics registered in the bridge.
  *
@@ -279,11 +281,6 @@ static kernel_error_st get_topic(uint8_t mqtt_index, mqtt_buffer_st *topic, qos_
     }
 
     mqtt_topic_st *current = &mqtt_topics[mqtt_index];
-
-    if (current->queue == NULL) {
-        logger_print(ERR, TAG, "Queue for topic %s is NULL", current->info->topic);
-        return KERNEL_ERROR_MQTT_QUEUE_NULL;
-    }
 
     if (current->info->mqtt_data_direction != SUBSCRIBE) {
         return KERNEL_ERROR_MQTT_INVALID_DATA_DIRECTION;
@@ -319,7 +316,6 @@ static kernel_error_st get_topic(uint8_t mqtt_index, mqtt_buffer_st *topic, qos_
     return KERNEL_SUCCESS;
 }
 
-
 /**
  * @brief Initializes the MQTT bridge and registers topics.
  *
@@ -349,11 +345,11 @@ static kernel_error_st handle_event_data(char *topic, mqtt_buffer_st *payload) {
     for (uint8_t i = 0; i < mqtt_bridge_num_topics; i++) {
         mqtt_topic_st *current = &mqtt_topics[i];
 
-        // TODO: Currently, strstr works well for specific target commands, but it causes an issue 
-        // when processing broadcast commands. All target commands may be mistakenly identified 
-        // as broadcast commands. To improve this, a more robust check is needed. 
+        // TODO: Currently, strstr works well for specific target commands, but it causes an issue
+        // when processing broadcast commands. All target commands may be mistakenly identified
+        // as broadcast commands. To improve this, a more robust check is needed.
         //
-        // As a temporary fix, we process all broadcast commands before target commands. 
+        // As a temporary fix, we process all broadcast commands before target commands.
         // This ensures that target commands are not mistakenly handled as broadcast commands.
         if (strstr(topic, mqtt_topics[i].info->topic) != NULL) {
             err = mqtt_deserialize_data(

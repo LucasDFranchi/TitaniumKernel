@@ -102,12 +102,19 @@ typedef enum command_status_e {
     COMMAND_AUTHENTICATION_FAIL = -3, /**< Calibration-specific failure */
 } command_status_et;
 
-typedef struct app_queues_s {
-    QueueHandle_t sensor_report_queue;
-    QueueHandle_t target_command_queue;
-    QueueHandle_t broadcast_command_queue;
-    QueueHandle_t command_response_queue;
-} app_queues_st;
+/** @enum
+ *  @brief Application queue identifiers for inter-task communication.
+ *  @var SENSOR_REPORT_QUEUE_ID Queue for sensor data reports.
+ *  @var TARGET_COMMAND_QUEUE_ID Queue for target-specific commands.
+ *  @var BROADCAST_COMMAND_QUEUE_ID Queue for broadcast/system-wide commands.
+ *  @var RESPONSE_COMMAND_QUEUE_ID Queue for task/module responses.
+ */
+enum {
+    SENSOR_REPORT_QUEUE_ID = LAST_KERNEL_QUEUE_ID,
+    TARGET_COMMAND_QUEUE_ID,
+    BROADCAST_COMMAND_QUEUE_ID,
+    RESPONSE_COMMAND_QUEUE_ID,
+};
 
 /**
  * @struct device_report_st

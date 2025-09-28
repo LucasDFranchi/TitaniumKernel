@@ -14,9 +14,9 @@
 #include "kernel/inter_task_communication/iot/mqtt/mqtt_client_external_types.h"
 #include "kernel/inter_task_communication/system/network/network_external_types.h"
 #include "kernel/inter_task_communication/queues/queues_definition.h"
+#include "kernel/inter_task_communication/queues/queue_manager.h"
 
 typedef struct global_structures_s {
-    global_queues_st global_queues;  ///< Pointer to the global queues structure.
     global_events_st global_events;  ///< Pointer to the global events structure.
 } global_structures_st;
 

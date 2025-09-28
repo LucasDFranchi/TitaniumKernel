@@ -57,6 +57,7 @@ kernel_error_st device_info_init(void) {
     }
 
     logger_print(INFO, TAG, "Device unique ID: %s", device_id);
+    printf("Device unique ID: %s\n", device_id);
     return KERNEL_SUCCESS;
 }
 

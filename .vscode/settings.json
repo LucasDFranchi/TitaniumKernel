@@ -56,6 +56,11 @@
         "text_encoding": "c",
         "typeinfo": "c",
         "modbus_types.h": "c",
-        "queue.h": "c"
+        "queue.h": "c",
+        "bit": "c",
+        "cstddef": "c",
+        "limits": "c",
+        "memory": "c",
+        "new": "c"
     }
 }

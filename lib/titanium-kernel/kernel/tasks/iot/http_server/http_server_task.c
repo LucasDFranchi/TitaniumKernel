@@ -1,8 +1,7 @@
 #include "http_server_task.h"
 
 #include "kernel/error/error_num.h"
-#include "kernel/inter_task_communication/events/events_definition.h"
-#include "kernel/inter_task_communication/queues/queues_definition.h"
+#include "kernel/inter_task_communication/inter_task_communication.h"
 #include "kernel/logger/logger.h"
 #include "kernel/tasks/system/network/network_task.h"
 #include "kernel/utils/utils.h"
@@ -131,7 +130,13 @@ static esp_err_t post_uri_wifi_credentials(httpd_req_t* req) {
     cred.ssid[ssid_len + 1]         = '\0';
     cred.password[password_len + 1] = '\0';
 
-    if (xQueueSend(_global_structures->global_queues.credentials_queue, &cred, pdMS_TO_TICKS(100)) != pdPASS) {
+    QueueHandle_t cred_queue = queue_manager_get(CREDENTIALS_QUEUE_ID);
+    if (cred_queue == NULL) {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Credentials queue not found");
+        return KERNEL_ERROR_QUEUE_NULL;
+    }
+
+    if (xQueueSend(cred_queue, &cred, pdMS_TO_TICKS(100)) != pdPASS) {
         return KERNEL_ERROR_QUEUE_FULL;
     }
 

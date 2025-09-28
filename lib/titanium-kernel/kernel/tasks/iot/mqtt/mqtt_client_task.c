@@ -271,7 +271,13 @@ static kernel_error_st handle_event_data(char* topic, char* data, size_t data_le
  * @retval KERNEL_ERROR_EMPTY_QUEUE  Queue did not return a valid bridge within timeout.
  */
 kernel_error_st mqtt_install_bridge(void) {
-    if (xQueueReceive(_global_structures->global_queues.mqtt_bridge_queue, &mqtt_bridge, pdMS_TO_TICKS(100)) == pdTRUE) {
+    QueueHandle_t queue = queue_manager_get(MQTT_BRIDGE_QUEUE_ID);
+    if (queue == NULL) {
+        logger_print(ERR, TAG, "MQTT bridge queue is NULL");
+        return KERNEL_ERROR_QUEUE_NULL;
+    }
+
+    if (xQueueReceive(queue, &mqtt_bridge, pdMS_TO_TICKS(100)) == pdTRUE) {
         logger_print(INFO, TAG, "MQTT bridge successfully installed.");
     } else {
         return KERNEL_ERROR_EMPTY_QUEUE;

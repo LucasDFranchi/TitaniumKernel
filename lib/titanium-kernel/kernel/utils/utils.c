@@ -22,14 +22,10 @@ kernel_error_st validate_global_structure(global_structures_st* global_structure
     if (global_structures == NULL) {
         return KERNEL_ERROR_NULL;
     }
-    global_queues_st* global_queues = &global_structures->global_queues;
+    // global_queues_st* global_queues = &global_structures->global_queues;
     global_events_st* global_events = &global_structures->global_events;
     
     if (global_events->firmware_event_group == NULL) {
-        return KERNEL_ERROR_NULL;
-    }
-    
-    if ((global_queues->credentials_queue == NULL) || (global_queues->mqtt_bridge_queue == NULL)) {
         return KERNEL_ERROR_NULL;
     }
 

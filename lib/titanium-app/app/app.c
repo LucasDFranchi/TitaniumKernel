@@ -127,20 +127,20 @@ static const mqtt_topic_info_st mqtt_topic_infos[] = {
  */
 mqtt_topic_st mqtt_topics[TOPIC_COUNT] = {
     [SENSOR_REPORT] = {
-        .info  = &mqtt_topic_infos[SENSOR_REPORT],
-        .queue = NULL,
+        .info        = &mqtt_topic_infos[SENSOR_REPORT],
+        .queue_index = SENSOR_REPORT_QUEUE_ID,
     },
     [TARGET_COMMAND] = {
-        .info  = &mqtt_topic_infos[TARGET_COMMAND],
-        .queue = NULL,
+        .info        = &mqtt_topic_infos[TARGET_COMMAND],
+        .queue_index = TARGET_COMMAND_QUEUE_ID,
     },
     [BROADCAST_COMMAND] = {
-        .info  = &mqtt_topic_infos[BROADCAST_COMMAND],
-        .queue = NULL,
+        .info        = &mqtt_topic_infos[BROADCAST_COMMAND],
+        .queue_index = BROADCAST_COMMAND_QUEUE_ID,
     },
     [RESPONSE_COMMAND] = {
-        .info  = &mqtt_topic_infos[RESPONSE_COMMAND],
-        .queue = NULL,
+        .info        = &mqtt_topic_infos[RESPONSE_COMMAND],
+        .queue_index = RESPONSE_COMMAND_QUEUE_ID,
     },
 };
 
@@ -167,41 +167,12 @@ mqtt_bridge_init_struct_st mqtt_bridge_init_struct = {
     .topics      = mqtt_topics,  /**< Pointer to the mqtt_topics array */
 };
 
-/**
- * @brief Sensor Manager initialization structure.
- *
- * This instance holds the initial configuration parameters for the
- * Sensor Manager module. It is zero-initialized here and should be
- * populated at runtime before use.
- */
-static sensor_manager_init_st sensor_manager_init = {0};
-
-/**
- * @brief Command Manager initialization structure.
- *
- * This instance holds the initial configuration parameters for the
- * Command Manager module. It is zero-initialized here and should be
- * set up by the system initialization sequence before being used
- * by application tasks.
- */
-static command_manager_init_st command_manager_init = {0};
-
-/**
- * @brief Health Manager initialization structure.
- *
- * This instance holds the initial configuration parameters for the
- * Health Manager module. It is zero-initialized here and should be
- * set up by the system initialization sequence before being used
- * by application tasks.
- */
-static health_manager_init_st health_manager_init = {0};
-
 task_interface_st sensor_manager_task = {
     .name         = SENSOR_MANAGER_TASK_NAME,
     .stack_size   = SENSOR_MANAGER_TASK_STACK_SIZE,
     .priority     = SENSOR_MANAGER_TASK_PRIORITY,
     .task_execute = sensor_manager_loop,
-    .arg          = &sensor_manager_init,
+    .arg          = NULL,
     .handle       = NULL,
 };
 
@@ -210,7 +181,7 @@ task_interface_st command_manager_task = {
     .stack_size   = COMMAND_MANAGER_TASK_STACK_SIZE,
     .priority     = COMMAND_MANAGER_TASK_PRIORITY,
     .task_execute = command_manager_loop,
-    .arg          = &command_manager_init,
+    .arg          = NULL,
     .handle       = NULL,
 };
 
@@ -219,7 +190,7 @@ task_interface_st health_manager_task = {
     .stack_size   = HEALTH_MANAGER_TASK_STACK_SIZE,
     .priority     = HEALTH_MANAGER_TASK_PRIORITY,
     .task_execute = health_manager_loop,
-    .arg          = &health_manager_init,
+    .arg          = NULL,
     .handle       = NULL,
 };
 
@@ -261,7 +232,12 @@ kernel_error_st app_initialize(global_structures_st *global_structures) {
         logger_print(INFO, TAG, "Network bridge installed failed!");
         return err;
     }
-    xQueueSend(global_structures->global_queues.network_bridge_queue,
+    QueueHandle_t queue = queue_manager_get(NETWORK_BRIDGE_QUEUE_ID);
+    if (queue == NULL) {
+        logger_print(ERR, TAG, "Network bridge queue not found");
+        return KERNEL_ERROR_QUEUE_NULL;
+    }
+    xQueueSend(queue,
                network_bridge_init_struct.network_bridge,
                pdMS_TO_TICKS(100));
 
@@ -270,21 +246,21 @@ kernel_error_st app_initialize(global_structures_st *global_structures) {
         logger_print(INFO, TAG, "MQTT bridge installed failed!");
         return err;
     }
-    xQueueSend(global_structures->global_queues.mqtt_bridge_queue,
+
+    queue = queue_manager_get(MQTT_BRIDGE_QUEUE_ID);
+    if (queue == NULL) {
+        logger_print(ERR, TAG, "Network bridge queue not found");
+        return KERNEL_ERROR_QUEUE_NULL;
+    }
+    xQueueSend(queue,
                mqtt_bridge_init_struct.mqtt_bridge,
                pdMS_TO_TICKS(100));
-
-    sensor_manager_init.sensor_manager_queue = mqtt_topics[SENSOR_REPORT].queue;
 
     err = task_handler_attach_task(&sensor_manager_task);
     if (err != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to initialized Sensor Manager Task - %d", err);
         return err;
     }
-
-    command_manager_init.target_command_queue    = mqtt_topics[TARGET_COMMAND].queue;
-    command_manager_init.broadcast_command_queue = mqtt_topics[BROADCAST_COMMAND].queue;
-    command_manager_init.response_command_queue  = mqtt_topics[RESPONSE_COMMAND].queue;
 
     err = task_handler_attach_task(&command_manager_task);
     if (err != KERNEL_SUCCESS) {
@@ -297,6 +273,6 @@ kernel_error_st app_initialize(global_structures_st *global_structures) {
         logger_print(ERR, TAG, "Failed to initialized Health Manager Task - %d", err);
         return err;
     }
-    
+
     return KERNEL_SUCCESS;
 }

@@ -13,12 +13,12 @@
 #include "lwip/sockets.h"
 #include "lwip/sys.h"
 
-#include "kernel/inter_task_communication/events/events_definition.h"
+#include "kernel/device/device_info.h"
+#include "kernel/inter_task_communication/inter_task_communication.h"
 #include "kernel/logger/logger.h"
 #include "kernel/tasks/system/network/network_task.h"
 #include "kernel/tasks/system/network/wifi/wifi_manager.h"
 #include "kernel/utils/utils.h"
-#include "kernel/device/device_info.h"
 
 /* Global Constants Definition */
 static const char *TAG = "Network Task";        ///< Tag for logging.
@@ -65,7 +65,7 @@ static void network_task_event_handler(void *arg, esp_event_base_t event_base,
         } else if ((event_id == IP_EVENT_ETH_GOT_IP) && network_bridge.got_ip) {
             network_bridge.got_ip(event_data);
         }
-        ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
+        ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
         device_info_set_ip_address(event->ip_info.ip);
     } else if ((event_base == ETH_EVENT) && network_bridge.handle_ethernet_events) {
         network_bridge.handle_ethernet_events(event_id, event_data);
@@ -144,14 +144,14 @@ static kernel_error_st register_network_device(void) {
  *
  * @return KERNEL_SUCCESS on success or if already installed, or a specific error code on failure.
  */
-static kernel_error_st network_install_bridge(void) {
+static kernel_error_st network_install_bridge(QueueHandle_t eth_queue) {
     static bool is_external_device_installed = false;
 
     if (is_external_device_installed) {
         return KERNEL_SUCCESS;
     }
 
-    if (xQueueReceive(_global_structures->global_queues.network_bridge_queue, &network_bridge, pdMS_TO_TICKS(100)) == pdTRUE) {
+    if (xQueueReceive(eth_queue, &network_bridge, pdMS_TO_TICKS(100)) == pdTRUE) {
         kernel_error_st err = register_network_device();
         if (err != KERNEL_SUCCESS) {
             logger_print(INFO, TAG, "Failed to install external ethernet device: %d", err);
@@ -248,11 +248,25 @@ void network_task_execute(void *pvParameters) {
         vTaskDelete(NULL);
     }
 
-    credentials_st cred = {0};
-    while (1) {
-        network_install_bridge();
+    credentials_st cred      = {0};
+    QueueHandle_t cred_queue = queue_manager_get(CREDENTIALS_QUEUE_ID);
+    if (cred_queue == NULL) {
+        logger_print(ERR, TAG, "Credentials queue is NULL");
+        vTaskDelete(NULL);
+        return;
+    }
 
-        if (xQueueReceive(_global_structures->global_queues.credentials_queue, &cred, pdMS_TO_TICKS(100)) == pdPASS) {
+    QueueHandle_t eth_queue = queue_manager_get(NETWORK_BRIDGE_QUEUE_ID);
+    if (eth_queue == NULL) {
+        logger_print(ERR, TAG, "Ethernet bridge queue is NULL");
+        vTaskDelete(NULL);
+        return;
+    }
+
+    while (1) {
+        network_install_bridge(eth_queue);
+
+        if (xQueueReceive(cred_queue, &cred, pdMS_TO_TICKS(100)) == pdPASS) {
             logger_print(DEBUG, TAG, "SSID: %s, Password: %s", cred.ssid, cred.password);
             wifi_manager_set_credentials(cred.ssid, cred.password);
         }

@@ -24,11 +24,6 @@
 static const char* TAG = "Command Manager";
 
 /**
- * @brief Global initialization structure for the command manager.
- */
-command_manager_init_st command_manager_init = {0};
-
-/**
  * @brief Processes the CMD_SET_CALIBRATION command.
  *
  * Updates the calibration parameters (gain and offset) for a specific sensor.
@@ -210,17 +205,24 @@ kernel_error_st handle_incoming_command(QueueHandle_t command_queue, QueueHandle
  * @param args Pointer to a command_manager_init_st structure containing queue handles.
  */
 void command_manager_loop(void* args) {
-    if (args == NULL) {
-        logger_print(ERR, TAG, "Command Manager Loop received NULL args");
+    // if (args == NULL) {
+    //     logger_print(ERR, TAG, "Command Manager Loop received NULL args");
+    //     return;
+    // }
+
+    QueueHandle_t command_queue        = queue_manager_get(TARGET_COMMAND_QUEUE_ID);
+    QueueHandle_t broadcast_queue      = queue_manager_get(BROADCAST_COMMAND_QUEUE_ID);
+    QueueHandle_t response_command_queue = queue_manager_get(RESPONSE_COMMAND_QUEUE_ID);
+
+    if ((command_queue == NULL) || (broadcast_queue == NULL) || (response_command_queue == NULL)) {
+        logger_print(ERR, TAG, "Command Manager Loop received NULL queue handles");
+        vTaskDelete(NULL);
         return;
     }
-    command_manager_init.target_command_queue    = ((command_manager_init_st*)args)->target_command_queue;
-    command_manager_init.broadcast_command_queue = ((command_manager_init_st*)args)->broadcast_command_queue;
-    command_manager_init.response_command_queue  = ((command_manager_init_st*)args)->response_command_queue;
 
     while (1) {
-        handle_incoming_command(command_manager_init.target_command_queue, command_manager_init.response_command_queue);
-        handle_incoming_command(command_manager_init.broadcast_command_queue, command_manager_init.response_command_queue);
+        handle_incoming_command(command_queue, response_command_queue);
+        handle_incoming_command(broadcast_queue, response_command_queue);
 
         vTaskDelay(pdMS_TO_TICKS(100));
     }

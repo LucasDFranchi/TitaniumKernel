@@ -68,7 +68,7 @@ typedef struct {
  */
 typedef struct {
     const mqtt_topic_info_st *info;  ///< Pointer to constant topic info.
-    QueueHandle_t queue;             ///< Runtime queue handle.
+    uint8_t queue_index;             ///< Queue index.
 } mqtt_topic_st;
 
 /**

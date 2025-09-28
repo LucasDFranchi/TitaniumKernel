@@ -39,14 +39,19 @@ kernel_error_st mqtt_serialize_data(mqtt_topic_st *topic, char *buffer, size_t b
         return KERNEL_ERROR_INVALID_SIZE;
     }
 
-    kernel_error_st err;
+    kernel_error_st err = KERNEL_ERROR_FAIL;
+    QueueHandle_t queue = queue_manager_get(topic->queue_index);
+    if (queue == NULL) {
+        logger_print(ERR, TAG, "%s - Queue not found for index %d", __func__, topic->queue_index);
+        return KERNEL_ERROR_MQTT_QUEUE_NULL;
+    }
 
     switch (topic->info->data_type) {
         case DATA_TYPE_REPORT:
-            err = serialize_data_report(topic->queue, buffer, buffer_size);
+            err = serialize_data_report(queue, buffer, buffer_size);
             break;
         case DATA_TYPE_COMMAND_RESPONSE:
-            err = serialize_command_response(topic->queue, buffer, buffer_size);
+            err = serialize_command_response(queue, buffer, buffer_size);
             break;
         default:
             logger_print(ERR, TAG, "Unsupported data type: %d", topic->info->data_type);
@@ -91,10 +96,16 @@ kernel_error_st mqtt_deserialize_data(mqtt_topic_st *topic, char *buffer, size_t
         return KERNEL_ERROR_INVALID_SIZE;
     }
 
-    kernel_error_st err = KERNEL_SUCCESS;
+    kernel_error_st err = KERNEL_ERROR_FAIL;
+    QueueHandle_t queue = queue_manager_get(topic->queue_index);
+    if (queue == NULL) {
+        logger_print(ERR, TAG, "%s - Queue not found for index %d", __func__, topic->queue_index);
+        return KERNEL_ERROR_MQTT_QUEUE_NULL;
+    }
+
     switch (topic->info->data_type) {
         case DATA_TYPE_COMMAND:
-            err = deserialize_command(topic->queue, buffer, buffer_size);
+            err = deserialize_command(queue, buffer, buffer_size);
             break;
 
         default:
