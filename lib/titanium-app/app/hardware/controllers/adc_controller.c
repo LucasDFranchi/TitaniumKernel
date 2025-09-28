@@ -169,7 +169,7 @@ static kernel_error_st read(const adc_hw_config_st *adc_hw_config, int16_t *raw_
 
     uint8_t retries = 10;
     while (!ads1115_get_conversion_state(&ads1115_config) && retries > 0) {
-        vTaskDelay(pdMS_TO_TICKS(get_conversion_delay(adc_hw_config->data_rate)));
+        vTaskDelay(pdMS_TO_TICKS(20));
         retries--;
     }
 
