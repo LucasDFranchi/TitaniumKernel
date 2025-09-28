@@ -65,7 +65,7 @@ typedef struct ethernet_device_t {
  *                                On success, the MAC and PHY handles are populated.
  *
  * @return kernel_error_st
- *         - KERNEL_ERROR_NONE: Initialization successful.
+ *         - KERNEL_SUCCESS: Initialization successful.
  *         - KERNEL_ERROR_NULL: Null pointer passed as parameter.
  *         - KERNEL_ERROR_SPI_INIT: Failed to initialize SPI bus.
  *         - KERNEL_ERROR_ASSIGN_MAC: Failed to assign MAC address.

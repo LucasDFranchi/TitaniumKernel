@@ -19,7 +19,7 @@
  * @param[in] buffer       Buffer containing the raw MQTT payload data (typically a JSON string).
  * @param[in] buffer_size  Size of the buffer in bytes.
  *
- * @return KERNEL_ERROR_NONE on success.
+ * @return KERNEL_SUCCESS on success.
  * @return KERNEL_ERROR_NULL if any pointer argument is NULL.
  * @return KERNEL_ERROR_INVALID_SIZE if buffer size is zero.
  * @return KERNEL_ERROR_UNSUPPORTED_TYPE if the topic data type is not supported.
@@ -41,7 +41,7 @@ kernel_error_st mqtt_serialize_data(mqtt_topic_st *topic, char *buffer, size_t b
  * @param[in] buffer       Buffer containing the raw MQTT payload data (typically a JSON string).
  * @param[in] buffer_size  Size of the buffer in bytes.
  *
- * @return KERNEL_ERROR_NONE on success.
+ * @return KERNEL_SUCCESS on success.
  * @return KERNEL_ERROR_NULL if any pointer argument is NULL.
  * @return KERNEL_ERROR_INVALID_SIZE if buffer size is zero.
  * @return KERNEL_ERROR_UNSUPPORTED_TYPE if the topic data type is not supported.

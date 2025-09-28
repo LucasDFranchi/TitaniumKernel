@@ -33,7 +33,7 @@
  * @param out_buffer    A pointer to the buffer where the serialized JSON will be written.
  * @param buffer_size   The size of the output buffer in bytes.
  * @return kernel_error_st
- *         - KERNEL_ERROR_NONE on success
+ *         - KERNEL_SUCCESS on success
  *         - KERNEL_ERROR_NULL if the output buffer is null or size is 0
  *         - KERNEL_ERROR_NULL_MQTT_QUEUE if the queue is null
  *         - KERNEL_ERROR_EMPTY_QUEUE if no report was available within timeout
@@ -94,7 +94,7 @@ kernel_error_st serialize_data_report(QueueHandle_t queue, char *out_buffer, siz
         return KERNEL_ERROR_FORMATTING;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -157,7 +157,7 @@ kernel_error_st serialize_cmd_set_calibration(command_response_st *command_respo
         return KERNEL_ERROR_FORMATTING;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -183,7 +183,7 @@ kernel_error_st serialize_cmd_set_calibration(command_response_st *command_respo
  * @param[in]  buffer_size      Size of the output buffer in bytes.
  *
  * @return kernel_error_st
- *         - KERNEL_ERROR_NONE on success
+ *         - KERNEL_SUCCESS on success
  *         - KERNEL_ERROR_NULL if command_response or out_buffer is NULL
  *         - KERNEL_ERROR_INVALID_SIZE if buffer_size is 0
  *         - KERNEL_ERROR_FORMATTING if JSON serialization failed or didn’t fit
@@ -246,7 +246,7 @@ kernel_error_st serialize_cmd_get_system_info(command_response_st *command_respo
         return KERNEL_ERROR_FORMATTING;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 kernel_error_st serialize_cmd_error(command_response_st *command_response, char *out_buffer, size_t buffer_size) {
@@ -263,7 +263,7 @@ kernel_error_st serialize_cmd_error(command_response_st *command_response, char 
     doc["command_index"]  = command_response->command_index;
     doc["command_status"] = command_response->command_status;
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -278,7 +278,7 @@ kernel_error_st serialize_cmd_error(command_response_st *command_response, char 
  * @param[in]  buffer_size  Size of the output buffer in bytes.
  *
  * @return kernel_error_st Returns:
- *                         - KERNEL_ERROR_NONE on success
+ *                         - KERNEL_SUCCESS on success
  *                         - KERNEL_ERROR_NULL if out_buffer is NULL
  *                         - KERNEL_ERROR_INVALID_SIZE if buffer_size is 0
  *                         - KERNEL_ERROR_QUEUE_NULL if queue is NULL
@@ -303,7 +303,7 @@ kernel_error_st serialize_command_response(QueueHandle_t queue, char *out_buffer
         return KERNEL_ERROR_EMPTY_QUEUE;
     }
 
-    kernel_error_st err = KERNEL_ERROR_NONE;
+    kernel_error_st err = KERNEL_SUCCESS;
     if (command_response.command_status == COMMAND_SUCCESS) {
         switch (command_response.command_index) {
             case CMD_SET_CALIBRATION:
@@ -344,7 +344,7 @@ kernel_error_st serialize_command_response(QueueHandle_t queue, char *out_buffer
  * @param queue         FreeRTOS queue where the parsed command will be sent.
  * @param json_object   Reference to a JsonObject containing command parameters.
  * @return kernel_error_st
- *         - KERNEL_ERROR_NONE on success
+ *         - KERNEL_SUCCESS on success
  *         - KERNEL_ERROR_MISSING_FIELD if a required key is missing
  *         - KERNEL_ERROR_INVALID_TYPE if any value is of the wrong type
  *         - KERNEL_ERROR_QUEUE_SEND if sending to the queue fails
@@ -353,7 +353,7 @@ kernel_error_st deserialize_command_set_calibration(QueueHandle_t queue, JsonObj
     kernel_error_st validation_result = validate_json_schema(
         json_object, get_calibration_schema, sizeof(get_calibration_schema) / sizeof(json_field_t));
 
-    if (validation_result != KERNEL_ERROR_NONE) {
+    if (validation_result != KERNEL_SUCCESS) {
         return validation_result;
     }
 
@@ -366,7 +366,7 @@ kernel_error_st deserialize_command_set_calibration(QueueHandle_t queue, JsonObj
         return KERNEL_ERROR_QUEUE_SEND;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -388,7 +388,7 @@ kernel_error_st deserialize_command_set_calibration(QueueHandle_t queue, JsonObj
  * @param[in] json_object JSON object containing the command fields.
  *
  * @return kernel_error_st
- *         - KERNEL_ERROR_NONE on success
+ *         - KERNEL_SUCCESS on success
  *         - KERNEL_ERROR_NULL if user or password is missing
  *         - KERNEL_ERROR_INVALID_SIZE if credentials exceed buffer size
  *         - KERNEL_ERROR_QUEUE_SEND if sending to the queue fails
@@ -398,7 +398,7 @@ kernel_error_st deserialize_command_get_system_info(QueueHandle_t queue, JsonObj
     kernel_error_st validation_result = validate_json_schema(
         json_object, get_system_info_schema, sizeof(get_system_info_schema) / sizeof(json_field_t));
 
-    if (validation_result != KERNEL_ERROR_NONE) {
+    if (validation_result != KERNEL_SUCCESS) {
         return validation_result;
     }
 
@@ -432,7 +432,7 @@ kernel_error_st deserialize_command_get_system_info(QueueHandle_t queue, JsonObj
         return KERNEL_ERROR_QUEUE_SEND;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -456,7 +456,7 @@ kernel_error_st deserialize_command_get_system_info(QueueHandle_t queue, JsonObj
  * @param buffer        JSON string buffer to deserialize.
  * @param buffer_size   Size of the buffer (unused here but kept for API consistency).
  * @return kernel_error_st
- *         - KERNEL_ERROR_NONE on success
+ *         - KERNEL_SUCCESS on success
  *         - KERNEL_ERROR_DESERIALIZE_JSON if the JSON is malformed
  *         - KERNEL_ERROR_MISSING_FIELD if required fields are not found
  *         - KERNEL_ERROR_INVALID_COMMAND if the command index is unrecognized
@@ -464,7 +464,7 @@ kernel_error_st deserialize_command_get_system_info(QueueHandle_t queue, JsonObj
  */
 kernel_error_st deserialize_command(QueueHandle_t queue, char *buffer, size_t buffer_size) {
     StaticJsonDocument<MAXIMUM_DOC_SIZE> doc{};
-    kernel_error_st result = KERNEL_ERROR_NONE;
+    kernel_error_st result = KERNEL_SUCCESS;
 
     DeserializationError error = deserializeJson(doc, buffer);
     if (error) {

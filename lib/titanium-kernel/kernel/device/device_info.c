@@ -35,7 +35,7 @@ static void device_info_set_unknown_id(void) {
  * and stores it internally. Must be called once before any calls to
  * device_info_get_id().
  *
- * @return KERNEL_ERROR_NONE on success,
+ * @return KERNEL_SUCCESS on success,
  *         KERNEL_ERROR_UNKNOWN_MAC if MAC retrieval fails,
  *         KERNEL_ERROR_FORMATTING if formatting fails.
  */
@@ -57,7 +57,7 @@ kernel_error_st device_info_init(void) {
     }
 
     logger_print(INFO, TAG, "Device unique ID: %s", device_id);
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -109,7 +109,7 @@ kernel_error_st device_info_get_current_time(char* buffer, size_t buffer_size) {
         return KERNEL_ERROR_FORMATTING;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -133,7 +133,7 @@ int64_t device_info_get_uptime(void) {
  * @param[in] ip The IPv4 address to store (type: esp_ip4_addr_t).
  *
  * @return kernel_error_st
- *         - KERNEL_ERROR_NONE if the IP was successfully stored.
+ *         - KERNEL_SUCCESS if the IP was successfully stored.
  *         - KERNEL_ERROR_INVALID_ARG if conversion failed (buffer too small).
  */
 kernel_error_st device_info_set_ip_address(const esp_ip4_addr_t ip) {
@@ -141,7 +141,7 @@ kernel_error_st device_info_set_ip_address(const esp_ip4_addr_t ip) {
         return KERNEL_ERROR_INVALID_SIZE;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**

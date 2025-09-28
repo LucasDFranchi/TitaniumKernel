@@ -94,7 +94,7 @@ static uint16_t get_conversion_delay(data_rate_et data_rate) {
  *
  * This must be called once before using any other ADC controller functions.
  *
- * @return kernel_error_st KERNEL_ERROR_NONE on success, otherwise error code.
+ * @return kernel_error_st KERNEL_SUCCESS on success, otherwise error code.
  */
 static kernel_error_st adc_initialize(void) {
     esp_err_t err = i2c_get_interface(ads1115_config.hw_config.port, &ads1115_config.i2c_interface);
@@ -105,7 +105,7 @@ static kernel_error_st adc_initialize(void) {
 
     is_initialized = true;
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -114,7 +114,7 @@ static kernel_error_st adc_initialize(void) {
  * Updates the internal ADS1115 config structure and writes the configuration over I2C.
  *
  * @param adc_hw_config Pointer to hardware config with desired settings.
- * @return kernel_error_st KERNEL_ERROR_NONE on success, otherwise error code.
+ * @return kernel_error_st KERNEL_SUCCESS on success, otherwise error code.
  */
 static kernel_error_st configure(const adc_hw_config_st *adc_hw_config) {
     if (!adc_hw_config) {
@@ -132,7 +132,7 @@ static kernel_error_st configure(const adc_hw_config_st *adc_hw_config) {
         return KERNEL_ERROR_ADC_CONFIGURE_ERROR;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -143,7 +143,7 @@ static kernel_error_st configure(const adc_hw_config_st *adc_hw_config) {
  *
  * @param adc_hw_config Pointer to configuration (must match previous configure call).
  * @param raw_value Pointer to store the raw ADC value.
- * @return kernel_error_st KERNEL_ERROR_NONE on success, otherwise error code.
+ * @return kernel_error_st KERNEL_SUCCESS on success, otherwise error code.
  */
 static kernel_error_st read(const adc_hw_config_st *adc_hw_config, int16_t *raw_value) {
     if ((adc_hw_config == NULL) || (raw_value == NULL)) {
@@ -184,7 +184,7 @@ static kernel_error_st read(const adc_hw_config_st *adc_hw_config, int16_t *raw_
         return KERNEL_ERROR_ADC_READ_ERROR;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -258,7 +258,7 @@ static pga_gain_et get_pga_gain(uint16_t coarse_voltage) {
  * @param adc_controller Pointer to the adc_controller_st struct to be populated.
  *                       Must not be NULL.
  *
- * @return kernel_error_st Returns KERNEL_ERROR_NONE on success,
+ * @return kernel_error_st Returns KERNEL_SUCCESS on success,
  *                         KERNEL_ERROR_NULL if adc_controller is NULL,
  *                         or an initialization error code if hardware init fails.
  *
@@ -272,7 +272,7 @@ kernel_error_st adc_controller_init(adc_controller_st *adc_controller) {
 
     if (!is_initialized) {
         kernel_error_st err = adc_initialize();
-        if (err != KERNEL_ERROR_NONE) {
+        if (err != KERNEL_SUCCESS) {
             return err;
         }
     }
@@ -282,5 +282,5 @@ kernel_error_st adc_controller_init(adc_controller_st *adc_controller) {
     adc_controller->get_lsb_size = get_lsb_size;
     adc_controller->get_pga_gain = get_pga_gain;
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }

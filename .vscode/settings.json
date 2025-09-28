@@ -55,6 +55,7 @@
         "task.h": "c",
         "text_encoding": "c",
         "typeinfo": "c",
-        "modbus_types.h": "c"
+        "modbus_types.h": "c",
+        "queue.h": "c"
     }
 }

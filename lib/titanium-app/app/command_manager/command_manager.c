@@ -37,13 +37,13 @@ command_manager_init_st command_manager_init = {0};
  * @param command Pointer to the parsed command structure containing calibration data.
  * @param command_response Pointer to the response structure to populate with status and updated values.
  * @return kernel_error_st Result of the calibration operation:
- *         - KERNEL_ERROR_NONE on success
+ *         - KERNEL_SUCCESS on success
  *         - KERNEL_ERROR_NULL if input pointers are NULL
  *         - KERNEL_ERROR_INVALID_SENSOR if sensor index is invalid
  *         - KERNEL_ERROR_CALIBRATION_FAIL if calibration fails
  */
 kernel_error_st process_set_calibration_command(command_st* command, command_response_st* command_response) {
-    kernel_error_st result = KERNEL_ERROR_NONE;
+    kernel_error_st result = KERNEL_SUCCESS;
 
     if ((command == NULL) || (command_response == NULL)) {
         return KERNEL_ERROR_NULL;
@@ -53,7 +53,7 @@ kernel_error_st process_set_calibration_command(command_st* command, command_res
     result                     = sensor_calibrate(cmd.sensor_index, cmd.offset, cmd.gain);
 
     command_response->command_index  = CMD_SET_CALIBRATION;
-    command_response->command_status = result == KERNEL_ERROR_NONE ? COMMAND_SUCCESS : COMMAND_CALIBRATION_FAIL;
+    command_response->command_status = result == KERNEL_SUCCESS ? COMMAND_SUCCESS : COMMAND_CALIBRATION_FAIL;
 
     if (command_response->command_status == COMMAND_SUCCESS) {
         command_response->command_u.cmd_sensor_response.sensor_index = cmd.sensor_index;
@@ -74,14 +74,14 @@ kernel_error_st process_set_calibration_command(command_st* command, command_res
  * @param command Pointer to the parsed command structure containing authentication information.
  * @param command_response Pointer to the response structure to populate with system information.
  * @return kernel_error_st Result of system info retrieval:
- *         - KERNEL_ERROR_NONE on success
+ *         - KERNEL_SUCCESS on success
  *         - KERNEL_ERROR_NULL if input pointers are NULL
  *         - KERNEL_ERROR_INVALID_USER if username is incorrect
  *         - KERNEL_ERROR_INVALID_PASSWORD if password is incorrect
  *         - KERNEL_ERROR_INVALID_SIZE if device ID or IP address exceeds buffer size
  */
 kernel_error_st process_get_system_info_command(command_st* command, command_response_st* command_response) {
-    kernel_error_st result                = KERNEL_ERROR_NONE;
+    kernel_error_st result                = KERNEL_SUCCESS;
     static const char expected_user[]     = "root";
     static const char expected_password[] = "root";
 
@@ -100,7 +100,7 @@ kernel_error_st process_get_system_info_command(command_st* command, command_res
     }
 
     command_response->command_index  = CMD_GET_SYSTEM_INFO;
-    command_response->command_status = result == KERNEL_ERROR_NONE ? COMMAND_SUCCESS : COMMAND_AUTHENTICATION_FAIL;
+    command_response->command_status = result == KERNEL_SUCCESS ? COMMAND_SUCCESS : COMMAND_AUTHENTICATION_FAIL;
 
     if (command_response->command_status == COMMAND_SUCCESS) {
         size_t device_id_size = snprintf(command_response->command_u.cmd_system_info_response.device_id,
@@ -142,12 +142,12 @@ kernel_error_st process_get_system_info_command(command_st* command, command_res
  * @param command Pointer to the parsed command structure.
  * @param command_response Pointer to the response structure to populate.
  * @return kernel_error_st Result of command processing:
- *         - KERNEL_ERROR_NONE if processed successfully
+ *         - KERNEL_SUCCESS if processed successfully
  *         - KERNEL_ERROR_NULL if input pointers are NULL
  *         - KERNEL_ERROR_INVALID_COMMAND if command_index is not recognized
  */
 kernel_error_st process_command(command_st* command, command_response_st* command_response) {
-    kernel_error_st result = KERNEL_ERROR_NONE;
+    kernel_error_st result = KERNEL_SUCCESS;
 
     if ((command == NULL) || (command_response == NULL)) {
         return KERNEL_ERROR_NULL;
@@ -178,7 +178,7 @@ kernel_error_st process_command(command_st* command, command_response_st* comman
  * @param command_queue Queue handle from which to receive incoming commands.
  * @param response_command_queue Queue handle to send command responses.
  * @return kernel_error_st Result of processing:
- *         - KERNEL_ERROR_NONE on success
+ *         - KERNEL_SUCCESS on success
  *         - KERNEL_ERROR_NULL if input pointers are invalid
  *         - KERNEL_ERROR_QUEUE_FULL if sending response fails
  */
@@ -188,7 +188,7 @@ kernel_error_st handle_incoming_command(QueueHandle_t command_queue, QueueHandle
 
     if (xQueueReceive(command_queue, &command, pdMS_TO_TICKS(100)) == pdPASS) {
         kernel_error_st err = process_command(&command, &command_response);
-        if (err != KERNEL_ERROR_NONE) {
+        if (err != KERNEL_SUCCESS) {
             logger_print(WARN, TAG, "Failed to process incoming command! - %d", err);
             // return err;
         }
@@ -198,7 +198,7 @@ kernel_error_st handle_incoming_command(QueueHandle_t command_queue, QueueHandle
             return KERNEL_ERROR_QUEUE_FULL;
         }
     }
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**

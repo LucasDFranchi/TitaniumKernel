@@ -22,7 +22,7 @@ static const char *TAG = "MQTT_Serializer";
  * @param[out] buffer      Output buffer where serialized data will be stored.
  * @param[in] buffer_size  Size of the output buffer in bytes.
  *
- * @return KERNEL_ERROR_NONE on success.
+ * @return KERNEL_SUCCESS on success.
  * @return KERNEL_ERROR_NULL if any input pointer is NULL.
  * @return KERNEL_ERROR_INVALID_SIZE if the buffer size is zero.
  * @return KERNEL_ERROR_UNSUPPORTED_TYPE if the topic data type is not recognized.
@@ -53,7 +53,7 @@ kernel_error_st mqtt_serialize_data(mqtt_topic_st *topic, char *buffer, size_t b
             return KERNEL_ERROR_UNSUPPORTED_TYPE;
     }
 
-    if (err != KERNEL_ERROR_NONE) {
+    if (err != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Serialization failed for topic %s - %d", topic->info->topic, err);
     }
 
@@ -74,7 +74,7 @@ kernel_error_st mqtt_serialize_data(mqtt_topic_st *topic, char *buffer, size_t b
  * @param[in] buffer       Buffer containing the raw MQTT payload data (typically a JSON string).
  * @param[in] buffer_size  Size of the buffer in bytes.
  *
- * @return KERNEL_ERROR_NONE on success.
+ * @return KERNEL_SUCCESS on success.
  * @return KERNEL_ERROR_NULL if any pointer argument is NULL.
  * @return KERNEL_ERROR_INVALID_SIZE if buffer size is zero.
  * @return KERNEL_ERROR_UNSUPPORTED_TYPE if the topic data type is not supported.
@@ -91,7 +91,7 @@ kernel_error_st mqtt_deserialize_data(mqtt_topic_st *topic, char *buffer, size_t
         return KERNEL_ERROR_INVALID_SIZE;
     }
 
-    kernel_error_st err = KERNEL_ERROR_NONE;
+    kernel_error_st err = KERNEL_SUCCESS;
     switch (topic->info->data_type) {
         case DATA_TYPE_COMMAND:
             err = deserialize_command(topic->queue, buffer, buffer_size);
@@ -102,7 +102,7 @@ kernel_error_st mqtt_deserialize_data(mqtt_topic_st *topic, char *buffer, size_t
             return KERNEL_ERROR_UNSUPPORTED_TYPE;
     }
 
-    if (err != KERNEL_ERROR_NONE) {
+    if (err != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Deserialization failed for topic %s - %d", topic->info->topic, err);
     }
 

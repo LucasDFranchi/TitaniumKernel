@@ -62,7 +62,7 @@ static float voltage_to_pressure(uint16_t voltage_mv, int sensor_index) {
  *                            @p ctx->index will be updated with the pressure data.
  *
  * @return kernel_error_st
- *         - KERNEL_ERROR_NONE on success
+ *         - KERNEL_SUCCESS on success
  *         - KERNEL_ERROR_NULL if @p ctx or @p sensor_report is NULL
  *         - KERNEL_ERROR_xxx if MUX selection, ADC configuration, or ADC read fails
  *
@@ -70,7 +70,7 @@ static float voltage_to_pressure(uint16_t voltage_mv, int sensor_index) {
  *       by @p ctx->offset to apply calibration.
  */
 kernel_error_st pressure_sensor_read(sensor_interface_st *ctx, sensor_report_st *sensor_report) {
-    kernel_error_st err    = KERNEL_ERROR_NONE;
+    kernel_error_st err    = KERNEL_SUCCESS;
     int16_t sensor_raw_adc = 0;
 
     uint8_t sensor_index = ctx->index;
@@ -84,18 +84,18 @@ kernel_error_st pressure_sensor_read(sensor_interface_st *ctx, sensor_report_st 
     sensor_report[sensor_index].active      = false;
 
     err = ctx->mux_controller->select_channel(&ctx->hw->mux_hw_config);
-    if (err != KERNEL_ERROR_NONE) {
+    if (err != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to select MUX for sensor %d", sensor_index);
         return err;
     }
 
     err = ctx->adc_controller->configure(&ctx->hw->adc_sensor_branch);
-    if (err != KERNEL_ERROR_NONE) {
+    if (err != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to configure sensor branch ADC for sensor %d", sensor_index);
         return err;
     }
     err = ctx->adc_controller->read(&ctx->hw->adc_sensor_branch, &sensor_raw_adc);
-    if (err != KERNEL_ERROR_NONE) {
+    if (err != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to read sensor branch ADC for sensor %d", sensor_index);
         return err;
     }
@@ -108,5 +108,5 @@ kernel_error_st pressure_sensor_read(sensor_interface_st *ctx, sensor_report_st 
     sensor_report[sensor_index].sensor_type = ctx->type;
     sensor_report[sensor_index].active      = true;
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }

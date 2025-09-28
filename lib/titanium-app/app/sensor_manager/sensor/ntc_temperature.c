@@ -169,7 +169,7 @@ static float voltage_to_temperature(uint16_t v_ref, uint16_t v_ntc, int sensor_i
  * @return kernel_error_st Error code indicating success or failure.
  */
 kernel_error_st temperature_sensor_read(sensor_interface_st *ctx, sensor_report_st *sensor_report) {
-    kernel_error_st err       = KERNEL_ERROR_NONE;
+    kernel_error_st err       = KERNEL_SUCCESS;
     int16_t reference_raw_adc = 0;
     int16_t sensor_raw_adc    = 0;
 
@@ -184,31 +184,31 @@ kernel_error_st temperature_sensor_read(sensor_interface_st *ctx, sensor_report_
     sensor_report[sensor_index].active      = false;
 
     err = ctx->mux_controller->select_channel(&ctx->hw->mux_hw_config);
-    if (err != KERNEL_ERROR_NONE) {
+    if (err != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to select MUX for sensor %d", sensor_index);
         return err;
     }
     vTaskDelay(pdMS_TO_TICKS(10));
     /* First we measure the reference branch to estimate the error based on the voltage input */
     err = ctx->adc_controller->configure(&ctx->hw->adc_ref_branch);
-    if (err != KERNEL_ERROR_NONE) {
+    if (err != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to configure reference branch ADC for sensor %d - %d", sensor_index, err);
         return err;
     }
     err = ctx->adc_controller->read(&ctx->hw->adc_ref_branch, &reference_raw_adc);
-    if (err != KERNEL_ERROR_NONE) {
+    if (err != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to read reference branch ADC for sensor %d - %d", sensor_index, err);
         return err;
     }
 
     /* Them we try to measure using the maximum PGA*/
     err = ctx->adc_controller->configure(&ctx->hw->adc_sensor_branch);
-    if (err != KERNEL_ERROR_NONE) {
+    if (err != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to configure sensor branch ADC for sensor %d - %d", sensor_index, err);
         return err;
     }
     err = ctx->adc_controller->read(&ctx->hw->adc_sensor_branch, &sensor_raw_adc);
-    if (err != KERNEL_ERROR_NONE) {
+    if (err != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to read sensor branch ADC for sensor %d - %d", sensor_index, err);
         return err;
     }
@@ -225,12 +225,12 @@ kernel_error_st temperature_sensor_read(sensor_interface_st *ctx, sensor_report_
         ctx->hw->adc_sensor_branch.pga_gain = fine_pga_gain;
 
         err = ctx->adc_controller->configure(&ctx->hw->adc_sensor_branch);
-        if (err != KERNEL_ERROR_NONE) {
+        if (err != KERNEL_SUCCESS) {
             logger_print(ERR, TAG, "Failed to configure sensor branch ADC for sensor %d - %d", sensor_index, err);
             return err;
         }
         err = ctx->adc_controller->read(&ctx->hw->adc_sensor_branch, &sensor_raw_adc);
-        if (err != KERNEL_ERROR_NONE) {
+        if (err != KERNEL_SUCCESS) {
             logger_print(ERR, TAG, "Failed to read sensor branch ADC for sensor %d - %d", sensor_index, err);
             return err;
         }
@@ -248,5 +248,5 @@ kernel_error_st temperature_sensor_read(sensor_interface_st *ctx, sensor_report_
     sensor_report[sensor_index].sensor_type = ctx->type;
     sensor_report[sensor_index].active      = true;
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }

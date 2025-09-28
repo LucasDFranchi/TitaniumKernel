@@ -10,7 +10,7 @@ static bool is_nvs_initialized = false;
  * This function initializes the flash-based key-value storage system. It must be called
  * before any other NVS operations. Handles page errors and version upgrades automatically.
  *
- * @return KERNEL_ERROR_NONE on success,
+ * @return KERNEL_SUCCESS on success,
  *         KERNEL_ERROR_NVS_INIT on failure.
  */
 kernel_error_st nvs_util_init(void) {
@@ -27,7 +27,7 @@ kernel_error_st nvs_util_init(void) {
 
     is_nvs_initialized = true;
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -37,7 +37,7 @@ kernel_error_st nvs_util_init(void) {
  * @param key            The key under which to store the string.
  * @param value          The null-terminated string to store.
  *
- * @return KERNEL_ERROR_NONE on success,
+ * @return KERNEL_SUCCESS on success,
  *         KERNEL_ERROR_NULL if any input is NULL,
  *         KERNEL_ERROR_NVS_NOT_INITIALIZED if NVS is not initialized,
  *         KERNEL_ERROR_NVS_OPEN or KERNEL_ERROR_NVS_SAVE on failure.
@@ -68,7 +68,7 @@ kernel_error_st nvs_util_save_str(const char *nvs_namespace, const char *key, co
         return KERNEL_ERROR_NVS_SAVE;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -81,7 +81,7 @@ kernel_error_st nvs_util_save_str(const char *nvs_namespace, const char *key, co
  * @param out_value      Buffer to store the string.
  * @param max_len        Maximum length of the buffer (including null terminator).
  *
- * @return KERNEL_ERROR_NONE on success,
+ * @return KERNEL_SUCCESS on success,
  *         KERNEL_ERROR_NULL or KERNEL_ERROR_INVALID_SIZE for invalid arguments,
  *         KERNEL_ERROR_NVS_NOT_INITIALIZED if NVS is not initialized,
  *         KERNEL_ERROR_NVS_OPEN or KERNEL_ERROR_NVS_LOAD on failure.
@@ -120,7 +120,7 @@ kernel_error_st nvs_util_load_str(const char *nvs_namespace, const char *key, ch
         return KERNEL_ERROR_NVS_LOAD;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -129,7 +129,7 @@ kernel_error_st nvs_util_load_str(const char *nvs_namespace, const char *key, ch
  * @param nvs_namespace  The NVS namespace.
  * @param key            The key to erase.
  *
- * @return KERNEL_ERROR_NONE on success,
+ * @return KERNEL_SUCCESS on success,
  *         KERNEL_ERROR_NULL for invalid arguments,
  *         KERNEL_ERROR_NVS_NOT_INITIALIZED if NVS is not initialized,
  *         KERNEL_ERROR_NVS_OPEN or KERNEL_ERROR_NVS_ERASE_KEY on failure.
@@ -161,7 +161,7 @@ kernel_error_st nvs_util_erase_key(const char *nvs_namespace, const char *key) {
         return KERNEL_ERROR_NVS_ERASE_KEY;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 
@@ -170,7 +170,7 @@ kernel_error_st nvs_util_erase_key(const char *nvs_namespace, const char *key) {
  *
  * @param nvs_namespace  The NVS namespace to erase.
  *
- * @return KERNEL_ERROR_NONE on success,
+ * @return KERNEL_SUCCESS on success,
  *         KERNEL_ERROR_NULL for invalid arguments,
  *         KERNEL_ERROR_NVS_NOT_INITIALIZED if NVS is not initialized,
  *         KERNEL_ERROR_NVS_OPEN or KERNEL_ERROR_NVS_ERASE_ALL on failure.
@@ -202,5 +202,5 @@ kernel_error_st nvs_util_erase_all(const char *nvs_namespace) {
         return KERNEL_ERROR_NVS_ERASE_ALL;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }

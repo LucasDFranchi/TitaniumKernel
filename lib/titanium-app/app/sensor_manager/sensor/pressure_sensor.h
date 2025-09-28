@@ -29,7 +29,7 @@
  *                            @p ctx->index will be updated with the pressure data.
  *
  * @return kernel_error_st
- *         - KERNEL_ERROR_NONE on success
+ *         - KERNEL_SUCCESS on success
  *         - KERNEL_ERROR_NULL if @p ctx or @p sensor_report is NULL
  *         - KERNEL_ERROR_xxx if MUX selection, ADC configuration, or ADC read fails
  *

@@ -19,7 +19,7 @@ typedef struct mux_hw_config_s {
  * and enables the new one. Updates internal state accordingly.
  *
  * @param[in] mux_hw_config Pointer to desired MUX channel configuration.
- * @return KERNEL_ERROR_NONE on success, specific error code otherwise.
+ * @return KERNEL_SUCCESS on success, specific error code otherwise.
  */
 typedef kernel_error_st (*mux_select_fn_st)(const mux_hw_config_st *mux);
 
@@ -40,7 +40,7 @@ typedef struct mux_controller_s {
  * @param[out] mux_controller Pointer to a mux_controller_st structure to be populated.
  *                            Must not be NULL.
  *
- * @return kernel_error_st Returns KERNEL_ERROR_NONE on success,
+ * @return kernel_error_st Returns KERNEL_SUCCESS on success,
  *                         KERNEL_ERROR_NULL if mux_controller is NULL,
  *                         or an initialization error code if hardware init fails.
  *

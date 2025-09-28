@@ -49,7 +49,7 @@ static tca9548a_config_st tca9548a_config[NUM_OF_MUX_ADDRESS][NUM_OF_MUX_CHANNEL
  * Validates the provided configuration and sets it as the active one.
  *
  * @param[in] mux_hw_config Pointer to the new MUX hardware configuration.
- * @return KERNEL_ERROR_NONE on success, error code otherwise.
+ * @return KERNEL_SUCCESS on success, error code otherwise.
  */
 static kernel_error_st update_current_mux_config(mux_address_et mux_address, mux_channel_et mux_channel) {
     if (mux_address >= NUM_OF_MUX_ADDRESS ||
@@ -59,7 +59,7 @@ static kernel_error_st update_current_mux_config(mux_address_et mux_address, mux
 
     current_mux_config = &tca9548a_config[mux_address][mux_channel];
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -88,7 +88,7 @@ static bool is_same_mux_and_channel(const tca9548a_hw_config_st *mux_hw_config, 
  *
  * Initializes I2C interfaces for all configured MUXes and their channels.
  *
- * @return KERNEL_ERROR_NONE on success.
+ * @return KERNEL_SUCCESS on success.
  */
 static kernel_error_st mux_initialize(void) {
     esp_err_t err = ESP_OK;
@@ -121,14 +121,14 @@ static kernel_error_st mux_initialize(void) {
     }
 
     kernel_error_st result = update_current_mux_config(MUX_ADDRESS_0, MUX_CHANNEL_0);
-    if (result != KERNEL_ERROR_NONE) {
+    if (result != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Cannot update the current mux configuration.");
         return result;
     }
 
     is_initialized = true;
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -138,14 +138,14 @@ static kernel_error_st mux_initialize(void) {
  * and enables the new one. Updates internal state accordingly.
  *
  * @param[in] mux_hw_config Pointer to desired MUX channel configuration.
- * @return KERNEL_ERROR_NONE on success, specific error code otherwise.
+ * @return KERNEL_SUCCESS on success, specific error code otherwise.
  */
 static kernel_error_st select_channel(const mux_hw_config_st *mux_hw_config) {
     if ((mux_hw_config == NULL) || (current_mux_config == NULL)) {
         return KERNEL_ERROR_NULL;
     }
 
-    kernel_error_st ret = KERNEL_ERROR_NONE;
+    kernel_error_st ret = KERNEL_SUCCESS;
     if (!is_same_mux_and_channel(&current_mux_config->hw_config, mux_hw_config)) {
         esp_err_t err = tca9548a_disable_all_channels(current_mux_config);
         if (err != ESP_OK) {
@@ -164,7 +164,7 @@ static kernel_error_st select_channel(const mux_hw_config_st *mux_hw_config) {
         }
 
         ret = update_current_mux_config(mux_hw_config->mux_address, mux_hw_config->mux_channel);
-        if (ret != KERNEL_ERROR_NONE) {
+        if (ret != KERNEL_SUCCESS) {
             logger_print(ERR, TAG, "Failed to update current MUX configuration: %d\n", ret);
             return ret;
         }
@@ -183,7 +183,7 @@ static kernel_error_st select_channel(const mux_hw_config_st *mux_hw_config) {
  * @param[out] mux_controller Pointer to a mux_controller_st structure to be populated.
  *                            Must not be NULL.
  *
- * @return kernel_error_st Returns KERNEL_ERROR_NONE on success,
+ * @return kernel_error_st Returns KERNEL_SUCCESS on success,
  *                         KERNEL_ERROR_NULL if mux_controller is NULL,
  *                         or an initialization error code if hardware init fails.
  *
@@ -197,12 +197,12 @@ kernel_error_st mux_controller_init(mux_controller_st *mux_controller) {
 
     if (!is_initialized) {
         kernel_error_st err = mux_initialize();
-        if (err != KERNEL_ERROR_NONE) {
+        if (err != KERNEL_SUCCESS) {
             return err;
         }
     }
 
     mux_controller->select_channel = select_channel;
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }

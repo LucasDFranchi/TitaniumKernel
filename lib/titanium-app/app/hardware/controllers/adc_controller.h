@@ -19,7 +19,7 @@ typedef struct adc_hw_config_s {
  * Updates the ADC configuration and writes it over I2C.
  *
  * @param adc_hw_config Pointer to hardware config with desired settings.
- * @return kernel_error_st KERNEL_ERROR_NONE on success, otherwise error code.
+ * @return kernel_error_st KERNEL_SUCCESS on success, otherwise error code.
  */
 typedef kernel_error_st (*adc_configure_fn_st)(const adc_hw_config_st *adc_hw_config);
 
@@ -30,7 +30,7 @@ typedef kernel_error_st (*adc_configure_fn_st)(const adc_hw_config_st *adc_hw_co
  *
  * @param adc_hw_config Pointer to ADC configuration.
  * @param raw_value Pointer to store the raw ADC value.
- * @return kernel_error_st KERNEL_ERROR_NONE on success, otherwise error code.
+ * @return kernel_error_st KERNEL_SUCCESS on success, otherwise error code.
  */
 typedef kernel_error_st (*adc_read_fn_st)(const adc_hw_config_st *adc_hw_config, int16_t *raw_value);
 
@@ -70,7 +70,7 @@ typedef struct adc_controller_s {
  * @param adc_controller Pointer to the adc_controller_st struct to be populated.
  *                       Must not be NULL.
  *
- * @return kernel_error_st Returns KERNEL_ERROR_NONE on success,
+ * @return kernel_error_st Returns KERNEL_SUCCESS on success,
  *                         KERNEL_ERROR_NULL if adc_controller is NULL,
  *                         or an initialization error code if hardware init fails.
  *

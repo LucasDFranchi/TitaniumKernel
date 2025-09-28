@@ -17,7 +17,7 @@ static int enqued_task_index                               = 0;
  *
  * @param task Pointer to the task_interface_st structure representing the task.
  * @return
- *   - `KERNEL_ERROR_NONE` if the task was successfully added.
+ *   - `KERNEL_SUCCESS` if the task was successfully added.
  *   - `KERNEL_ERROR_NULL` if the task pointer is NULL.
  *   - `KERNEL_ERROR_TASK_FULL` if the task queue is full.
  *
@@ -35,7 +35,7 @@ kernel_error_st task_handler_enqueue_task(task_interface_st *task) {
     enqued_task_list[enqued_task_index] = task;
     enqued_task_index++;
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -45,7 +45,7 @@ kernel_error_st task_handler_enqueue_task(task_interface_st *task) {
  * If a task in the queue is NULL, it is skipped.
  *
  * @return
- *   - `KERNEL_ERROR_NONE` if all tasks were successfully started.
+ *   - `KERNEL_SUCCESS` if all tasks were successfully started.
  *   - `KERNEL_ERROR_FAIL` if any task creation fails.
  *
  * @note This function should only be called after all tasks have been queued.
@@ -70,7 +70,7 @@ kernel_error_st task_handler_start_queued_tasks(void) {
         }
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -83,7 +83,7 @@ kernel_error_st task_handler_start_queued_tasks(void) {
  *
  * @param task Pointer to the task descriptor structure to attach.
  *
- * @return KERNEL_ERROR_NONE       Task successfully enqueued and created.
+ * @return KERNEL_SUCCESS       Task successfully enqueued and created.
  * @return KERNEL_ERROR_INVALID_ARG Null pointer passed as task.
  * @return KERNEL_ERROR_TASK_FULL  Task queue is full; cannot enqueue task.
  * @return KERNEL_ERROR_TASK_INIT  FreeRTOS task creation failed.
@@ -94,7 +94,7 @@ kernel_error_st task_handler_start_queued_tasks(void) {
  */
 kernel_error_st task_handler_attach_task(task_interface_st *task) {
     kernel_error_st err = task_handler_enqueue_task(task);;
-    if (err != KERNEL_ERROR_NONE) {
+    if (err != KERNEL_SUCCESS) {
         return err;
     }
 
@@ -113,7 +113,7 @@ kernel_error_st task_handler_attach_task(task_interface_st *task) {
         return KERNEL_ERROR_TASK_INIT;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**

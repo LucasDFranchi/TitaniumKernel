@@ -31,7 +31,7 @@
  * @param log_output          The log output backend (e.g., SERIAL or UDP).
  * @param global_structures   Pointer to the global system state structure. Must not be NULL.
  *
- * @return KERNEL_ERROR_NONE on success, or an appropriate error code if initialization fails.
+ * @return KERNEL_SUCCESS on success, or an appropriate error code if initialization fails.
  */
 kernel_error_st kernel_initialize(release_mode_et release_mode, log_output_et log_output, global_structures_st *global_structures);
 
@@ -41,7 +41,7 @@ kernel_error_st kernel_initialize(release_mode_et release_mode, log_output_et lo
  * This function spawns a task to handle network operations.
  *
  * @param global_events Pointer to the global configuration structure.
- * @return KERNEL_ERROR_NONE on success, KERNEL_ERROR_TASK_CREATE if task creation fails,
+ * @return KERNEL_SUCCESS on success, KERNEL_ERROR_TASK_CREATE if task creation fails,
  *         or KERNEL_ERROR_NULL if global_events is NULL.
  */
 kernel_error_st kernel_enable_network(global_structures_st *global_structures);
@@ -52,7 +52,7 @@ kernel_error_st kernel_enable_network(global_structures_st *global_structures);
  * This function spawns a task to handle HTTP server operations.
  *
  * @param global_events Pointer to the global configuration structure.
- * @return KERNEL_ERROR_NONE on success, KERNEL_ERROR_TASK_CREATE if task creation fails,
+ * @return KERNEL_SUCCESS on success, KERNEL_ERROR_TASK_CREATE if task creation fails,
  *         or KERNEL_ERROR_NULL if global_events is NULL.
  */
 kernel_error_st kernel_enable_http_server(global_structures_st *global_structures);
@@ -63,7 +63,7 @@ kernel_error_st kernel_enable_http_server(global_structures_st *global_structure
  * This function spawns a task to handle MQTT client operations.
  *
  * @param global_events Pointer to the global configuration structure.
- * @return KERNEL_ERROR_NONE on success, KERNEL_ERROR_TASK_CREATE if task creation fails,
+ * @return KERNEL_SUCCESS on success, KERNEL_ERROR_TASK_CREATE if task creation fails,
  *         or KERNEL_ERROR_NULL if global_events is NULL.
  */
 kernel_error_st kernel_enable_mqtt(global_structures_st *global_structures);
@@ -75,7 +75,7 @@ kernel_error_st kernel_enable_mqtt(global_structures_st *global_structures);
  * It should be called after all necessary tasks have been enqueued and
  * the system is ready to start multitasking.
  *
- * @return KERNEL_ERROR_NONE on success, or an error code if starting tasks fails.
+ * @return KERNEL_SUCCESS on success, or an error code if starting tasks fails.
  */
 kernel_error_st kernel_start_tasks(void);
 
@@ -85,7 +85,7 @@ kernel_error_st kernel_start_tasks(void);
  * This function spawns a task to handle MQTT client operations.
  *
  * @param global_events Pointer to the global configuration structure.
- * @return KERNEL_ERROR_NONE on success, KERNEL_ERROR_TASK_CREATE if task creation fails,
+ * @return KERNEL_SUCCESS on success, KERNEL_ERROR_TASK_CREATE if task creation fails,
  *         or KERNEL_ERROR_NULL if global_events is NULL.
  */
 kernel_error_st kernel_enqueue_task(task_interface_st *task);

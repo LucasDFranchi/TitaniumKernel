@@ -29,7 +29,7 @@ extern "C" {
  * @param out_buffer    A pointer to the buffer where the serialized JSON will be written.
  * @param buffer_size   The size of the output buffer in bytes.
  * @return kernel_error_st
- *         - KERNEL_ERROR_NONE on success
+ *         - KERNEL_SUCCESS on success
  *         - KERNEL_ERROR_NULL if the output buffer is null or size is 0
  *         - KERNEL_ERROR_NULL_MQTT_QUEUE if the queue is null
  *         - KERNEL_ERROR_EMPTY_QUEUE if no report was available within timeout
@@ -75,7 +75,7 @@ kernel_error_st serialize_command_response(QueueHandle_t queue, char *out_buffer
  * @param queue         FreeRTOS queue where the parsed command will be sent.
  * @param json_object   Reference to a JsonObject containing command parameters.
  * @return kernel_error_st
- *         - KERNEL_ERROR_NONE on success
+ *         - KERNEL_SUCCESS on success
  *         - KERNEL_ERROR_MISSING_FIELD if a required key is missing
  *         - KERNEL_ERROR_INVALID_TYPE if any value is of the wrong type
  *         - KERNEL_ERROR_QUEUE_SEND if sending to the queue fails

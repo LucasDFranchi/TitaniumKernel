@@ -100,7 +100,7 @@ sensor_state_et sensor_get_state(uint8_t sensor_index);
  * @param offset       Offset value to subtract from the raw measured voltage.
  * @param gain         Gain factor to apply after offset adjustment.
  * @return kernel_error_st
- *         - KERNEL_ERROR_NONE on success
+ *         - KERNEL_SUCCESS on success
  *         - KERNEL_ERROR_INVALID_ARG if the sensor index is out of range
  */
 kernel_error_st sensor_calibrate(uint8_t sensor_index, float offset, float gain);

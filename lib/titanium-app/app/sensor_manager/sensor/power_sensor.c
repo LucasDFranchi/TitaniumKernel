@@ -62,7 +62,7 @@ static const uint8_t POWER_FACTOR_INDEX            = 3;
  * @param[out] transmit_buffer       Buffer where the encoded Modbus frame is stored.
  * @param[in] transmit_buffer_size   Size of the transmit buffer in bytes.
  *
- * @return KERNEL_ERROR_NONE on success,
+ * @return KERNEL_SUCCESS on success,
  *         KERNEL_ERROR_INVALID_ARG if input arguments are invalid,
  *         KERNEL_ERROR_FAILED_TO_ENCODE_PACKET if the request could not be encoded,
  *         KERNEL_ERROR_FAIL if UART transmission fails.
@@ -83,7 +83,7 @@ static kernel_error_st request_power_data(sensor_interface_st *ctx, uint8_t *tra
 
     esp_err_t err = uart_interface.uart_write_fn(UART_NUM_2, transmit_buffer, message_size, TRANSMIT_TIMEOUT_MS);
 
-    return err == ESP_OK ? KERNEL_ERROR_NONE : KERNEL_ERROR_FAIL;
+    return err == ESP_OK ? KERNEL_SUCCESS : KERNEL_ERROR_FAIL;
 }
 
 /**
@@ -98,7 +98,7 @@ static kernel_error_st request_power_data(sensor_interface_st *ctx, uint8_t *tra
  * @param[in]  response_buffer_size Size of the response buffer in bytes.
  * @param[out] sensor_report        Array of sensor report entries to update.
  *
- * @return KERNEL_ERROR_NONE on success,
+ * @return KERNEL_SUCCESS on success,
  *         KERNEL_ERROR_INVALID_ARG if inputs are invalid,
  *         KERNEL_ERROR_TIMEOUT if no response is received,
  *         KERNEL_ERROR_FAILED_TO_DECODE_PACKET if response decoding fails.
@@ -144,7 +144,7 @@ static kernel_error_st receive_power_data(sensor_interface_st *ctx, uint8_t *res
     sensor_report[ctx->index + POWER_FACTOR_INDEX].sensor_type = SENSOR_TYPE_POWER_FACTOR;
     sensor_report[ctx->index + POWER_FACTOR_INDEX].active      = true;
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -158,7 +158,7 @@ static kernel_error_st receive_power_data(sensor_interface_st *ctx, uint8_t *res
  * @code
  * sensor_report_st report[4];
  * sensor_interface_st ctx = {.index = 0};
- * if (power_sensor_read(&ctx, report) == KERNEL_ERROR_NONE) {
+ * if (power_sensor_read(&ctx, report) == KERNEL_SUCCESS) {
  *     printf("Voltage: %.2f V\n", report[0].value);
  *     printf("Current: %.3f A\n", report[1].value);
  * }
@@ -168,7 +168,7 @@ static kernel_error_st receive_power_data(sensor_interface_st *ctx, uint8_t *res
  * @param[out] sensor_report Array where measurement values will be stored.
  *
  * @return kernel_error_st
- *         - KERNEL_ERROR_NONE on success
+ *         - KERNEL_SUCCESS on success
  *         - KERNEL_ERROR_NULL if ctx or sensor_report is NULL
  *         - KERNEL_ERROR_UART_NOT_INITIALIZED if UART interface is unavailable
  *         - KERNEL_ERROR_FAILED_TO_ENCODE_PACKET if Modbus request failed
@@ -209,17 +209,17 @@ kernel_error_st power_sensor_read(sensor_interface_st *ctx, sensor_report_st *se
     }
 
     kernel_error_st err = request_power_data(ctx, buffer, sizeof(buffer));
-    if (err != KERNEL_ERROR_NONE) {
+    if (err != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to send Modbus request - %d", sensor_index);
         return err;
     }
 
     err = receive_power_data(ctx, response, sizeof(response), sensor_report);
 
-    if (err != KERNEL_ERROR_NONE) {
+    if (err != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to receive Modbus response - %d", sensor_index);
         return err;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }

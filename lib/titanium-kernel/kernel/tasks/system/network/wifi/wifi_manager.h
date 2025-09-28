@@ -35,7 +35,7 @@ typedef enum wifi_manager_interface_e {
  *  - KERNEL_ERROR_WIFI_SET_MODE if setting Wi-Fi mode fails.
  *  - Errors returned by `set_access_point_mode()` if AP configuration fails.
  *  - KERNEL_ERROR_WIFI_START if starting the Wi-Fi driver fails.
- *  - KERNEL_ERROR_NONE on successful initialization.
+ *  - KERNEL_SUCCESS on successful initialization.
  */
 kernel_error_st wifi_manager_initialize();
 
@@ -57,7 +57,7 @@ kernel_error_st wifi_manager_initialize();
  *       and configures the station mode. A connection should be triggered separately.
  *
  * @return kernel_error_st
- *  - KERNEL_ERROR_NONE if credentials are successfully stored and station mode configured.
+ *  - KERNEL_SUCCESS if credentials are successfully stored and station mode configured.
  *  - KERNEL_ERROR_NULL if `ssid` or `password` is NULL.
  *  - KERNEL_ERROR_STA_SSID_TOO_LONG if SSID string exceeds buffer size.
  *  - KERNEL_ERROR_STA_PASSWORD_TOO_LONG if password string exceeds buffer size.

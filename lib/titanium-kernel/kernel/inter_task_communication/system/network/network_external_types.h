@@ -27,7 +27,7 @@ typedef struct credentials_s {
  * @brief Function pointer type for initializing the Ethernet driver.
  *
  * @param[out] eth_handle Pointer to store the initialized Ethernet handle.
- * @return KERNEL_ERROR_NONE on success, or an error code on failure.
+ * @return KERNEL_SUCCESS on success, or an error code on failure.
  */
 typedef kernel_error_st (*initialize_driver_t)(esp_eth_handle_t *eth_handle);
 

@@ -28,7 +28,7 @@ static led_state_t led_state = LED_OFF;
  * Configures the GPIO for the health LED.
  *
  * @param args Unused for now, reserved for future parameters.
- * @return KERNEL_ERROR_NONE on success, or other error codes on failure.
+ * @return KERNEL_SUCCESS on success, or other error codes on failure.
  */
 kernel_error_st health_manager_initialize(void* args) {
     // TODO: Move GPIO configuration to HAL for portability
@@ -45,7 +45,7 @@ kernel_error_st health_manager_initialize(void* args) {
         return KERNEL_ERROR_TASK_INIT;
     }
 
-    return KERNEL_ERROR_NONE;
+    return KERNEL_SUCCESS;
 }
 
 /**
@@ -58,7 +58,7 @@ kernel_error_st health_manager_initialize(void* args) {
 void health_manager_loop(void* args) {
     kernel_error_st err = health_manager_initialize(args);
 
-    if (err != KERNEL_ERROR_NONE) {
+    if (err != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to initialize the Health Manager");
         vTaskDelete(NULL);  // Stop the task if initialization fails
     }

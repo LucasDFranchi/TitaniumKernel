@@ -19,7 +19,7 @@
  */
 typedef enum kernel_error_s {
     /* -------- General (0x000) -------- */
-    KERNEL_ERROR_NONE              = 0x0000,
+    KERNEL_SUCCESS                 = 0x0000,
     KERNEL_ERROR_FAIL              = 0x0001,
     KERNEL_ERROR_NULL              = 0x0002,
     KERNEL_ERROR_INVALID_ARG       = 0x0003,
@@ -32,6 +32,7 @@ typedef enum kernel_error_s {
     KERNEL_ERROR_FUNC_POINTER_NULL = 0x000A,
     KERNEL_ERROR_TIMEOUT           = 0x000B,
     KERNEL_ERROR_FORMAT            = 0x000C,
+    KERNEL_ERROR_FAILED_TO_LOCK    = 0x000D,
 
     /* -------- Task/Queue (0x100) -------- */
     KERNEL_ERROR_TASK_CREATE     = 0x0100,
@@ -115,9 +116,11 @@ typedef enum kernel_error_s {
     KERNEL_ERROR_FAILED_GET_NETIF_HANDLE  = 0x061E,
 
     /* -------- System Init (0x700) -------- */
-    KERNEL_ERROR_INITIALIZATION_FAIL = 0x0700,
-    KERNEL_ERROR_GLOBAL_EVENTS_INIT  = 0x0701,
-    KERNEL_ERROR_GLOBAL_QUEUES_INIT  = 0x0702,
+    KERNEL_ERROR_INITIALIZATION_FAIL      = 0x0700,
+    KERNEL_ERROR_GLOBAL_EVENTS_INIT       = 0x0701,
+    KERNEL_ERROR_GLOBAL_QUEUES_INIT       = 0x0702,
+    KERNEL_ERROR_FAILED_TO_ALLOCATE_MUTEX = 0x0703,
+    KERNEL_ERROR_MANAGER_NOT_INITIALIZED  = 0x0704,
 
     /* -------- App/Commands (0x800) -------- */
     KERNEL_ERROR_INVALID_INTERFACE = 0x0800,
