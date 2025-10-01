@@ -3,7 +3,6 @@
 #include "kernel/logger/logger.h"
 
 #define TASK_LIST_SIZE 20
-//TODO: this is not a manager, this is a handler!
 
 static const char *TAG                                     = "Task Manager";
 static task_interface_st *enqued_task_list[TASK_LIST_SIZE] = {0};
@@ -93,7 +92,8 @@ kernel_error_st task_handler_start_queued_tasks(void) {
  *       of the created FreeRTOS task.
  */
 kernel_error_st task_handler_attach_task(task_interface_st *task) {
-    kernel_error_st err = task_handler_enqueue_task(task);;
+    kernel_error_st err = task_handler_enqueue_task(task);
+    ;
     if (err != KERNEL_SUCCESS) {
         return err;
     }
@@ -130,4 +130,30 @@ kernel_error_st task_handler_attach_task(task_interface_st *task) {
  */
 int task_handler_get_task_count(void) {
     return enqued_task_index;
+}
+
+/**
+ * @brief Get the stack high-water mark for a specific task.
+ *
+ * Retrieves the minimum amount of stack space that has remained
+ * since the specified task started execution.
+ *
+ * @param index Index of the task in the enqueued task list.
+ * @return The high-water mark value, in words.
+ */
+UBaseType_t task_handler_get_highwater(size_t index) {
+    return uxTaskGetStackHighWaterMark(enqued_task_list[index]->handle);
+}
+
+/**
+ * @brief Get the name of a specific task.
+ *
+ * Returns a pointer to the null-terminated string containing
+ * the name of the specified task.
+ *
+ * @param index Index of the task in the enqueued task list.
+ * @return Pointer to the task name string (read-only).
+ */
+const char *task_handler_get_task_name(size_t index) {
+    return enqued_task_list[index]->name;
 }

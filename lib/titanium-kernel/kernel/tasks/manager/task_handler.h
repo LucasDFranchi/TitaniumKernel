@@ -70,3 +70,24 @@ kernel_error_st task_handler_attach_task(task_interface_st *task);
  */
 int task_handler_get_task_count(void);
 
+/**
+ * @brief Get the stack high-water mark for a specific task.
+ *
+ * Retrieves the minimum amount of stack space that has remained
+ * since the specified task started execution.
+ *
+ * @param index Index of the task in the enqueued task list.
+ * @return The high-water mark value, in words.
+ */
+UBaseType_t task_handler_get_highwater(size_t index);
+
+/**
+ * @brief Get the name of a specific task.
+ *
+ * Returns a pointer to the null-terminated string containing
+ * the name of the specified task.
+ *
+ * @param index Index of the task in the enqueued task list.
+ * @return Pointer to the task name string (read-only).
+ */
+const char *task_handler_get_task_name(size_t index);
