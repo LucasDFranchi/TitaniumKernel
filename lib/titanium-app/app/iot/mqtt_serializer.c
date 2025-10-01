@@ -16,7 +16,7 @@ static const char *TAG = "MQTT_Serializer";
  * or other appropriate format, storing it in the provided buffer.
  *
  * Currently supports:
- * - DATA_TYPE_REPORT: Uses `serialize_data_report()` to serialize sensor data.
+ * - DATA_TYPE_SENSOR_REPORT: Uses `serialize_data_report()` to serialize sensor data.
  *
  * @param[in] topic        Pointer to the MQTT topic containing the queue and metadata.
  * @param[out] buffer      Output buffer where serialized data will be stored.
@@ -47,11 +47,14 @@ kernel_error_st mqtt_serialize_data(mqtt_topic_st *topic, char *buffer, size_t b
     }
 
     switch (topic->info->data_type) {
-        case DATA_TYPE_REPORT:
+        case DATA_TYPE_SENSOR_REPORT:
             err = serialize_data_report(queue, buffer, buffer_size);
             break;
         case DATA_TYPE_COMMAND_RESPONSE:
             err = serialize_command_response(queue, buffer, buffer_size);
+            break;
+        case DATA_TYPE_HEALTH_REPORT:
+            err = serialize_health_report(queue, buffer, buffer_size);
             break;
         default:
             logger_print(ERR, TAG, "Unsupported data type: %d", topic->info->data_type);

@@ -54,6 +54,35 @@ kernel_error_st serialize_data_report(QueueHandle_t queue, char *out_buffer, siz
 kernel_error_st serialize_command_response(QueueHandle_t queue, char *out_buffer, size_t buffer_size);
 
 /**
+ * @brief Serializes a health report into JSON format.
+ *
+ * This function receives a `health_report_st` structure from the provided FreeRTOS queue
+ * and serializes it into a JSON object using ArduinoJson. The JSON format includes the
+ * number of tasks and an array of task objects, each containing the task `name` and its
+ * `high_water_mark` value.
+ *
+ * Example output:
+ * {
+ *   "num_of_tasks": 2,
+ *   "tasks": [
+ *     {"name": "MQTT Task", "high_water_mark": 128},
+ *     {"name": "Sensor Task", "high_water_mark": 256}
+ *   ]
+ * }
+ *
+ * @param queue         The FreeRTOS queue from which the health report will be read.
+ * @param out_buffer    A pointer to the buffer where the serialized JSON will be written.
+ * @param buffer_size   The size of the output buffer in bytes.
+ * @return kernel_error_st
+ *         - KERNEL_SUCCESS on success
+ *         - KERNEL_ERROR_NULL if the output buffer is null or size is 0
+ *         - KERNEL_ERROR_QUEUE_NULL if the queue is null
+ *         - KERNEL_ERROR_EMPTY_QUEUE if no report was available within timeout
+ *         - KERNEL_ERROR_FORMATTING if the resulting JSON didn't fit in the buffer
+ */
+kernel_error_st serialize_health_report(QueueHandle_t queue, char *out_buffer, size_t buffer_size);
+
+/**
  * @brief Deserializes a `set_calibration` command from a JSON object and pushes it to a queue.
  *
  * This function expects a JSON object with the following keys:

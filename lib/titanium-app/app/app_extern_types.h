@@ -50,6 +50,18 @@
  */
 #define IP_ADDRESS_SIZE 16
 
+/**
+ * @def TASK_MAXIMUM_NAME_SIZE
+ * @brief Maximum size of a task name string (including null terminator).
+ */
+#define TASK_MAXIMUM_NAME_SIZE 32
+
+/**
+ * @def MAX_SYSTEM_TASKS
+ * @brief Maximum number of system tasks supported.
+ */
+#define MAX_SYSTEM_TASKS 10
+
 /* === Data Types === */
 
 /* MQTT Topics Definition */
@@ -66,6 +78,7 @@ typedef enum mqtt_topic_index_e {
     BROADCAST_COMMAND, /**< Topic for receiving broadcast commands (affects multiple devices). */
     TARGET_COMMAND,    /**< Topic for receiving direct commands targeted at this device. */
     RESPONSE_COMMAND,  /**< Topic for publishing responses/acknowledgments to commands. */
+    HEALTH_REPORT,     /**< Topic for publishing responses/acknowledgments to commands. */
     TOPIC_COUNT,       /**< Total number of defined topics (used for bounds checking). */
 } mqtt_topic_index_et;
 
@@ -74,10 +87,11 @@ typedef enum mqtt_topic_index_e {
  * @brief Enumerates the types of application-level data.
  */
 typedef enum app_data_type_e {
-    DATA_TYPE_REPORT = 0,       /**< Sensor/device report */
-    DATA_TYPE_COMMAND,          /**< Command sent to the device */
-    DATA_TYPE_COMMAND_RESPONSE, /**< Response to a previously issued command */
-    END_OF_DATA_TYPES           /**< End marker for enumeration */
+    DATA_TYPE_SENSOR_REPORT = 0, /**< Sensor/device report */
+    DATA_TYPE_COMMAND,           /**< Command sent to the device */
+    DATA_TYPE_COMMAND_RESPONSE,  /**< Response to a previously issued command */
+    DATA_TYPE_HEALTH_REPORT,     /**< Health report */
+    END_OF_DATA_TYPES            /**< End marker for enumeration */
 } app_data_type_et;
 
 /**
@@ -114,6 +128,7 @@ enum {
     TARGET_COMMAND_QUEUE_ID,
     BROADCAST_COMMAND_QUEUE_ID,
     RESPONSE_COMMAND_QUEUE_ID,
+    HEALTH_REPORT_QUEUE_ID,
 };
 
 /**
@@ -216,3 +231,26 @@ typedef struct command_response_s {
         // Additional response payloads for future commands can be added here
     } command_u;
 } command_response_st;
+
+/**
+ * @struct task_health_s
+ * @brief Stores health information for a single task.
+ *
+ * Contains the task name and its stack high-water mark.
+ */
+typedef struct task_health_s {
+    char task_name[TASK_MAXIMUM_NAME_SIZE]; /**< Task name string (null-terminated). */
+    UBaseType_t high_water_mark;            /**< Minimum amount of stack space that remained (in words) since the task started. */
+} task_health_st;
+
+/**
+ * @struct health_report_s
+ * @brief Aggregates health information for multiple tasks.
+ *
+ * Contains an array of task health entries and the number
+ * of tasks currently reported.
+ */
+typedef struct health_report_s {
+    task_health_st task_health[MAX_SYSTEM_TASKS]; /**< Array of task health information. */
+    uint8_t num_of_tasks;                         /**< Number of tasks included in the report. */
+} health_report_st;

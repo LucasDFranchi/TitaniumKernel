@@ -88,7 +88,7 @@ static const mqtt_topic_info_st mqtt_topic_infos[] = {
         .mqtt_data_direction = PUBLISH,
         .queue_length        = 10,
         .queue_item_size     = sizeof(device_report_st),
-        .data_type           = DATA_TYPE_REPORT,
+        .data_type           = DATA_TYPE_SENSOR_REPORT,
         .message_type        = MESSAGE_TYPE_TARGET,
     },
     [BROADCAST_COMMAND] = {
@@ -118,6 +118,15 @@ static const mqtt_topic_info_st mqtt_topic_infos[] = {
         .data_type           = DATA_TYPE_COMMAND_RESPONSE,
         .message_type        = MESSAGE_TYPE_TARGET,
     },
+    [HEALTH_REPORT] = {
+        .topic               = "health/report",
+        .qos                 = QOS_1,
+        .mqtt_data_direction = PUBLISH,
+        .queue_length        = 10,
+        .queue_item_size     = sizeof(health_report_st),
+        .data_type           = DATA_TYPE_HEALTH_REPORT,
+        .message_type        = MESSAGE_TYPE_TARGET,
+    },
 };
 
 /**
@@ -141,6 +150,10 @@ mqtt_topic_st mqtt_topics[TOPIC_COUNT] = {
     [RESPONSE_COMMAND] = {
         .info        = &mqtt_topic_infos[RESPONSE_COMMAND],
         .queue_index = RESPONSE_COMMAND_QUEUE_ID,
+    },
+    [HEALTH_REPORT] = {
+        .info        = &mqtt_topic_infos[HEALTH_REPORT],
+        .queue_index = HEALTH_REPORT_QUEUE_ID,
     },
 };
 

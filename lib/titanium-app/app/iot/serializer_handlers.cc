@@ -323,6 +323,68 @@ kernel_error_st serialize_command_response(QueueHandle_t queue, char *out_buffer
 }
 
 /**
+ * @brief Serializes a health report into JSON format.
+ *
+ * This function receives a `health_report_st` structure from the provided FreeRTOS queue
+ * and serializes it into a JSON object using ArduinoJson. The JSON format includes the
+ * number of tasks and an array of task objects, each containing the task `name` and its
+ * `high_water_mark` value.
+ *
+ * Example output:
+ * {
+ *   "num_of_tasks": 2,
+ *   "tasks": [
+ *     {"name": "MQTT Task", "high_water_mark": 128},
+ *     {"name": "Sensor Task", "high_water_mark": 256}
+ *   ]
+ * }
+ *
+ * @param queue         The FreeRTOS queue from which the health report will be read.
+ * @param out_buffer    A pointer to the buffer where the serialized JSON will be written.
+ * @param buffer_size   The size of the output buffer in bytes.
+ * @return kernel_error_st
+ *         - KERNEL_SUCCESS on success
+ *         - KERNEL_ERROR_NULL if the output buffer is null or size is 0
+ *         - KERNEL_ERROR_QUEUE_NULL if the queue is null
+ *         - KERNEL_ERROR_EMPTY_QUEUE if no report was available within timeout
+ *         - KERNEL_ERROR_FORMATTING if the resulting JSON didn't fit in the buffer
+ */
+kernel_error_st serialize_health_report(QueueHandle_t queue, char *out_buffer, size_t buffer_size) {
+    if (out_buffer == NULL || buffer_size == 0) {
+        return KERNEL_ERROR_NULL;
+    }
+
+    if (queue == NULL) {
+        return KERNEL_ERROR_QUEUE_NULL;
+    }
+
+    health_report_st health_report{};
+    if (xQueueReceive(queue, &health_report, pdMS_TO_TICKS(100)) != pdTRUE) {
+        return KERNEL_ERROR_EMPTY_QUEUE;
+    }
+
+    StaticJsonDocument<MAXIMUM_DOC_SIZE> doc;
+
+    doc["num_of_tasks"] = health_report.num_of_tasks;
+
+    JsonArray sensors = doc.createNestedArray("tasks");
+    for (int i = 0; i < health_report.num_of_tasks; i++) {
+        JsonObject sensor = sensors.createNestedObject();
+
+        sensor["name"]  = health_report.task_health[i].task_name;
+        sensor["high_water_mark"] = health_report.task_health[i].high_water_mark;
+    }
+
+    size_t json_size = serializeJson(doc, out_buffer, buffer_size);
+
+    if (json_size == 0 || json_size >= buffer_size) {
+        return KERNEL_ERROR_FORMATTING;
+    }
+
+    return KERNEL_SUCCESS;
+}
+
+/**
  * @brief Deserializes a `set_calibration` command from a JSON object and pushes it to a queue.
  *
  * This function expects a JSON object with the following keys:
