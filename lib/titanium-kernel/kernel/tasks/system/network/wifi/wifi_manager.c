@@ -8,10 +8,10 @@
 #include "lwip/sockets.h"
 #include "lwip/sys.h"
 
+#include "kernel/device/device_info.h"
 #include "kernel/inter_task_communication/inter_task_communication.h"
 #include "kernel/logger/logger.h"
 #include "kernel/utils/nvs_util.h"
-#include "kernel/device/device_info.h"
 
 /**
  * @brief Struct representing the current wifi connection status.
@@ -489,19 +489,25 @@ void wifi_manager_sta_got_ip(int32_t event_id, void *event_data) {
     bool ssid_changed = true;
     bool pwd_changed  = true;
 
-    if (nvs_util_load_str("wifi", "ssid", stored_ssid, sizeof(stored_ssid)) == KERNEL_SUCCESS &&
-        strcmp(stored_ssid, cred.ssid) == 0) {
+    if (nvs_util_load_str("wifi", "ssid", stored_ssid, sizeof(stored_ssid)) != KERNEL_SUCCESS) {
+        logger_print(WARN, TAG, "Failed to load SSID from NVS for comparison");
+    }
+    stored_ssid[sizeof(stored_ssid) - 1] = '\0';
+    if (strcmp(stored_ssid, cred.ssid) == 0 && stored_ssid[0] != '\0') {
         ssid_changed = false;
     }
 
-    if (nvs_util_load_str("wifi", "pwd", stored_password, sizeof(stored_password)) == KERNEL_SUCCESS &&
-        strcmp(stored_password, cred.password) == 0) {
+    if (nvs_util_load_str("wifi", "pwd", stored_password, sizeof(stored_password)) != KERNEL_SUCCESS) {
+        logger_print(WARN, TAG, "Failed to load password from NVS for comparison");
+    }
+    stored_password[sizeof(stored_password) - 1] = '\0';
+    if (strcmp(stored_password, cred.password) == 0 && stored_password[0] != '\0') {
         pwd_changed = false;
     }
 
     kernel_error_st result = KERNEL_SUCCESS;
     if (ssid_changed) {
-        result = nvs_util_save_str("wifi", "ssid", cred.ssid);
+        result = nvs_util_save_str("wifi", "ssid", (char *)sta_config.sta.ssid);
         if (result != KERNEL_SUCCESS) {
             logger_print(WARN, TAG, "Failed to save SSID to NVS: %d", result);
         } else {
@@ -510,7 +516,7 @@ void wifi_manager_sta_got_ip(int32_t event_id, void *event_data) {
     }
 
     if (pwd_changed) {
-        result = nvs_util_save_str("wifi", "pwd", cred.password);
+        result = nvs_util_save_str("wifi", "pwd", (char *)sta_config.sta.password);
         if (result != KERNEL_SUCCESS) {
             logger_print(WARN, TAG, "Failed to save password to NVS: %d", result);
         } else {
