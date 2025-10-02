@@ -79,6 +79,35 @@ static uart_instance_st uart_instance[UART_NUM_MAX] = {
 };
 
 /**
+ * @brief   Wait for UART transmission to complete without blocking scheduler.
+ *
+ * This function repeatedly polls uart_wait_tx_done() with zero timeout
+ * and yields using vTaskDelay(1) to allow other tasks to run.
+ * It ensures the function will not block indefinitely by enforcing
+ * a maximum wait time specified by @p max_wait_ticks.
+ *
+ * @param[in] port            UART port number.
+ * @param[in] max_wait_ticks  Maximum number of ticks to wait before giving up.
+ *
+ * @return
+ *      - ESP_OK: Transmission completed within the timeout
+ *      - ESP_ERR_TIMEOUT: Transmission did not complete before timeout expired
+ */
+esp_err_t uart_wait_tx_nonblocking(uart_port_t port, TickType_t max_wait_ticks) {
+    TickType_t start = xTaskGetTickCount();
+
+    while (uart_wait_tx_done(port, 0) != ESP_OK) {
+        vTaskDelay(pdMS_TO_TICKS(1));
+
+        if ((xTaskGetTickCount() - start) > max_wait_ticks) {
+            return ESP_ERR_TIMEOUT;
+        }
+    }
+    return ESP_OK;
+}
+
+
+/**
  * @brief Set the UART transceiver direction (DE pin) for RS-485.
  *
  * This function controls the Driver Enable (DE) pin if configured for the UART instance.
@@ -146,7 +175,7 @@ static esp_err_t uart_handle_write(uart_port_t port, uint8_t* buffer, size_t buf
     }
 
     int bytes_written = uart_write_bytes(port, (const char*)buffer, buffer_size);
-    uart_wait_tx_done(UART_NUM_2, pdMS_TO_TICKS(ticks_to_wait * 10));
+    uart_wait_tx_nonblocking(UART_NUM_2, pdMS_TO_TICKS(ticks_to_wait * 10));
     xSemaphoreGive(uart_instance[port].mutex);
 
     if (uart_set_transmit_mode(port, false) != ESP_OK) {

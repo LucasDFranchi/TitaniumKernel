@@ -6,7 +6,7 @@
 
 static const char *TAG                                     = "Task Manager";
 static task_interface_st *enqued_task_list[TASK_LIST_SIZE] = {0};
-static int enqued_task_index                               = 0;
+static int enqueued_task_index                               = 0;
 
 /**
  * @brief Adds a task to the task queue.
@@ -27,12 +27,12 @@ kernel_error_st task_handler_enqueue_task(task_interface_st *task) {
     if (task == NULL) {
         return KERNEL_ERROR_INVALID_ARG;
     }
-    if (enqued_task_index >= TASK_LIST_SIZE) {
+    if (enqueued_task_index >= TASK_LIST_SIZE) {
         return KERNEL_ERROR_TASK_FULL;
     }
 
-    enqued_task_list[enqued_task_index] = task;
-    enqued_task_index++;
+    enqued_task_list[enqueued_task_index] = task;
+    enqueued_task_index++;
 
     return KERNEL_SUCCESS;
 }
@@ -50,7 +50,7 @@ kernel_error_st task_handler_enqueue_task(task_interface_st *task) {
  * @note This function should only be called after all tasks have been queued.
  */
 kernel_error_st task_handler_start_queued_tasks(void) {
-    for (uint8_t i = 0; i < enqued_task_index; i++) {
+    for (uint8_t i = 0; i < enqueued_task_index; i++) {
         if (enqued_task_list[i] == NULL) {
             continue;
         }
@@ -92,25 +92,27 @@ kernel_error_st task_handler_start_queued_tasks(void) {
  *       of the created FreeRTOS task.
  */
 kernel_error_st task_handler_attach_task(task_interface_st *task) {
-    kernel_error_st err = task_handler_enqueue_task(task);
-    ;
-    if (err != KERNEL_SUCCESS) {
-        return err;
+    if (task == NULL) {
+        return KERNEL_ERROR_NULL;
     }
 
-    int current_index = enqued_task_index - 1;
-
     BaseType_t result = xTaskCreate(
-        enqued_task_list[current_index]->task_execute,
-        enqued_task_list[current_index]->name,
-        enqued_task_list[current_index]->stack_size,
-        enqued_task_list[current_index]->arg,
-        enqued_task_list[current_index]->priority,
-        &enqued_task_list[current_index]->handle);
+        task->task_execute,
+        task->name,
+        task->stack_size,
+        task->arg,
+        task->priority,
+        &task->handle);
 
     if (result != pdPASS) {
-        logger_print(ERR, TAG, "Failed to create task: %s", enqued_task_list[current_index]->name);
+        logger_print(ERR, TAG, "Failed to create task: %s", task->name);
         return KERNEL_ERROR_TASK_INIT;
+    }
+
+    kernel_error_st err = task_handler_enqueue_task(task);
+
+    if (err != KERNEL_SUCCESS) {
+        return err;
     }
 
     return KERNEL_SUCCESS;
@@ -120,16 +122,16 @@ kernel_error_st task_handler_attach_task(task_interface_st *task) {
  * @brief Retrieves the current count of tasks in the task queue.
  *
  * This function returns the number of tasks currently in the queue by checking
- * the `enqued_task_index`. It does not remove or modify any tasks.
+ * the `enqueued_task_index`. It does not remove or modify any tasks.
  *
  * @return The number of tasks currently queued.
  *
- * @note This function simply returns the value of `enqued_task_index` and does
+ * @note This function simply returns the value of `enqueued_task_index` and does
  *       not perform any synchronization, so the value might change if other
  *       operations modify the queue concurrently.
  */
 int task_handler_get_task_count(void) {
-    return enqued_task_index;
+    return enqueued_task_index;
 }
 
 /**
@@ -142,6 +144,9 @@ int task_handler_get_task_count(void) {
  * @return The high-water mark value, in words.
  */
 UBaseType_t task_handler_get_highwater(size_t index) {
+    if (enqued_task_list[index]->handle == NULL) {
+        return 0;
+    }
     return uxTaskGetStackHighWaterMark(enqued_task_list[index]->handle);
 }
 

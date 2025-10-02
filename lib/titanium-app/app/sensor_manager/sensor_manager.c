@@ -435,11 +435,6 @@ static sensor_interface_st sensor_interface[NUM_OF_SENSORS] = {
  *       at system startup.
  */
 static kernel_error_st sensor_manager_initialize(void *args) {
-    // if (args == NULL) {
-    //     logger_print(ERR, TAG, "Sensor Manager Loop received NULL args!");
-    //     return KERNEL_ERROR_NULL;
-    // }
-
     if (adc_controller_init(&adc_controller) != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to initialize ADC manager");
         return KERNEL_ERROR_MUX_INIT_ERROR;
@@ -620,7 +615,7 @@ kernel_error_st sensor_calibrate(uint8_t sensor_index, float offset, float gain)
 
     sensor_interface_st *sensor = &sensor_interface[sensor_index];
 
-    if (xSemaphoreTake(sensor->mutex, pdMS_TO_TICKS(10)) == pdTRUE) {
+    if (xSemaphoreTake(sensor->mutex, pdMS_TO_TICKS(100)) == pdTRUE) {
         sensor_interface[sensor_index].offset          = offset;
         sensor_interface[sensor_index].conversion_gain = gain;
         xSemaphoreGive(sensor->mutex);
