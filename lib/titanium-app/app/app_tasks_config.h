@@ -29,6 +29,6 @@
 /** @name Health Manager Task Configuration */
 /** @{ */
 #define HEALTH_MANAGER_TASK_PRIORITY 2
-#define HEALTH_MANAGER_TASK_STACK_SIZE (2048)
+#define HEALTH_MANAGER_TASK_STACK_SIZE (2048 * 2)
 #define HEALTH_MANAGER_TASK_NAME "Health Manager"
 /** @} */

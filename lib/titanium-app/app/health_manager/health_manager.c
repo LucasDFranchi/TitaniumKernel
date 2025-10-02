@@ -107,7 +107,7 @@ kernel_error_st health_manager_initialize(void* args) {
         return KERNEL_ERROR_TASK_INIT;
     }
 
-    update_health_report_list();
+    // update_health_report_list();
 
     return KERNEL_SUCCESS;
 }
@@ -127,20 +127,22 @@ void health_manager_loop(void* args) {
         vTaskDelete(NULL);
     }
 
-    TickType_t last_wake_time       = xTaskGetTickCount();
-    const TickType_t blink_interval = pdMS_TO_TICKS(LED_BLINK_INTERVAL_MS);
+    // TickType_t last_wake_time       = xTaskGetTickCount();
+    // const TickType_t blink_interval = pdMS_TO_TICKS(LED_BLINK_INTERVAL_MS);
 
-    uint32_t elapsed = 0;
+    // uint32_t elapsed = 0;
 
     while (1) {
         toggle_health_led();
+        logger_print(INFO, TAG, "Free heap: %d", esp_get_free_heap_size());
+        vTaskDelay(pdMS_TO_TICKS(LED_BLINK_INTERVAL_MS));
 
-        vTaskDelayUntil(&last_wake_time, blink_interval);
-        elapsed += LED_BLINK_INTERVAL_MS;
+        // vTaskDelayUntil(&last_wake_time, blink_interval);
+        // elapsed += LED_BLINK_INTERVAL_MS;
 
-        if (elapsed >= REPORT_INTERVAL_MS) {
-            elapsed = 0;
-            send_health_report();
-        }
+        // if (elapsed >= REPORT_INTERVAL_MS) {
+        //     elapsed = 0;
+        //     send_health_report();
+        // }
     }
 }
