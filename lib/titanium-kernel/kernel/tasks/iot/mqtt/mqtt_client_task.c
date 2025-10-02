@@ -24,6 +24,11 @@ static bool is_mqtt_connected                   = false;        ///< MQTT connec
 static bool is_waiting_for_connection           = false;        ///<
 static mqtt_bridge_st mqtt_bridge               = {0};          ///< Pointer to the MQTT bridge structure.
 
+static char publish_payload[MQTT_MAXIMUM_PAYLOAD_LENGTH] = {0};
+static char publish_topic[MQTT_MAXIMUM_TOPIC_LENGTH]             = {0};
+static char subscribe_payload[256]                       = {0};
+static char subscribe_topic[MQTT_MAXIMUM_TOPIC_LENGTH]   = {0};
+
 /**
  * @brief Subscribes to all configured MQTT topics based on their direction.
  *
@@ -36,19 +41,6 @@ static mqtt_bridge_st mqtt_bridge               = {0};          ///< Pointer to 
  */
 static kernel_error_st subscribe(void);
 
-/**
- * @brief Handles incoming MQTT event data for subscribed topics.
- *
- * Matches the incoming topic string with registered topics and deserializes
- * the payload accordingly.
- *
- * @param topic Pointer to the incoming MQTT topic string.
- * @param payload Pointer to the mqtt_buffer_st containing the incoming payload data.
- * @return KERNEL_SUCCESS on success;
- *         KERNEL_ERROR_NULL if pointers are NULL;
- *         KERNEL_ERROR_INVALID_SIZE if payload size is zero;
- *         Other error codes as returned by mqtt_deserialize_data.
- */
 static kernel_error_st handle_event_data(char* topic, char* data, size_t data_length);
 
 /**
@@ -152,16 +144,14 @@ static void stop_mqtt_client(void) {
  * @warning No internal delays are used — if calling this rapidly, consider rate-limiting externally.
  */
 static void publish(void) {
-    char payload[MQTT_MAXIMUM_PAYLOAD_LENGTH] = {0};
-    char topic[MQTT_MAXIMUM_TOPIC_LENGTH]     = {0};
-    qos_et qos                                = QOS_0;
+    qos_et qos = QOS_0;
 
     mqtt_buffer_st mqtt_buffer_payload = {
-        .buffer = payload,
-        .size   = sizeof(payload)};
+        .buffer = publish_payload,
+        .size   = sizeof(publish_payload)};
     mqtt_buffer_st mqtt_buffer_topic = {
-        .buffer = topic,
-        .size   = sizeof(topic)};
+        .buffer = publish_topic,
+        .size   = sizeof(publish_topic)};
 
     for (size_t i = 0; i < mqtt_bridge.get_topics_count(); i++) {
         kernel_error_st err = mqtt_bridge.fetch_publish_data(i, &mqtt_buffer_topic, &mqtt_buffer_payload, &qos);
@@ -171,15 +161,15 @@ static void publish(void) {
         }
 
         if (err != KERNEL_SUCCESS) {
-            logger_print(ERR, TAG, "Failed to publish to topic %s - %d", topic, err);
+            logger_print(ERR, TAG, "Failed to publish to topic %s - %d", publish_topic, err);
             continue;
         }
 
-        int msg_id = esp_mqtt_client_publish(mqtt_client, topic, payload, 0, qos, 0);
+        int msg_id = esp_mqtt_client_publish(mqtt_client, publish_topic, publish_payload, 0, qos, 0);
         if (msg_id < 0) {
-            logger_print(ERR, TAG, "Failed to publish MQTT message (topic=%s, qos=%d)", topic, qos);
+            logger_print(ERR, TAG, "Failed to publish MQTT message (topic=%s, qos=%d)", publish_topic, qos);
         } else {
-            logger_print(DEBUG, TAG, "Published to topic %s, msg_id=%d", topic, msg_id);
+            logger_print(DEBUG, TAG, "Published to topic %s, msg_id=%d", publish_topic, msg_id);
         }
     }
 }
@@ -195,19 +185,18 @@ static void publish(void) {
  * @return KERNEL_SUCCESS if successful, or an appropriate error code if not.
  */
 static kernel_error_st subscribe(void) {
-    char topic[MQTT_MAXIMUM_TOPIC_LENGTH] = {0};
-    qos_et qos                            = QOS_0;
+    qos_et qos = QOS_0;
 
     mqtt_buffer_st mqtt_buffer_topic = {
-        .buffer = topic,
-        .size   = sizeof(topic),
+        .buffer = subscribe_topic,
+        .size   = sizeof(subscribe_topic),
     };
 
     for (size_t i = 0; i < mqtt_bridge.get_topics_count(); i++) {
         kernel_error_st err = mqtt_bridge.get_topic(i, &mqtt_buffer_topic, &qos);
 
         if ((err != KERNEL_SUCCESS) && (err != KERNEL_ERROR_EMPTY_QUEUE)) {
-            logger_print(ERR, TAG, "Failed to subscribe to topic %s - %d", topic, err);
+            logger_print(ERR, TAG, "Failed to subscribe to topic %s - %d", subscribe_topic, err);
             continue;
         }
 
@@ -223,38 +212,25 @@ static kernel_error_st subscribe(void) {
     return KERNEL_SUCCESS;
 }
 
-/**
- * @brief Handles incoming MQTT event data for subscribed topics.
- *
- * Matches the incoming topic string with registered topics and deserializes
- * the payload accordingly.
- *
- * @param topic Pointer to the incoming MQTT topic string.
- * @param payload Pointer to the mqtt_buffer_st containing the incoming payload data.
- * @return KERNEL_SUCCESS on success;
- *         KERNEL_ERROR_NULL if pointers are NULL;
- *         KERNEL_ERROR_INVALID_SIZE if payload size is zero;
- *         Other error codes as returned by mqtt_deserialize_data.
- */
 static kernel_error_st handle_event_data(char* topic, char* data, size_t data_length) {
     if ((topic == NULL) || (data == NULL)) {
         return KERNEL_ERROR_NULL;
     }
 
     if (data_length == 0 || data_length >= MQTT_MAXIMUM_PAYLOAD_LENGTH) {
-        logger_print(ERR, TAG, "Invalid data length %zu, max allowed is 1024", data_length);
+        logger_print(ERR, TAG, "Invalid data length %zu, max allowed is %d", data_length, MQTT_MAXIMUM_PAYLOAD_LENGTH);
         return KERNEL_ERROR_INVALID_SIZE;
     }
 
-    char payload_buffer[256] = {0};
-    memcpy(payload_buffer, data, data_length);
-    payload_buffer[data_length] = '\0';
+    memcpy(subscribe_payload, data, data_length);
+    subscribe_payload[data_length] = '\0';
 
-    mqtt_buffer_st payload = {
-        .buffer = payload_buffer,
-        .size   = data_length + 1};
+    mqtt_buffer_st mqtt_buffer = {
+        .buffer = subscribe_payload,
+        .size   = (data_length + 1),
+    };
 
-    return mqtt_bridge.handle_event_data(topic, &payload);
+    return mqtt_bridge.handle_event_data(topic, &mqtt_buffer);
 }
 
 /**
