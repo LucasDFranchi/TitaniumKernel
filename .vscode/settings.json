@@ -61,6 +61,10 @@
         "cstddef": "c",
         "limits": "c",
         "memory": "c",
-        "new": "c"
+        "new": "c",
+        "uart.h": "c",
+        "deque": "cpp",
+        "unordered_map": "cpp",
+        "vector": "cpp"
     }
 }

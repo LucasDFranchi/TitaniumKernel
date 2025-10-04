@@ -6,7 +6,10 @@
 #include "app/iot/schemas/commands_schema.h"
 #include "app/iot/schemas/schema_validator.h"
 
-#define MAXIMUM_DOC_SIZE 4096
+#define MAXIMUM_SERIALIZE_DOC_SIZE 2048
+#define MAXIMUM_DESERIALIZE_DOC_SIZE 512
+static StaticJsonDocument<MAXIMUM_SERIALIZE_DOC_SIZE> serialize_doc;
+static StaticJsonDocument<MAXIMUM_DESERIALIZE_DOC_SIZE> deserialize_doc;
 
 /**
  * @note This module uses StaticJsonDocument and avoids dynamic allocation.
@@ -53,11 +56,11 @@ kernel_error_st serialize_data_report(QueueHandle_t queue, char *out_buffer, siz
         return KERNEL_ERROR_EMPTY_QUEUE;
     }
 
-    StaticJsonDocument<MAXIMUM_DOC_SIZE> doc;
+    serialize_doc.clear();
 
-    doc["timestamp"] = device_report.timestamp;
+    serialize_doc["timestamp"] = device_report.timestamp;
 
-    JsonArray sensors = doc.createNestedArray("sensors");
+    JsonArray sensors = serialize_doc.createNestedArray("sensors");
     for (int i = 0; i < device_report.num_of_channels; i++) {
         JsonObject sensor = sensors.createNestedObject();
         /* This is not very maintable, it's necessary to find a better way to trunk the float value */
@@ -88,7 +91,7 @@ kernel_error_st serialize_data_report(QueueHandle_t queue, char *out_buffer, siz
         }
     }
 
-    size_t json_size = serializeJson(doc, out_buffer, buffer_size);
+    size_t json_size = serializeJson(serialize_doc, out_buffer, buffer_size);
 
     if (json_size == 0 || json_size >= buffer_size) {
         return KERNEL_ERROR_FORMATTING;
@@ -120,38 +123,38 @@ kernel_error_st serialize_cmd_set_calibration(command_response_st *command_respo
         return KERNEL_ERROR_INVALID_SIZE;
     }
 
-    StaticJsonDocument<MAXIMUM_DOC_SIZE> doc;
+    serialize_doc.clear();
 
-    doc["command_index"]  = command_response->command_index;
-    doc["command_status"] = command_response->command_status;
-    doc["sensor_id"]      = command_response->command_u.cmd_sensor_response.sensor_index;
-    doc["gain"]           = command_response->command_u.cmd_sensor_response.gain;
-    doc["offset"]         = command_response->command_u.cmd_sensor_response.offset;
+    serialize_doc["command_index"]  = command_response->command_index;
+    serialize_doc["command_status"] = command_response->command_status;
+    serialize_doc["sensor_id"]      = command_response->command_u.cmd_sensor_response.sensor_index;
+    serialize_doc["gain"]           = command_response->command_u.cmd_sensor_response.gain;
+    serialize_doc["offset"]         = command_response->command_u.cmd_sensor_response.offset;
 
     switch (command_response->command_u.cmd_sensor_response.sensor_type) {
         case SENSOR_TYPE_TEMPERATURE:
-            doc["unit"] = "°C";
+            serialize_doc["unit"] = "°C";
             break;
         case SENSOR_TYPE_PRESSURE:
-            doc["unit"] = "kPa";
+            serialize_doc["unit"] = "kPa";
             break;
         case SENSOR_TYPE_VOLTAGE:
-            doc["unit"] = "V";
+            serialize_doc["unit"] = "V";
             break;
         case SENSOR_TYPE_CURRENT:
-            doc["unit"] = "A";
+            serialize_doc["unit"] = "A";
             break;
         case SENSOR_TYPE_POWER:
-            doc["unit"] = "W";
+            serialize_doc["unit"] = "W";
             break;
         case SENSOR_TYPE_POWER_FACTOR:
-            doc["unit"] = "%";
+            serialize_doc["unit"] = "%";
             break;
         default:
-            doc["unit"] = "Unkown";
+            serialize_doc["unit"] = "Unkown";
     }
 
-    size_t json_size = serializeJson(doc, out_buffer, buffer_size);
+    size_t json_size = serializeJson(serialize_doc, out_buffer, buffer_size);
 
     if (json_size == 0 || json_size >= buffer_size) {
         return KERNEL_ERROR_FORMATTING;
@@ -197,16 +200,16 @@ kernel_error_st serialize_cmd_get_system_info(command_response_st *command_respo
         return KERNEL_ERROR_INVALID_SIZE;
     }
 
-    StaticJsonDocument<MAXIMUM_DOC_SIZE> doc;
+    serialize_doc.clear();
 
-    doc["command_index"]  = command_response->command_index;
-    doc["command_status"] = command_response->command_status;
+    serialize_doc["command_index"]  = command_response->command_index;
+    serialize_doc["command_status"] = command_response->command_status;
 
-    doc["device_id"]  = command_response->command_u.cmd_system_info_response.device_id;
-    doc["ip_address"] = command_response->command_u.cmd_system_info_response.ip_address;
-    doc["uptime"]     = command_response->command_u.cmd_system_info_response.uptime;
+    serialize_doc["device_id"]  = command_response->command_u.cmd_system_info_response.device_id;
+    serialize_doc["ip_address"] = command_response->command_u.cmd_system_info_response.ip_address;
+    serialize_doc["uptime"]     = command_response->command_u.cmd_system_info_response.uptime;
 
-    JsonArray sensors = doc.createNestedArray("sensors");
+    JsonArray sensors = serialize_doc.createNestedArray("sensors");
     for (uint8_t i = 0; i < NUM_OF_SENSORS; i++) {
         JsonObject sensor = sensors.createNestedObject();
         sensor["gain"]    = command_response->command_u.cmd_system_info_response.sensor_calibration_status[i].gain;
@@ -240,7 +243,7 @@ kernel_error_st serialize_cmd_get_system_info(command_response_st *command_respo
 
     // TODO: Document that a slave never transmit broadcast
 
-    size_t json_size = serializeJson(doc, out_buffer, buffer_size);
+    size_t json_size = serializeJson(serialize_doc, out_buffer, buffer_size);
 
     if (json_size == 0 || json_size >= buffer_size) {
         return KERNEL_ERROR_FORMATTING;
@@ -258,10 +261,10 @@ kernel_error_st serialize_cmd_error(command_response_st *command_response, char 
         return KERNEL_ERROR_INVALID_SIZE;
     }
 
-    StaticJsonDocument<MAXIMUM_DOC_SIZE> doc;
+    serialize_doc.clear();
 
-    doc["command_index"]  = command_response->command_index;
-    doc["command_status"] = command_response->command_status;
+    serialize_doc["command_index"]  = command_response->command_index;
+    serialize_doc["command_status"] = command_response->command_status;
 
     return KERNEL_SUCCESS;
 }
@@ -363,19 +366,19 @@ kernel_error_st serialize_health_report(QueueHandle_t queue, char *out_buffer, s
         return KERNEL_ERROR_EMPTY_QUEUE;
     }
 
-    StaticJsonDocument<MAXIMUM_DOC_SIZE> doc;
+    serialize_doc.clear();
 
-    doc["num_of_tasks"] = health_report.num_of_tasks;
+    serialize_doc["num_of_tasks"] = health_report.num_of_tasks;
 
-    JsonArray sensors = doc.createNestedArray("tasks");
+    JsonArray sensors = serialize_doc.createNestedArray("tasks");
     for (int i = 0; i < health_report.num_of_tasks; i++) {
         JsonObject sensor = sensors.createNestedObject();
 
-        sensor["name"]  = health_report.task_health[i].task_name;
+        sensor["name"]            = health_report.task_health[i].task_name;
         sensor["high_water_mark"] = health_report.task_health[i].high_water_mark;
     }
 
-    size_t json_size = serializeJson(doc, out_buffer, buffer_size);
+    size_t json_size = serializeJson(serialize_doc, out_buffer, buffer_size);
 
     if (json_size == 0 || json_size >= buffer_size) {
         return KERNEL_ERROR_FORMATTING;
@@ -525,27 +528,27 @@ kernel_error_st deserialize_command_get_system_info(QueueHandle_t queue, JsonObj
  *         - Any other error code returned by a specific command deserializer
  */
 kernel_error_st deserialize_command(QueueHandle_t queue, char *buffer, size_t buffer_size) {
-    StaticJsonDocument<MAXIMUM_DOC_SIZE> doc{};
+    deserialize_doc.clear();
     kernel_error_st result = KERNEL_SUCCESS;
 
-    DeserializationError error = deserializeJson(doc, buffer);
+    DeserializationError error = deserializeJson(deserialize_doc, buffer);
     if (error) {
         return KERNEL_ERROR_DESERIALIZE_JSON;
     }
 
-    if (!doc.containsKey("command")) {
+    if (!deserialize_doc.containsKey("command")) {
         return KERNEL_ERROR_MISSING_FIELD;
     }
 
-    if (!doc["command"].is<int>()) {
+    if (!deserialize_doc["command"].is<int>()) {
         return KERNEL_ERROR_INVALID_TYPE;
     }
 
-    command_index_et command_index = doc["command"];
-    if (!doc.containsKey("params")) {
+    command_index_et command_index = deserialize_doc["command"];
+    if (!deserialize_doc.containsKey("params")) {
         return KERNEL_ERROR_MISSING_FIELD;
     }
-    JsonObject params = doc["params"];
+    JsonObject params = deserialize_doc["params"];
 
     switch (command_index) {
         case CMD_SET_CALIBRATION: {

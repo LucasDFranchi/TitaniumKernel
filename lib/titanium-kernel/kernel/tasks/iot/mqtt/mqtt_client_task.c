@@ -25,7 +25,7 @@ static bool is_waiting_for_connection           = false;        ///<
 static mqtt_bridge_st mqtt_bridge               = {0};          ///< Pointer to the MQTT bridge structure.
 
 static char publish_payload[MQTT_MAXIMUM_PAYLOAD_LENGTH] = {0};
-static char publish_topic[MQTT_MAXIMUM_TOPIC_LENGTH]             = {0};
+static char publish_topic[MQTT_MAXIMUM_TOPIC_LENGTH]     = {0};
 static char subscribe_payload[256]                       = {0};
 static char subscribe_topic[MQTT_MAXIMUM_TOPIC_LENGTH]   = {0};
 
@@ -77,7 +77,7 @@ static void mqtt_event_handler(void* arg, esp_event_base_t base, int32_t event_i
             break;
 
         case MQTT_EVENT_DATA:
-            logger_print(DEBUG, TAG, "MQTT_EVENT_DATA: Topic=%.*s, Data=%.*s",
+            logger_print(INFO, TAG, "MQTT_EVENT_DATA: Topic=%.*s, Data=%.*s",
                          event->topic_len, event->topic,
                          event->data_len, event->data);
             handle_event_data(event->topic, event->data, event->data_len);

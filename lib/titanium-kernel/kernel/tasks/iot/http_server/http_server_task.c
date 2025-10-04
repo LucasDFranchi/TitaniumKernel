@@ -66,7 +66,7 @@ esp_err_t status_get_handler(httpd_req_t* req) {
     EventBits_t firmware_event_bits = xEventGroupGetBits(_global_structures->global_events.firmware_event_group);
 
     bool is_status_green = false;
-    if ((firmware_event_bits & STA_GOT_IP) == 1) {
+    if (firmware_event_bits & STA_GOT_IP) {
         is_status_green = true;
     }
     const char* status_json = is_status_green
@@ -320,7 +320,7 @@ void http_server_task_execute(void* pvParameters) {
         EventBits_t firmware_event_bits = xEventGroupGetBits(_global_structures->global_events.firmware_event_group);
 
         if (is_server_connected) {
-            if ((firmware_event_bits & WIFI_CONNECTED_AP) == 0) {
+            if (!(firmware_event_bits & WIFI_CONNECTED_AP)) {
                 logger_print(INFO, TAG, "STOP SERVER");
                 stop_http_server();
             }
