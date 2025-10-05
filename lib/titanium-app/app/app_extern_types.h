@@ -114,6 +114,7 @@ typedef enum command_status_e {
     COMMAND_FAIL                = -1, /**< General command failure */
     COMMAND_CALIBRATION_FAIL    = -2, /**< Calibration-specific failure */
     COMMAND_AUTHENTICATION_FAIL = -3, /**< Calibration-specific failure */
+    COMMAND_PARSE_FAIL          = -4, /**< Parse-specific failure */
 } command_status_et;
 
 /** @enum

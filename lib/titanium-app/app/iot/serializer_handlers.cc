@@ -1,10 +1,11 @@
 #include "serializer_handlers.h"
 
-#include "app/app_extern_types.h"
-#include "app/third_party/json_handler.h"
+#include "kernel/inter_task_communication/queues/queue_manager.h"
 
+#include "app/app_extern_types.h"
 #include "app/iot/schemas/commands_schema.h"
 #include "app/iot/schemas/schema_validator.h"
+#include "app/third_party/json_handler.h"
 
 #define MAXIMUM_SERIALIZE_DOC_SIZE 2048
 #define MAXIMUM_DESERIALIZE_DOC_SIZE 512
@@ -15,6 +16,35 @@ static StaticJsonDocument<MAXIMUM_DESERIALIZE_DOC_SIZE> deserialize_doc;
  * @note This module uses StaticJsonDocument and avoids dynamic allocation.
  *       All serialized/deserialized JSON must fit within MAXIMUM_DOC_SIZE.
  */
+
+/**
+ * @brief Generates and enqueues an error response for an invalid or failed command.
+ *
+ * This function constructs a `command_response_st` structure representing a failed
+ * command execution (with status `COMMAND_PARSE_FAIL`) and sends it to the
+ * `RESPONSE_COMMAND_QUEUE_ID` queue for further processing by the response handler task.
+ *
+ * The error response includes the command index to help identify which command failed.
+ *
+ * @param[in] cmd_index The index of the command that caused the error.
+ *
+ * @return kernel_error_st
+ *         - KERNEL_SUCCESS on success
+ *         - KERNEL_ERROR_QUEUE_SEND if the response could not be enqueued
+ */
+kernel_error_st generate_error_command_response(command_index_et cmd_index) {
+    command_response_st command_response_error{};
+    command_response_error.command_index  = cmd_index;
+    command_response_error.command_status = COMMAND_PARSE_FAIL;
+
+    if (xQueueSend(queue_manager_get(RESPONSE_COMMAND_QUEUE_ID),
+                   &command_response_error,
+                   pdMS_TO_TICKS(100)) != pdPASS) {
+        return KERNEL_ERROR_QUEUE_SEND;
+    }
+
+    return KERNEL_SUCCESS;
+}
 
 /**
  * @brief Serializes a device report into JSON format.
@@ -66,29 +96,6 @@ kernel_error_st serialize_data_report(QueueHandle_t queue, char *out_buffer, siz
         /* This is not very maintable, it's necessary to find a better way to trunk the float value */
         sensor["value"]  = (int)(device_report.sensors[i].value * 100 + 0.5) / 100.00f;
         sensor["active"] = device_report.sensors[i].active;
-
-        switch (device_report.sensors[i].sensor_type) {
-            case SENSOR_TYPE_TEMPERATURE:
-                sensor["unit"] = "°C";
-                break;
-            case SENSOR_TYPE_PRESSURE:
-                sensor["unit"] = "kPa";
-                break;
-            case SENSOR_TYPE_VOLTAGE:
-                sensor["unit"] = "V";
-                break;
-            case SENSOR_TYPE_CURRENT:
-                sensor["unit"] = "A";
-                break;
-            case SENSOR_TYPE_POWER:
-                sensor["unit"] = "W";
-                break;
-            case SENSOR_TYPE_POWER_FACTOR:
-                sensor["unit"] = "%";
-                break;
-            default:
-                sensor["unit"] = "Unkown";
-        }
     }
 
     size_t json_size = serializeJson(serialize_doc, out_buffer, buffer_size);
@@ -241,8 +248,6 @@ kernel_error_st serialize_cmd_get_system_info(command_response_st *command_respo
         }
     }
 
-    // TODO: Document that a slave never transmit broadcast
-
     size_t json_size = serializeJson(serialize_doc, out_buffer, buffer_size);
 
     if (json_size == 0 || json_size >= buffer_size) {
@@ -251,6 +256,30 @@ kernel_error_st serialize_cmd_get_system_info(command_response_st *command_respo
 
     return KERNEL_SUCCESS;
 }
+
+/**
+ * @brief Serializes a generic command error response into JSON format.
+ *
+ * This function converts a `command_response_st` structure with an error status
+ * into a minimal JSON object containing the command index and status. It is used
+ * to report generic command errors or invalid command responses.
+ *
+ * Example output:
+ * {
+ *   "command_index": 3,
+ *   "command_status": 2
+ * }
+ *
+ * @param[in]  command_response Pointer to the command response structure.
+ * @param[out] out_buffer       Buffer where the serialized JSON will be written.
+ * @param[in]  buffer_size      Size of the output buffer in bytes.
+ *
+ * @return kernel_error_st
+ *         - KERNEL_SUCCESS on success
+ *         - KERNEL_ERROR_NULL if any pointer is NULL
+ *         - KERNEL_ERROR_INVALID_SIZE if buffer_size is 0
+ *         - KERNEL_ERROR_FORMATTING if serialization fails or exceeds buffer size
+ */
 
 kernel_error_st serialize_cmd_error(command_response_st *command_response, char *out_buffer, size_t buffer_size) {
     if ((out_buffer == NULL) || (command_response == NULL)) {
@@ -265,6 +294,12 @@ kernel_error_st serialize_cmd_error(command_response_st *command_response, char 
 
     serialize_doc["command_index"]  = command_response->command_index;
     serialize_doc["command_status"] = command_response->command_status;
+
+    size_t json_size = serializeJson(serialize_doc, out_buffer, buffer_size);
+
+    if (json_size == 0 || json_size >= buffer_size) {
+        return KERNEL_ERROR_FORMATTING;
+    }
 
     return KERNEL_SUCCESS;
 }
@@ -419,6 +454,7 @@ kernel_error_st deserialize_command_set_calibration(QueueHandle_t queue, JsonObj
         json_object, get_calibration_schema, sizeof(get_calibration_schema) / sizeof(json_field_t));
 
     if (validation_result != KERNEL_SUCCESS) {
+        generate_error_command_response(CMD_SET_CALIBRATION);
         return validation_result;
     }
 
@@ -464,6 +500,7 @@ kernel_error_st deserialize_command_get_system_info(QueueHandle_t queue, JsonObj
         json_object, get_system_info_schema, sizeof(get_system_info_schema) / sizeof(json_field_t));
 
     if (validation_result != KERNEL_SUCCESS) {
+        generate_error_command_response(CMD_GET_SYSTEM_INFO);
         return validation_result;
     }
 

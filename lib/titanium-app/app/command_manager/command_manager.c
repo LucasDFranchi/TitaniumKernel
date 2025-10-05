@@ -93,7 +93,7 @@ kernel_error_st process_get_system_info_command(command_st* command, command_res
     if (memcmp(cmd.password, expected_password, sizeof(expected_password)) != 0) {
         result = KERNEL_ERROR_INVALID_PASSWORD;
     }
-
+    
     command_response->command_index  = CMD_GET_SYSTEM_INFO;
     command_response->command_status = result == KERNEL_SUCCESS ? COMMAND_SUCCESS : COMMAND_AUTHENTICATION_FAIL;
 
@@ -185,7 +185,6 @@ kernel_error_st handle_incoming_command(QueueHandle_t command_queue, QueueHandle
         kernel_error_st err = process_command(&command, &command_response);
         if (err != KERNEL_SUCCESS) {
             logger_print(WARN, TAG, "Failed to process incoming command! - %d", err);
-            // return err;
         }
 
         if (xQueueSend(response_command_queue, &command_response, pdMS_TO_TICKS(100)) != pdPASS) {
@@ -205,11 +204,6 @@ kernel_error_st handle_incoming_command(QueueHandle_t command_queue, QueueHandle
  * @param args Pointer to a command_manager_init_st structure containing queue handles.
  */
 void command_manager_loop(void* args) {
-    // if (args == NULL) {
-    //     logger_print(ERR, TAG, "Command Manager Loop received NULL args");
-    //     return;
-    // }
-
     QueueHandle_t command_queue        = queue_manager_get(TARGET_COMMAND_QUEUE_ID);
     QueueHandle_t broadcast_queue      = queue_manager_get(BROADCAST_COMMAND_QUEUE_ID);
     QueueHandle_t response_command_queue = queue_manager_get(RESPONSE_COMMAND_QUEUE_ID);

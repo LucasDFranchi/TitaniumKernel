@@ -15,6 +15,10 @@
 
 #include "kernel/error/error_num.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @enum
  * @brief Kernel and bridge queue identifiers.
@@ -72,3 +76,7 @@ kernel_error_st queue_manager_register(uint8_t index, UBaseType_t queue_length, 
  *   - NULL if no queue with the given ID is registered.
  */
 QueueHandle_t queue_manager_get(uint8_t index);
+
+#ifdef __cplusplus
+}
+#endif
