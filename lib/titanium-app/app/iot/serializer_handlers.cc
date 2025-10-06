@@ -7,8 +7,8 @@
 #include "app/iot/schemas/schema_validator.h"
 #include "app/third_party/json_handler.h"
 
-#define MAXIMUM_SERIALIZE_DOC_SIZE 2048
-#define MAXIMUM_DESERIALIZE_DOC_SIZE 512
+#define MAXIMUM_SERIALIZE_DOC_SIZE (2560)
+#define MAXIMUM_DESERIALIZE_DOC_SIZE (512)
 static StaticJsonDocument<MAXIMUM_SERIALIZE_DOC_SIZE> serialize_doc;
 static StaticJsonDocument<MAXIMUM_DESERIALIZE_DOC_SIZE> deserialize_doc;
 
@@ -137,29 +137,6 @@ kernel_error_st serialize_cmd_set_calibration(command_response_st *command_respo
     serialize_doc["sensor_id"]      = command_response->command_u.cmd_sensor_response.sensor_index;
     serialize_doc["gain"]           = command_response->command_u.cmd_sensor_response.gain;
     serialize_doc["offset"]         = command_response->command_u.cmd_sensor_response.offset;
-
-    switch (command_response->command_u.cmd_sensor_response.sensor_type) {
-        case SENSOR_TYPE_TEMPERATURE:
-            serialize_doc["unit"] = "°C";
-            break;
-        case SENSOR_TYPE_PRESSURE:
-            serialize_doc["unit"] = "kPa";
-            break;
-        case SENSOR_TYPE_VOLTAGE:
-            serialize_doc["unit"] = "V";
-            break;
-        case SENSOR_TYPE_CURRENT:
-            serialize_doc["unit"] = "A";
-            break;
-        case SENSOR_TYPE_POWER:
-            serialize_doc["unit"] = "W";
-            break;
-        case SENSOR_TYPE_POWER_FACTOR:
-            serialize_doc["unit"] = "%";
-            break;
-        default:
-            serialize_doc["unit"] = "Unkown";
-    }
 
     size_t json_size = serializeJson(serialize_doc, out_buffer, buffer_size);
 
