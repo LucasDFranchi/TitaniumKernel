@@ -3,6 +3,7 @@
 #include "kernel/logger/logger.h"
 
 static const char *TAG = "NTC Sensor";
+static const uint32_t FIXED_RESISTOR = (100 * 1000); //100k Ohms
 
 /**
  * @brief Structure representing a single entry in the NTC thermistor lookup table.
@@ -74,13 +75,13 @@ static const ntc_entry_st ntc_table[] = {
  * @param sensor_index Index of the sensor (for logging purposes).
  * @return Calculated thermistor resistance in kΩ.
  */
-static float calculate_resistance_kohm(uint16_t v_ref, uint16_t v_ntc, uint16_t sensor_index) {
-    float v_supply          = 3300.0f;
-    int16_t v_error         = 1650 - v_ref;
-    uint16_t adjusted_v_ntc = v_ntc + v_error;
-    float v_gain            = ((float)adjusted_v_ntc / v_supply);
+static float calculate_resistance_kohm(float v_ref, float v_ntc, uint16_t sensor_index) {
+    float v_supply       = 3300.0f;
+    float v_error        = 1650.0f - v_ref;
+    float adjusted_v_ntc = v_ntc + v_error;
+    float v_gain         = (adjusted_v_ntc / v_supply);
 
-    uint32_t resistance_ohm = ((100 * 1000) * v_gain) / (1 - v_gain);
+    uint32_t resistance_ohm = (FIXED_RESISTOR * v_gain) / (1 - v_gain);
 
     logger_print(DEBUG, TAG, "Calculated resistance %d: %d Ohm (%.3f kOhm)", sensor_index, resistance_ohm, resistance_ohm / 1000.0f);
     return resistance_ohm / 1000.0f;
@@ -150,7 +151,7 @@ static float resistance_to_temperature(float resistance_kohm, int sensor_index) 
  * @param sensor_index Index of the sensor (for logging).
  * @return Interpolated temperature in degrees Celsius.
  */
-static float voltage_to_temperature(uint16_t v_ref, uint16_t v_ntc, int sensor_index) {
+static float voltage_to_temperature(float v_ref, float v_ntc, int sensor_index) {
     float r_kohm = calculate_resistance_kohm(v_ref, v_ntc, sensor_index);
     return resistance_to_temperature(r_kohm, sensor_index);
 }
@@ -214,10 +215,10 @@ kernel_error_st temperature_sensor_read(sensor_interface_st *ctx, sensor_report_
     }
 
     // This part needs improvement to handle the voltage conversion
-    float pga_ref_branch      = ctx->adc_controller->get_lsb_size(ctx->hw->adc_ref_branch.pga_gain);
-    float pga_sensor_branch   = ctx->adc_controller->get_lsb_size(ctx->hw->adc_sensor_branch.pga_gain);
-    int16_t voltage_reference = (int16_t)((reference_raw_adc * pga_ref_branch));
-    int16_t voltage_sensor    = (int16_t)((sensor_raw_adc * pga_sensor_branch));
+    float pga_ref_branch    = ctx->adc_controller->get_lsb_size(ctx->hw->adc_ref_branch.pga_gain);
+    float pga_sensor_branch = ctx->adc_controller->get_lsb_size(ctx->hw->adc_sensor_branch.pga_gain);
+    float voltage_reference = (float)((reference_raw_adc * pga_ref_branch));
+    float voltage_sensor    = (float)((sensor_raw_adc * pga_sensor_branch));
 
     pga_gain_et fine_pga_gain = ctx->adc_controller->get_pga_gain(voltage_sensor);
 
@@ -235,11 +236,11 @@ kernel_error_st temperature_sensor_read(sensor_interface_st *ctx, sensor_report_
             return err;
         }
         pga_sensor_branch = ctx->adc_controller->get_lsb_size(ctx->hw->adc_sensor_branch.pga_gain);
-        voltage_sensor    = (int16_t)((sensor_raw_adc * pga_sensor_branch));
+        voltage_sensor    = (float)((sensor_raw_adc * pga_sensor_branch));
     }
 
     logger_print(DEBUG, TAG,
-                 "Sensor %d: Reference ADC: %d, Sensor ADC: %d, Reference Voltage: %d mV, Sensor Voltage: %d mV",
+                 "Sensor %d: Reference ADC: %d, Sensor ADC: %d, Reference Voltage: %f mV, Sensor Voltage: %f mV",
                  sensor_index, reference_raw_adc, sensor_raw_adc, voltage_reference, voltage_sensor);
 
     float temperature_c = voltage_to_temperature(voltage_reference, voltage_sensor, sensor_index);
