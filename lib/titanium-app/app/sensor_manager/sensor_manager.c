@@ -657,7 +657,7 @@ void sensor_manager_loop(void *args) {
         const TickType_t interval_ticks = pdMS_TO_TICKS(5000);
 
         device_info_get_current_time(device_report.timestamp, sizeof(device_report.timestamp));
-        device_report.num_of_channels = NUM_OF_SENSORS;
+        device_report.num_of_sensors = NUM_OF_SENSORS;
 
         for (int i = 0; i < NUM_OF_CHANNEL_SENSORS; i++) {
             if (sensor_interface[i].read == NULL) {

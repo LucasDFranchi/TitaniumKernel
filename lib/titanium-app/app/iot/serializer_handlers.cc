@@ -91,7 +91,7 @@ kernel_error_st serialize_data_report(QueueHandle_t queue, char *out_buffer, siz
     serialize_doc["timestamp"] = device_report.timestamp;
 
     JsonArray sensors = serialize_doc.createNestedArray("sensors");
-    for (int i = 0; i < device_report.num_of_channels; i++) {
+    for (int i = 0; i < device_report.num_of_sensors; i++) {
         JsonObject sensor = sensors.createNestedObject();
         /* This is not very maintable, it's necessary to find a better way to trunk the float value */
         sensor["value"]  = (int)(device_report.sensors[i].value * 100 + 0.5) / 100.00f;

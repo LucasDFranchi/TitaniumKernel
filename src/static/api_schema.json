@@ -84,7 +84,7 @@
           "description": "Number of valid sensor channels in the report"
         }
       },
-      "required": ["timestamp", "sensors", "num_of_channels"],
+      "required": ["timestamp", "sensors", "num_of_sensors"],
       "additionalProperties": false,
       "description": "Represents a device report containing sensor readings."
     }
