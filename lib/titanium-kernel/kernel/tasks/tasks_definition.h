@@ -27,25 +27,25 @@
 
 // Watchdog Task configuration
 #define WATCHDOG_TASK_PRIORITY 6
-#define WATCHDOG_TASK_STACK_SIZE (2048 * 2)
+#define WATCHDOG_TASK_STACK_SIZE (2048)
 #define WATCHDOG_TASK_NAME "Watchdog Task"
 #define WATCHDOG_TASK_DELAY 5000  // Delay in milliseconds
 
 // Network Task configuration
 #define NETWORK_TASK_PRIORITY 5
-#define NETWORK_TASK_STACK_SIZE (2048 * 10)
+#define NETWORK_TASK_STACK_SIZE (2048 * 5)
 #define NETWORK_TASK_NAME "Network Task"
 #define NETWORK_TASK_DELAY 1000  // Delay in milliseconds
 
 // HTTP Server Task configuration
 #define HTTP_SERVER_TASK_PRIORITY 4
-#define HTTP_SERVER_TASK_STACK_SIZE (2048 * 10)
+#define HTTP_SERVER_TASK_STACK_SIZE (2048 * 5)
 #define HTTP_SERVER_TASK_NAME "HTTP Server Task"
 #define HTTP_SERVER_TASK_DELAY 1000  // Delay in milliseconds
 
 // MQTT Client Task configuration
 #define MQTT_CLIENT_TASK_PRIORITY 4
-#define MQTT_CLIENT_TASK_STACK_SIZE (2048 * 10)
+#define MQTT_CLIENT_TASK_STACK_SIZE (2048 * 5)
 #define MQTT_CLIENT_TASK_NAME "MQTT Task"
 #define MQTT_CLIENT_TASK_DELAY 1000  // Delay in milliseconds
 

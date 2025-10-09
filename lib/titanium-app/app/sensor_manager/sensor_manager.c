@@ -650,6 +650,13 @@ void sensor_manager_loop(void *args) {
         return;
     }
 
+    QueueHandle_t sd_card_queue = queue_manager_get(SD_CARD_QUEUE_ID);
+    if (sensor_queue == NULL) {
+        logger_print(ERR, TAG, "SD Card queue is NULL");
+        vTaskDelete(NULL);
+        return;
+    }
+
     while (1) {
         device_report_st device_report = {0};
 
@@ -674,6 +681,10 @@ void sensor_manager_loop(void *args) {
 
         if (xQueueSend(sensor_queue, &device_report, pdMS_TO_TICKS(100)) != pdPASS) {
             logger_print(ERR, TAG, "Failed to send sensor report to queue");
+        }
+
+        if (xQueueSend(sd_card_queue, &device_report, pdMS_TO_TICKS(100)) != pdPASS) {
+            logger_print(ERR, TAG, "Failed to send sd card report to queue");
         }
 
         vTaskDelayUntil(&last_wake_time, interval_ticks);

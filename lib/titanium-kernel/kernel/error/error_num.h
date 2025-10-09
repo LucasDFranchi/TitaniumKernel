@@ -19,20 +19,25 @@
  */
 typedef enum kernel_error_s {
     /* -------- General (0x000) -------- */
-    KERNEL_SUCCESS                 = 0x0000,
-    KERNEL_ERROR_FAIL              = 0x0001,
-    KERNEL_ERROR_NULL              = 0x0002,
-    KERNEL_ERROR_INVALID_ARG       = 0x0003,
-    KERNEL_ERROR_INVALID_SIZE      = 0x0004,
-    KERNEL_ERROR_INVALID_INDEX     = 0x0005,
-    KERNEL_ERROR_NOT_FOUND         = 0x0006,
-    KERNEL_ERROR_UNSUPPORTED_TYPE  = 0x0007,
-    KERNEL_ERROR_FORMATTING        = 0x0008,
-    KERNEL_ERROR_UNKNOWN_MAC       = 0x0009,
-    KERNEL_ERROR_FUNC_POINTER_NULL = 0x000A,
-    KERNEL_ERROR_TIMEOUT           = 0x000B,
-    KERNEL_ERROR_FORMAT            = 0x000C,
-    KERNEL_ERROR_FAILED_TO_LOCK    = 0x000D,
+    KERNEL_SUCCESS                       = 0x0000,
+    KERNEL_ERROR_FAIL                    = 0x0001,
+    KERNEL_ERROR_NULL                    = 0x0002,
+    KERNEL_ERROR_INVALID_ARG             = 0x0003,
+    KERNEL_ERROR_INVALID_SIZE            = 0x0004,
+    KERNEL_ERROR_INVALID_INDEX           = 0x0005,
+    KERNEL_ERROR_NOT_FOUND               = 0x0006,
+    KERNEL_ERROR_UNSUPPORTED_TYPE        = 0x0007,
+    KERNEL_ERROR_FORMATTING              = 0x0008,
+    KERNEL_ERROR_UNKNOWN_MAC             = 0x0009,
+    KERNEL_ERROR_FUNC_POINTER_NULL       = 0x000A,
+    KERNEL_ERROR_TIMEOUT                 = 0x000B,
+    KERNEL_ERROR_FORMAT                  = 0x000C,
+    KERNEL_ERROR_FAILED_TO_LOCK          = 0x000D,
+    KERNEL_ERROR_FAILED_TO_WRITE_TO_FILE = 0x000E,
+    KERNEL_ERROR_BUFFER_TOO_SHORT        = 0x000F,
+    KERNEL_ERROR_FAILED_TO_MOUNT_SD_CARD = 0x0010,
+    KERNEL_ERROR_SD_CARD_NOT_PRESENT     = 0x0011,
+    KERNEL_ERROR_FAILED_TO_OPEN_FILE     = 0x0012,
 
     /* -------- Task/Queue (0x100) -------- */
     KERNEL_ERROR_TASK_CREATE     = 0x0100,
@@ -152,6 +157,7 @@ typedef enum kernel_error_s {
     KERNEL_ERROR_MUX_INIT_ERROR       = 0x1009,
     KERNEL_ERROR_ADC_INIT_ERROR       = 0x100A,
     KERNEL_ERROR_UART_NOT_INITIALIZED = 0x100B,
+    KERNEL_FAILED_INITIALIZE_SPI_BUS  = 0x100C,
 
     /* -------- Hardware (0x1000) ------- */
     KERNEL_ERROR_GPIO_CONFIG_FAIL    = 0x1100,

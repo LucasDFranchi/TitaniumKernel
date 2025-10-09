@@ -11,7 +11,6 @@
 
 #include "kernel/inter_task_communication/inter_task_communication.h"
 
-
 /** @name Sensor Manager Task Configuration */
 /** @{ */
 #define SENSOR_MANAGER_TASK_PRIORITY 6
@@ -31,4 +30,11 @@
 #define HEALTH_MANAGER_TASK_PRIORITY 2
 #define HEALTH_MANAGER_TASK_STACK_SIZE (2048 * 2)
 #define HEALTH_MANAGER_TASK_NAME "Health Manager"
+/** @} */
+
+/** @name SD Card Manager Task Configuration */
+/** @{ */
+#define SD_CARD_MANAGER_TASK_PRIORITY 2
+#define SD_CARD_MANAGER_TASK_STACK_SIZE (2048 * 2)
+#define SD_CARD_MANAGER_TASK_NAME "SD Card Manager"
 /** @} */

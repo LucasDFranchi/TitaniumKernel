@@ -34,6 +34,7 @@
 // TODO: move to a managers folder
 #include "app/command_manager/command_manager.h"
 #include "app/health_manager/health_manager.h"
+#include "app/sd_card_manager/sd_card_manager.h"
 #include "app/sensor_manager/sensor_manager.h"
 
 /**
@@ -207,6 +208,15 @@ task_interface_st health_manager_task = {
     .handle       = NULL,
 };
 
+task_interface_st sd_card_manager_task = {
+    .name         = SD_CARD_MANAGER_TASK_NAME,
+    .stack_size   = SD_CARD_MANAGER_TASK_STACK_SIZE,
+    .priority     = SD_CARD_MANAGER_TASK_PRIORITY,
+    .task_execute = sd_card_manager_loop,
+    .arg          = NULL,
+    .handle       = NULL,
+};
+
 static const char *TAG = "Application Task";  ///< Tag used for logging.
 
 /**
@@ -269,6 +279,12 @@ kernel_error_st app_initialize(global_structures_st *global_structures) {
                mqtt_bridge_init_struct.mqtt_bridge,
                pdMS_TO_TICKS(100));
 
+    err = queue_manager_register(SD_CARD_QUEUE_ID, 20, sizeof(device_report_st));
+    if (err != KERNEL_SUCCESS) {
+        logger_print(ERR, TAG, "Failed to register SD Card queue - %d", err);
+        return err;
+    }
+
     err = task_handler_attach_task(&sensor_manager_task);
     if (err != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to initialized Sensor Manager Task - %d", err);
@@ -282,6 +298,12 @@ kernel_error_st app_initialize(global_structures_st *global_structures) {
     }
 
     err = task_handler_attach_task(&health_manager_task);
+    if (err != KERNEL_SUCCESS) {
+        logger_print(ERR, TAG, "Failed to initialized Health Manager Task - %d", err);
+        return err;
+    }
+
+    err = task_handler_attach_task(&sd_card_manager_task);
     if (err != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to initialized Health Manager Task - %d", err);
         return err;

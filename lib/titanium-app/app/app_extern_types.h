@@ -130,6 +130,7 @@ enum {
     BROADCAST_COMMAND_QUEUE_ID,
     RESPONSE_COMMAND_QUEUE_ID,
     HEALTH_REPORT_QUEUE_ID,
+    SD_CARD_QUEUE_ID,
 };
 
 /**
@@ -141,7 +142,7 @@ enum {
 typedef struct device_report_s {
     char timestamp[TIME_UTC_STRING_SIZE];     /**< Timestamp in ISO 8601 format (e.g., "2025-06-29T15:20:00") */
     sensor_report_st sensors[NUM_OF_SENSORS]; /**< Sensor readings per channel */
-    uint8_t num_of_sensors;                  /**< Number of active/valid sensors in the report */
+    uint8_t num_of_sensors;                   /**< Number of active/valid sensors in the report */
 } device_report_st;
 
 /* === Command Definitions === */
