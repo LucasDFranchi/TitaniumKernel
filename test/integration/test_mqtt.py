@@ -393,10 +393,13 @@ def test_sensor_report_calibration():
         system_info = send_and_validate_system_info(mqtt_client, "root", "root")
         system_info_sensor_list = system_info.get("sensors", [])
         for sensor_id, sensor in enumerate(system_info_sensor_list):
-            if sensor.get("unit") not in ["°C", "kPa"]:
-                continue
             gain = random.uniform(0.5, 2.0)
             offset = random.uniform(-5.0, 5.0)
+            
+            if sensor.get("unit") not in ["°C", "kPa"]:
+                gain_list.append(1)
+                offset_list.append(0)
+                continue
 
             gain_list.append(gain)
             offset_list.append(offset)

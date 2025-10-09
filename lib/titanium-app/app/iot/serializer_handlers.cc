@@ -7,7 +7,7 @@
 #include "app/iot/schemas/schema_validator.h"
 #include "app/third_party/json_handler.h"
 
-#define MAXIMUM_SERIALIZE_DOC_SIZE (2560)
+#define MAXIMUM_SERIALIZE_DOC_SIZE (3072)
 #define MAXIMUM_DESERIALIZE_DOC_SIZE (512)
 static StaticJsonDocument<MAXIMUM_SERIALIZE_DOC_SIZE> serialize_doc;
 static StaticJsonDocument<MAXIMUM_DESERIALIZE_DOC_SIZE> deserialize_doc;
