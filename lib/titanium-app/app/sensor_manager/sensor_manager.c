@@ -609,7 +609,7 @@ sensor_state_et sensor_get_state(uint8_t sensor_index) {
  *         - KERNEL_ERROR_INVALID_ARG if the sensor index is out of range
  */
 kernel_error_st sensor_calibrate(uint8_t sensor_index, float offset, float gain) {
-    if (sensor_index >= NUM_OF_CHANNEL_SENSORS) {
+    if (sensor_index >= NUM_OF_SENSORS) {
         return KERNEL_ERROR_INVALID_ARG;
     }
 

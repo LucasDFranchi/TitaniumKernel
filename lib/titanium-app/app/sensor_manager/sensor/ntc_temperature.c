@@ -181,7 +181,6 @@ kernel_error_st temperature_sensor_read(sensor_interface_st *ctx, sensor_report_
     uint8_t sensor_index = ctx->index;
 
     sensor_report[sensor_index].value       = 0;
-    sensor_report[sensor_index].sensor_type = 0;
     sensor_report[sensor_index].active      = false;
 
     err = ctx->mux_controller->select_channel(&ctx->hw->mux_hw_config);
@@ -246,7 +245,6 @@ kernel_error_st temperature_sensor_read(sensor_interface_st *ctx, sensor_report_
     float temperature_c = voltage_to_temperature(voltage_reference, voltage_sensor, sensor_index);
 
     sensor_report[sensor_index].value       = (temperature_c * ctx->conversion_gain) + ctx->offset;
-    sensor_report[sensor_index].sensor_type = ctx->type;
     sensor_report[sensor_index].active      = true;
 
     return KERNEL_SUCCESS;

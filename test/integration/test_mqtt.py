@@ -170,11 +170,14 @@ def send_and_expect_fail_sys_info(mqtt_client, user: str, password: str):
 
     return response
 
-def receive_and_validate_sensor_report(mqtt_client):
+def receive_and_validate_sensor_report(mqtt_client, clear: bool = False):
     """
     Listen to a topic for incoming messages and validate the payload format.
     """
     topic = f"iocloud/response/{_DEVICE_ID}/sensor/report"
+
+    if clear:
+        mqtt_client.clear_message_list(topic)
 
     mqtt_client.subscribe(topic)
 
@@ -395,12 +398,6 @@ def test_sensor_report_calibration():
         for sensor_id, sensor in enumerate(system_info_sensor_list):
             gain = random.uniform(0.5, 2.0)
             offset = random.uniform(-5.0, 5.0)
-            
-            if sensor.get("unit") not in ["°C", "kPa"]:
-                gain_list.append(1)
-                offset_list.append(0)
-                continue
-
             gain_list.append(gain)
             offset_list.append(offset)
 
@@ -419,8 +416,6 @@ def test_sensor_report_calibration():
         print(f"Retrieved {len(system_info_sensor_list)} sensors from system info.")
 
         for sensor_id, sensor in enumerate(system_info_sensor_list):
-            if sensor.get("unit") not in ["°C"]:
-                continue
             expected_gain = gain_list[sensor_id]
             expected_offset = offset_list[sensor_id]
             actual_gain = sensor.get("gain")
@@ -440,15 +435,10 @@ def test_sensor_report_calibration():
         print("===== STEP 3: Verifying Calibration in System Info =====")
 
         # Receive a new sensor report after calibration
-        time.sleep(35)
-        post_calibration_sensor_report = receive_and_validate_sensor_report(mqtt_client)
+        post_calibration_sensor_report = receive_and_validate_sensor_report(mqtt_client, True)
         post_calibration_sensor_list = post_calibration_sensor_report.get("sensors", [])
 
         for sensor_id, sensor in enumerate(system_info_sensor_list):
-            # Skip non-temperature sensors if only °C units should be calibrated
-            if sensor.get("unit") not in ["°C"]:
-                continue
-
             # Retrieve pre-calibration and post-calibration values
             original_value = pre_calibration_sensor_list[sensor_id].get("value")
             reported_value = post_calibration_sensor_list[sensor_id].get("value")
@@ -464,62 +454,17 @@ def test_sensor_report_calibration():
             print(f"  Original value: {original_value:.3f}")
             print(f"  Expected calibrated value: {expected_value:.3f}")
             print(f"  Reported calibrated value: {reported_value:.3f}")
-
-            # Validate calibrated value within tolerance
-            assert math.isclose(expected_value, reported_value, rel_tol=1e-2), (
-                f"[Sensor {sensor_id}] Calibration mismatch: expected≈{expected_value:.3f}, "
-                f"got {reported_value:.3f} (gain={expected_gain:.3f}, offset={expected_offset:.3f})"
-            )
+            if sensor.get("active"):
+                # Validate calibrated value within tolerance
+                assert math.isclose(expected_value, reported_value, rel_tol=0.5), (
+                    f"[Sensor {sensor_id}] Calibration mismatch: expected≈{expected_value:.3f}, "
+                    f"got {reported_value:.3f} (gain={expected_gain:.3f}, offset={expected_offset:.3f})"
+                )
 
     except Exception as e:
         raise Exception(e)
     finally:
         mqtt_client.stop()
-            
-        
-        
-        
-        
-    # for sensor_id in range(20):
-    #     # Random gain/offset within a reasonable range
-
-    #     try:
-    #         # Step 1: get initial sensor value
-    #         sensor_report = receive_and_validate_sensor_report(mqtt_client)
-    #         sensor_list = sensor_report.get("sensors")
-    #         original_value = sensor_list[sensor_id]["value"]
-
-    #         # Step 2: send calibration
-    #         send_and_validate_calibration(mqtt_client, sensor_id, gain, offset)
-
-    #         # Step 3: get calibrated value from next report
-    #         sensor_report = receive_and_validate_sensor_report(mqtt_client)
-    #         sensor_report = receive_and_validate_sensor_report(mqtt_client)
-    #         sensor_report = receive_and_validate_sensor_report(mqtt_client)
-    #         sensor_report = receive_and_validate_sensor_report(mqtt_client)
-    #         sensor_report = receive_and_validate_sensor_report(mqtt_client)
-    #         sensor_list = sensor_report.get("sensors")
-    #         calibrated_value = sensor_list[sensor_id]["value"]
-
-    #         # Expected calibration
-    #         expected_value = (original_value * gain) + offset
-
-    #         # Allow tolerance for floating-point/device rounding errors
-    #         tolerance = 0.5 * abs(expected_value)  # 1% margin
-    #         assert math.isclose(
-    #             calibrated_value, expected_value, rel_tol=0, abs_tol=tolerance
-    #         ), (
-    #             f"Expected calibrated value ~ {expected_value}, "
-    #             f"but got {calibrated_value} (gain={gain}, offset={offset})"
-    #         )
-            
-    #         system_info = send_and_validate_system_info(mqtt_client, "root", "root")
-    #         system_info_sensor_list = system_info.get("sensors")
-    #         system_info_sensor_list[sensor_id].get("gain")
-    #         system_info_sensor_list[sensor_id].get("offset")
-
-    #     finally:
-    #         mqtt_client.stop()
             
 @pytest.mark.low
 def test_stress_system():

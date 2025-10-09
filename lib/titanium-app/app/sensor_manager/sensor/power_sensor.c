@@ -87,6 +87,34 @@ static kernel_error_st request_power_data(sensor_interface_st *ctx, uint8_t *tra
 }
 
 /**
+ * @brief Updates the sensor report with a new raw value using the sensor context.
+ *
+ * This function applies the sensor's conversion gain and offset to the raw value
+ * provided by the sensor interface, updates the `value` field in the sensor report,
+ * and marks the sensor report as active.
+ *
+ * @param ctx Pointer to the sensor interface context (`sensor_interface_st`) containing
+ *            the conversion gain and offset. Must not be NULL.
+ * @param value_raw The raw sensor reading to be converted and stored.
+ * @param sensor_report Pointer to the sensor report (`sensor_report_st`) to update.
+ *                      Must not be NULL.
+ *
+ * @return Returns a `kernel_error_st` code:
+ *         - `KERNEL_SUCCESS` if the update is successful.
+ *         - `KERNEL_ERROR_NULL` if `ctx` or `sensor_report` is NULL.
+ */
+kernel_error_st update_sensor_data(sensor_interface_st *ctx, float value_raw, sensor_report_st *sensor_report) {
+    if ((ctx == NULL) || (sensor_report == NULL)) {
+        return KERNEL_ERROR_NULL;
+    }
+
+    sensor_report->value  = (value_raw * ctx->conversion_gain) + ctx->offset;
+    sensor_report->active = true;
+
+    return KERNEL_SUCCESS;
+}
+
+/**
  * @brief Receive and parse Modbus response from the PZEM sensor.
  *
  * This function reads raw bytes from the UART interface, decodes the Modbus RTU
@@ -122,27 +150,46 @@ static kernel_error_st receive_power_data(sensor_interface_st *ctx, uint8_t *res
         return KERNEL_ERROR_FAILED_TO_DECODE_PACKET;
     }
 
-    sensor_report[ctx->index + VOLTAGE_INDEX].value = registers[VOLTAGE_REGISTER_ADDRESS] /
-                                                      VOLTAGE_SCALE_FACTOR;
-    sensor_report[ctx->index + VOLTAGE_INDEX].sensor_type = SENSOR_TYPE_VOLTAGE;
-    sensor_report[ctx->index + VOLTAGE_INDEX].active      = true;
+    float voltage_raw = (registers[VOLTAGE_REGISTER_ADDRESS] /
+                         VOLTAGE_SCALE_FACTOR);
 
-    sensor_report[ctx->index + CURRENT_INDEX].value = (registers[CURRENT_HIGH_REGISTER_ADDRESS] << 16 |
-                                                       registers[CURRENT_LOW_REGISTER_ADDRESS]) /
-                                                      CURRENT_SCALE_FACTOR;
-    sensor_report[ctx->index + CURRENT_INDEX].sensor_type = SENSOR_TYPE_CURRENT;
-    sensor_report[ctx->index + CURRENT_INDEX].active      = true;
+    kernel_error_st kerr = update_sensor_data(&ctx[VOLTAGE_INDEX],
+                                              voltage_raw,
+                                              &sensor_report[ctx->index + VOLTAGE_INDEX]);
+    if (kerr != KERNEL_SUCCESS) {
+        logger_print(ERR, TAG, "Failed to update voltage sensor data");
+    }
 
-    sensor_report[ctx->index + POWER_INDEX].value = (registers[POWER_HIGH_REGISTER_ADDRESS] << 16 |
-                                                     registers[POWER_LOW_REGISTER_ADDRESS]) /
-                                                    POWER_SCALE_FACTOR;
-    sensor_report[ctx->index + POWER_INDEX].sensor_type = SENSOR_TYPE_POWER;
-    sensor_report[ctx->index + POWER_INDEX].active      = true;
+    float current_raw = ((registers[CURRENT_HIGH_REGISTER_ADDRESS] << 16 |
+                          registers[CURRENT_LOW_REGISTER_ADDRESS]) /
+                         CURRENT_SCALE_FACTOR);
 
-    sensor_report[ctx->index + POWER_FACTOR_INDEX].value = registers[POWER_FACTOR_REGISTER_ADDRESS] /
-                                                           POWER_FACTOR_SCALE_FACTOR;
-    sensor_report[ctx->index + POWER_FACTOR_INDEX].sensor_type = SENSOR_TYPE_POWER_FACTOR;
-    sensor_report[ctx->index + POWER_FACTOR_INDEX].active      = true;
+    kerr = update_sensor_data(&ctx[CURRENT_INDEX],
+                              current_raw,
+                              &sensor_report[ctx->index + CURRENT_INDEX]);
+    if (kerr != KERNEL_SUCCESS) {
+        logger_print(ERR, TAG, "Failed to update current sensor data");
+    }
+
+    float power_raw = ((registers[POWER_HIGH_REGISTER_ADDRESS] << 16 |
+                        registers[POWER_LOW_REGISTER_ADDRESS]) /
+                       POWER_SCALE_FACTOR);
+
+    kerr = update_sensor_data(&ctx[POWER_INDEX],
+                              power_raw,
+                              &sensor_report[ctx->index + POWER_INDEX]);
+    if (kerr != KERNEL_SUCCESS) {
+        logger_print(ERR, TAG, "Failed to update power sensor data");
+    }
+
+    float power_factor_raw = registers[POWER_FACTOR_REGISTER_ADDRESS] /
+                             POWER_FACTOR_SCALE_FACTOR;
+    kerr = update_sensor_data(&ctx[POWER_FACTOR_INDEX],
+                              power_factor_raw,
+                              &sensor_report[ctx->index + POWER_FACTOR_INDEX]);
+    if (kerr != KERNEL_SUCCESS) {
+        logger_print(ERR, TAG, "Failed to update power factor sensor data");
+    }
 
     return KERNEL_SUCCESS;
 }
@@ -187,19 +234,15 @@ kernel_error_st power_sensor_read(sensor_interface_st *ctx, sensor_report_st *se
     uint8_t sensor_index = ctx->index;
 
     sensor_report[sensor_index + VOLTAGE_INDEX].value       = 0;
-    sensor_report[sensor_index + VOLTAGE_INDEX].sensor_type = 0;
     sensor_report[sensor_index + VOLTAGE_INDEX].active      = false;
 
     sensor_report[sensor_index + CURRENT_INDEX].value       = 0;
-    sensor_report[sensor_index + CURRENT_INDEX].sensor_type = 0;
     sensor_report[sensor_index + CURRENT_INDEX].active      = false;
 
     sensor_report[sensor_index + POWER_INDEX].value       = 0;
-    sensor_report[sensor_index + POWER_INDEX].sensor_type = 0;
     sensor_report[sensor_index + POWER_INDEX].active      = false;
 
     sensor_report[sensor_index + POWER_FACTOR_INDEX].value       = 0;
-    sensor_report[sensor_index + POWER_FACTOR_INDEX].sensor_type = 0;
     sensor_report[sensor_index + POWER_FACTOR_INDEX].active      = false;
 
     if (uart_interface.uart_read_fn == NULL || uart_interface.uart_write_fn == NULL) {

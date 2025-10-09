@@ -80,7 +80,6 @@ kernel_error_st pressure_sensor_read(sensor_interface_st *ctx, sensor_report_st 
     }
 
     sensor_report[sensor_index].value       = 0;
-    sensor_report[sensor_index].sensor_type = 0;
     sensor_report[sensor_index].active      = false;
 
     err = ctx->mux_controller->select_channel(&ctx->hw->mux_hw_config);
@@ -104,8 +103,7 @@ kernel_error_st pressure_sensor_read(sensor_interface_st *ctx, sensor_report_st 
     int16_t voltage_sensor  = (int16_t)((sensor_raw_adc * pga_sensor_branch));
 
     float pressure                          = voltage_to_pressure(voltage_sensor, sensor_index);
-    sensor_report[sensor_index].value       = pressure * ctx->conversion_gain + ctx->offset;
-    sensor_report[sensor_index].sensor_type = ctx->type;
+    sensor_report[sensor_index].value       = (pressure * ctx->conversion_gain) + ctx->offset;
     sensor_report[sensor_index].active      = true;
 
     return KERNEL_SUCCESS;

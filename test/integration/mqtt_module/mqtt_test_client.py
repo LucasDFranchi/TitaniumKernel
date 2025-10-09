@@ -33,6 +33,11 @@ class MqttTestClient:
                 return self._messages[topic].pop(0)
             time.sleep(0.1)
         pytest.fail(f"Timeout waiting for message on topic '{topic}'")
+        
+    def clear_message_list(self, topic:str = None):
+        self._messages.clear()
+        if topic:
+            self._messages[topic] = []
 
     def stop(self):
         self.client.loop_stop()
