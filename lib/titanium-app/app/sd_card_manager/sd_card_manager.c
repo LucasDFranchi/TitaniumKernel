@@ -26,12 +26,19 @@
 #define FILE_BUFFER_SIZE 512 /**< Size of the temporary buffer for a single CSV line */
 #define FILEPATH_SIZE 128    /**< Maximum length of the full file path */
 
-static const char* TAG                    = "SD Card Manager"; /**< Logger tag */
-static const char* MOUNT_POINT            = "/sdcard";         /**< Mount point for SD card */
-static bool is_sd_card_present            = false;             /**< Tracks SD card presence */
-static char filepath[FILEPATH_SIZE]       = {0};               /**< Full path to the file on the SD card */
-static char file_buffer[FILE_BUFFER_SIZE] = {0};
-static FILE* file                         = NULL; /**< File pointer for open log file */
+static const char* TAG                       = "SD Card Manager"; /**< Logger tag */
+static const char* MOUNT_POINT               = "/sdcard";         /**< Mount point for SD card */
+static const uint8_t MAX_WRITE_ERROR_COUNTER = 5;
+
+static bool is_sd_card_present                       = false; /**< Tracks SD card presence */
+static bool is_file_open                             = false; /**< */
+static char filepath[FILEPATH_SIZE]                  = {0};   /**< Full path to the file on the SD card */
+static char file_buffer[FILE_BUFFER_SIZE]            = {0};
+static FILE* file                                    = NULL; /**< File pointer for open log file */
+static sdmmc_card_t* card                            = NULL;
+static esp_vfs_fat_sdmmc_mount_config_t mount_config = {0};
+static sdmmc_host_t host                             = SDSPI_HOST_DEFAULT();
+static sdspi_device_config_t slot_config             = SDSPI_DEVICE_CONFIG_DEFAULT();
 
 /**
  * @brief Write the contents of the CSV buffer to the open log file.
@@ -49,11 +56,18 @@ static kernel_error_st write_to_file(void) {
 
     if (fputs(file_buffer, file) == EOF) {
         logger_print(ERR, TAG, "Failed to write to SD card!");
+        is_sd_card_present = false;
         return KERNEL_ERROR_FAILED_TO_WRITE_TO_FILE;
     }
 
-    fsync(fileno(file));
+    int errno = fsync(fileno(file));
+    if (errno < 0) {
+        logger_print(ERR, TAG, "fsync failed (%d)", errno);
+        is_sd_card_present = false;
+        return KERNEL_ERROR_FAILED_TO_WRITE_TO_FILE;
+    }
     fflush(file);
+
     return KERNEL_SUCCESS;
 }
 
@@ -126,10 +140,7 @@ static kernel_error_st mounting_sd_card(const sdmmc_host_t* host_config_input,
         logger_print(ERR, TAG, "Failed to mount filesystem.");
         return KERNEL_ERROR_FAILED_TO_MOUNT_SD_CARD;
     } else if (ret != ESP_OK) {
-        logger_print(ERR, TAG,
-                     "Failed to initialize the card (%s). "
-                     "Check SD card connections and pull-up resistors.",
-                     esp_err_to_name(ret));
+        logger_print(ERR, TAG, "Failed to initialize the card (%s)", esp_err_to_name(ret));
         return KERNEL_ERROR_SD_CARD_NOT_PRESENT;
     }
 
@@ -137,7 +148,55 @@ static kernel_error_st mounting_sd_card(const sdmmc_host_t* host_config_input,
     sdmmc_card_print_info(stdout, *out_card);
 
     is_sd_card_present = true;
+
     return KERNEL_SUCCESS;
+}
+
+static kernel_error_st open_and_mount_sd_partition() {
+    kernel_error_st kerr = mounting_sd_card(&host, &slot_config, &mount_config, &card);
+    if (kerr != KERNEL_SUCCESS) {
+        return kerr;
+    }
+
+    file = fopen(filepath, "a");
+    if (!file) {
+        logger_print(ERR, TAG, "Failed to open log file");
+        return KERNEL_ERROR_FAILED_TO_OPEN_FILE;
+    }
+
+    is_file_open = true;
+
+    logger_print(INFO, TAG, "Log file opened successfully");
+
+    return KERNEL_SUCCESS;
+}
+
+static kernel_error_st close_and_dismount_sd_partition() {
+    kernel_error_st kerr = KERNEL_SUCCESS;
+    if (file != NULL) {
+        int err = fclose(file);
+        if (err < 0) {
+            logger_print(ERR, TAG, "");
+            kerr = KERNEL_ERROR_FAILED_TO_CLOSE_FILE;
+        }
+        file = NULL;
+    }
+    if (card != NULL) {
+        esp_err_t ret = esp_vfs_fat_sdcard_unmount(MOUNT_POINT, card);
+        if (ret != ESP_OK) {
+            logger_print(ERR, TAG, "");
+            kerr = KERNEL_ERROR_FAILED_DISMOUNT_SDCARD;
+        }
+
+        card = NULL;
+    }
+
+    is_file_open       = false;
+    is_sd_card_present = false;
+
+    spi_bus_free(host.slot);
+
+    return kerr;
 }
 
 /**
@@ -148,14 +207,12 @@ static kernel_error_st mounting_sd_card(const sdmmc_host_t* host_config_input,
  * @return KERNEL_SUCCESS if initialization succeeds, otherwise error code
  */
 static kernel_error_st sd_card_manager_initialize(void) {
-    esp_vfs_fat_sdmmc_mount_config_t mount_config = {
-        .format_if_mount_failed = true,
-        .max_files              = 5,
-        .allocation_unit_size   = (16 * 1024),
-    };
-    sdmmc_card_t* card = NULL;
+    mount_config.format_if_mount_failed = false;
+    mount_config.max_files              = 5;
+    mount_config.allocation_unit_size   = (16 * 1024);
 
-    sdmmc_host_t host = SDSPI_HOST_DEFAULT();
+    slot_config.gpio_cs = PIN_NUM_CS;
+    slot_config.host_id = host.slot;
 
     spi_bus_config_t bus_cfg = {
         .mosi_io_num     = PIN_NUM_MOSI,
@@ -172,28 +229,12 @@ static kernel_error_st sd_card_manager_initialize(void) {
         return KERNEL_FAILED_INITIALIZE_SPI_BUS;
     }
 
-    sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
-    slot_config.gpio_cs               = PIN_NUM_CS;
-    slot_config.host_id               = host.slot;
-
-    kernel_error_st kerr = mounting_sd_card(&host, &slot_config, &mount_config, &card);
-    if (kerr != KERNEL_SUCCESS) {
-        return kerr;
-    }
-
     size_t filepath_size = snprintf(filepath, sizeof(filepath), "%s/venax.csv", MOUNT_POINT);
     if (filepath_size >= sizeof(filepath)) {
         return KERNEL_ERROR_BUFFER_TOO_SHORT;
     }
 
-    file = fopen(filepath, "a");
-    if (!file) {
-        logger_print(ERR, TAG, "Failed to open log file");
-        return KERNEL_ERROR_FAILED_TO_OPEN_FILE;
-    }
-
-    logger_print(INFO, TAG, "Log file opened successfully");
-    return KERNEL_SUCCESS;
+    return open_and_mount_sd_partition();
 }
 
 /**
@@ -205,11 +246,11 @@ static kernel_error_st sd_card_manager_initialize(void) {
  * @param args Task argument (unused)
  */
 void sd_card_manager_loop(void* args) {
+    static uint8_t error_counter = 0;
+
     kernel_error_st err = sd_card_manager_initialize();
     if (err != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to initialize SD card manager! - %d", err);
-        vTaskDelete(NULL);
-        return;
     }
 
     QueueHandle_t sd_card_queue = queue_manager_get(SD_CARD_QUEUE_ID);
@@ -227,15 +268,25 @@ void sd_card_manager_loop(void* args) {
             continue;
         }
 
-        err = device_report_to_csv(&device_report);
-        if (err != KERNEL_SUCCESS) {
-            logger_print(ERR, TAG, "Failed to convert device report to CSV - %d", err);
-            continue;
-        }
+        if (is_file_open && is_sd_card_present) {
+            err = device_report_to_csv(&device_report);
+            if (err != KERNEL_SUCCESS) {
+                logger_print(ERR, TAG, "Failed to convert device report to CSV - %d", err);
+                vTaskDelay(pdMS_TO_TICKS(1000));
+                continue;
+            }
 
-        err = write_to_file();
-        if (err != KERNEL_SUCCESS) {
-            logger_print(ERR, TAG, "Failed to write device report to SD card - %d", err);
+            err = write_to_file();
+            if (err != KERNEL_SUCCESS) {
+                logger_print(ERR, TAG, "Failed to write device report to SD card - %d", err);
+                error_counter++;
+            } else {
+                error_counter = 0;
+            }
+
+            if (error_counter > MAX_WRITE_ERROR_COUNTER) {
+                close_and_dismount_sd_partition();
+            }
         }
 
         vTaskDelay(pdMS_TO_TICKS(1000));
