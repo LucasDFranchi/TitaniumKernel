@@ -2,11 +2,8 @@ name: Build and Release ESP32 Firmware
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches:
-      - '**'        # run for PRs targeting any branch
-  workflow_dispatch: # allow manual trigger
+    tags:
+      - 'v*'   # e.g., v1.0.0, v1.1.2
 
 
 jobs:
