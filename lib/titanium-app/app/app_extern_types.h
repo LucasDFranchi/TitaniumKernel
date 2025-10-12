@@ -1,6 +1,7 @@
 #pragma once
 #include <stdbool.h>
 #include <stdint.h>
+#include <time.h>
 
 #include "app/sensor_manager/sensor_manager.h"
 
@@ -140,7 +141,7 @@ enum {
  * Includes a timestamp and an array of sensor data for each active channel.
  */
 typedef struct device_report_s {
-    char timestamp[TIME_UTC_STRING_SIZE];     /**< Timestamp in ISO 8601 format (e.g., "2025-06-29T15:20:00") */
+    time_t timestamp;     /**< Timestamp in ISO 8601 format (e.g., "2025-06-29T15:20:00") */
     sensor_report_st sensors[NUM_OF_SENSORS]; /**< Sensor readings per channel */
     uint8_t num_of_sensors;                   /**< Number of active/valid sensors in the report */
 } device_report_st;

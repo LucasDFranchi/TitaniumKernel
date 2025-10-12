@@ -88,7 +88,7 @@ static kernel_error_st device_report_to_csv(const device_report_st* device_repor
     int written   = 0;
     int remaining = sizeof(file_buffer);
 
-    int size = snprintf(file_buffer + written, remaining, "%s,", device_report->timestamp);
+    int size = snprintf(file_buffer + written, remaining, "%lld,", device_report->timestamp);
     if (size < 0 || size >= remaining) {
         return KERNEL_ERROR_BUFFER_TOO_SHORT;
     }

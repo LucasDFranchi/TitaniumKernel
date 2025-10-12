@@ -1,7 +1,6 @@
 #include "device_info.h"
 
 #include <string.h>
-#include <time.h>
 
 #include "esp_mac.h"
 #include "esp_netif.h"
@@ -74,26 +73,20 @@ const char* device_info_get_id(void) {
 }
 
 /**
- * @brief Get the current timestamp in ISO 8601 format.
+ * @brief Get the current Unix timestamp.
  *
- * This function retrieves the current system time and formats it
- * as an ISO 8601 string (e.g., "2024-12-24T15:30:45").
+ * This function retrieves the current system time as a Unix timestamp
+ * (seconds since 1970-01-01 00:00:00 UTC).
  *
- * @param[out] buffer      Pointer to the buffer where the formatted timestamp will be stored.
- * @param[in]  buffer_size Size of the buffer.
+ * @param[out] timestamp Pointer to store the current timestamp.
  *
- * @return ESP_OK on success, or an appropriate error code on failure:
- *         - ESP_ERR_INVALID_ARG if the buffer is NULL or the size is zero.
- *         - ESP_ERR_INVALID_STATE if the system time is not set.
- *         - ESP_FAIL if time formatting fails.
+ * @return KERNEL_SUCCESS on success, or an appropriate error code on failure:
+ *         - KERNEL_ERROR_NULL if the timestamp pointer is NULL.
+ *         - KERNEL_ERROR_INVALID_INTERFACE if the system time is not set.
  */
-kernel_error_st device_info_get_current_time(char* buffer, size_t buffer_size) {
-    if (buffer == NULL) {
+kernel_error_st device_info_get_current_time(time_t* timestamp) {
+    if (timestamp == NULL) {
         return KERNEL_ERROR_NULL;
-    }
-
-    if (buffer_size == 0) {
-        return KERNEL_ERROR_INVALID_SIZE;
     }
 
     time_t now = time(NULL);
@@ -101,15 +94,7 @@ kernel_error_st device_info_get_current_time(char* buffer, size_t buffer_size) {
         return KERNEL_ERROR_INVALID_INTERFACE;
     }
 
-    struct tm timeinfo;
-    if (localtime_r(&now, &timeinfo) == NULL) {
-        return KERNEL_ERROR_FAIL;
-    }
-
-    if (strftime(buffer, buffer_size, "%Y-%m-%dT%H:%M:%S", &timeinfo) == 0) {
-        return KERNEL_ERROR_FORMATTING;
-    }
-
+    *timestamp = now;
     return KERNEL_SUCCESS;
 }
 

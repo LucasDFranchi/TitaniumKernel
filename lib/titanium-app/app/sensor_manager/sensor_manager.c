@@ -663,9 +663,6 @@ void sensor_manager_loop(void *args) {
         TickType_t last_wake_time       = xTaskGetTickCount();
         const TickType_t interval_ticks = pdMS_TO_TICKS(5000);
 
-        device_info_get_current_time(device_report.timestamp, sizeof(device_report.timestamp));
-        device_report.num_of_sensors = NUM_OF_SENSORS;
-
         for (int i = 0; i < NUM_OF_CHANNEL_SENSORS; i++) {
             if (sensor_interface[i].read == NULL) {
                 continue;
@@ -679,12 +676,18 @@ void sensor_manager_loop(void *args) {
 
         logger_print(DEBUG, TAG, "Sensor report generated, sending to queue");
 
-        if (xQueueSend(sensor_queue, &device_report, pdMS_TO_TICKS(100)) != pdPASS) {
-            logger_print(ERR, TAG, "Failed to send sensor report to queue");
-        }
+        if (device_info_get_current_time(&device_report.timestamp) != KERNEL_SUCCESS) {
+            logger_print(ERR, TAG, "Unix timestamp not set yet");  // In the worst case sync with the event
+        } else {
+            device_report.num_of_sensors = NUM_OF_SENSORS;
 
-        if (xQueueSend(sd_card_queue, &device_report, pdMS_TO_TICKS(100)) != pdPASS) {
-            logger_print(ERR, TAG, "Failed to send sd card report to queue");
+            if (xQueueSend(sensor_queue, &device_report, pdMS_TO_TICKS(100)) != pdPASS) {
+                logger_print(ERR, TAG, "Failed to send sensor report to queue");
+            }
+
+            if (xQueueSend(sd_card_queue, &device_report, pdMS_TO_TICKS(100)) != pdPASS) {
+                logger_print(ERR, TAG, "Failed to send sd card report to queue");
+            }
         }
 
         vTaskDelayUntil(&last_wake_time, interval_ticks);

@@ -40,6 +40,7 @@ typedef enum kernel_error_s {
     KERNEL_ERROR_FAILED_TO_OPEN_FILE     = 0x0012,
     KERNEL_ERROR_FAILED_TO_CLOSE_FILE    = 0x0013,
     KERNEL_ERROR_FAILED_DISMOUNT_SDCARD  = 0x0014,
+    KERNEL_ERROR_STRING_OVERFLOW         = 0x0015,
 
     /* -------- Task/Queue (0x100) -------- */
     KERNEL_ERROR_TASK_CREATE     = 0x0100,
