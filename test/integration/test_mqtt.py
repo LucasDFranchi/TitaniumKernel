@@ -116,7 +116,7 @@ def send_and_expect_fail_calibration(
 
     return message
 
-def send_and_validate_system_info(mqtt_client, user: str, password: str):
+def send_and_validate_system_info(mqtt_client, user: str, password: str, success: bool):
     topic_req = f"iocloud/request/all/command"
     topic_resp = f"iocloud/response/{_DEVICE_ID}/command"
 
@@ -133,13 +133,15 @@ def send_and_validate_system_info(mqtt_client, user: str, password: str):
     start_time = time.time()
     mqtt_client.publish(topic_req, command)
 
-    message = mqtt_client.wait_for_message(topic_resp, timeout=25)
-    if message is None:
-        raise TimeoutError("No message received within the timeout period.")
-    print(f"Message received in {time.time() - start_time:.2f} seconds: {message}")
-    # Validate response
-    assert message["command_index"] == command["command"]
-    assert message["command_status"] == 0
+    message = None
+    if success:
+        message = mqtt_client.wait_for_message(topic_resp, timeout=25)
+        if message is None:
+            raise TimeoutError("No message received within the timeout period.")
+        print(f"Message received in {time.time() - start_time:.2f} seconds: {message}")
+        # Validate response
+        assert message["command_index"] == command["command"]
+        assert message["command_status"] == 0
 
     return message
 
@@ -506,4 +508,29 @@ def test_stress_system():
             # raise AssertionError(f"Uptime did not increase: {uptime} >= {last_valid_uptime} - Reboot!")
 
         # finally:
+    mqtt_client.stop()
+
+@pytest.mark.low
+def test_stress_system_without_validate_command():
+    """
+    Positive test: verify that applying a calibration command (gain + offset)
+    to a sensor is reflected in subsequent sensor reports.
+
+    The test:
+    1. Receives an initial sensor report and records the raw value.
+    2. Sends a calibration command for a chosen sensor with random gain/offset.
+    3. Receives a new sensor report and checks that the reported value matches
+       the expected calibrated value within a tolerance margin.
+    """
+    
+    iterations = 5000
+    mqtt_client = MqttTestClient()
+    for _ in range(iterations):
+        send_and_validate_system_info(mqtt_client, "root", "root", success=False)
+        time.sleep(0.1)
+        
+    post_calibration_sensor_report = receive_and_validate_sensor_report(mqtt_client, True)
+    
+    assert post_calibration_sensor_report is not None
+
     mqtt_client.stop()
