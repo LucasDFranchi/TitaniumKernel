@@ -11,12 +11,12 @@
 #define LOGGER_UDP_HOST "logs5.papertrailapp.com"                                    ///< Papertrail hostname
 #define LOGGER_UDP_PORT (20770)                                                      ///< Papertrail port
 
-static log_output_et _log_output                = SERIAL;                ///< Log output channel (serial or UDP).
-static release_mode_et _release_mode            = RELEASE_MODE_RELEASE;  ///< Current release mode of the system.
-static global_structures_st* _global_structures = NULL;                  ///< Pointer to the global configuration structure.
-static SemaphoreHandle_t logger_mutex           = NULL;                  ///< Mutex used for ensuring thread safety during UDP packet send operations.
-static struct sockaddr_in dest_addr             = {0};                   ///< Destination address structure for the UDP server.
-static int sock                                 = -1;                    ///< UDP socket descriptor used for sending data.
+static log_output_et _log_output                = SERIAL;                   ///< Log output channel (serial or UDP).
+static release_mode_et _release_mode            = RELEASE_MODE_PRODUCTION;  ///< Current release mode of the system.
+static global_structures_st* _global_structures = NULL;                     ///< Pointer to the global configuration structure.
+static SemaphoreHandle_t logger_mutex           = NULL;                     ///< Mutex used for ensuring thread safety during UDP packet send operations.
+static struct sockaddr_in dest_addr             = {0};                      ///< Destination address structure for the UDP server.
+static int sock                                 = -1;                       ///< UDP socket descriptor used for sending data.
 
 /**
  * @brief Sends a UDP packet to the specified destination.

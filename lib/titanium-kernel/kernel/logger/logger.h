@@ -28,8 +28,8 @@ typedef enum log_output_e {
 } log_output_et;
 
 typedef enum release_mode_e {
-    RELEASE_MODE_RELEASE = 0, /**< */
-    RELEASE_MODE_DEBUG,       /**< */
+    RELEASE_MODE_PRODUCTION = 0, /**< */
+    RELEASE_MODE_DEBUG,          /**< */
 } release_mode_et;
 
 /**
