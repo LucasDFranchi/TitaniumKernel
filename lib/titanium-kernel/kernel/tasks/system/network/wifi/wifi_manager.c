@@ -35,19 +35,19 @@ static const uint8_t AP_CHANNEL           = 1;                  ///< Access Poin
 static const uint8_t AP_VISIBILITY        = 0;                  ///< Access Point visibility (0: hidden, 1: visible).
 static const uint8_t AP_MAX_CONNECTIONS   = 1;                  ///< Maximum number of connections to the Access Point.
 static const uint8_t AP_BEACON_INTERVAL   = 100;                ///< Beacon interval in milliseconds.
-static const char *AP_IP                  = "192.168.0.1";      ///< Access Point IP address.
-static const char *AP_GW                  = "192.168.0.1";      ///< Access Point gateway address.
-static const char *AP_NETMASK             = "255.255.255.0";    ///< Access Point netmask.
+static const char* AP_IP                  = "192.168.0.1";      ///< Access Point IP address.
+static const char* AP_GW                  = "192.168.0.1";      ///< Access Point gateway address.
+static const char* AP_NETMASK             = "255.255.255.0";    ///< Access Point netmask.
 static const wifi_bandwidth_t AP_BW       = WIFI_BW_HT20;       ///< Access Point bandwidth configuration.
 static const wifi_ps_type_t AP_POWER_SAVE = WIFI_PS_MIN_MODEM;  ///< Access Point power save mode.
 
 /* Global Constants Definition */
-static const char *TAG                      = "WiFi Manager";  ///< Tag for logging.
+static const char* TAG                      = "WiFi Manager";  ///< Tag for logging.
 static const uint8_t MAX_RECONNECT_ATTEMPTS = 3;               ///< Maximum number of reconnection attempts
 
 /* Global Variables Definition */
-static esp_netif_t *esp_netif_sta          = {0};    ///< Pointer to the Station network interface.
-static esp_netif_t *esp_netif_ap           = {0};    ///< Pointer to the Access Point network interface.
+static esp_netif_t* esp_netif_sta          = {0};    ///< Pointer to the Station network interface.
+static esp_netif_t* esp_netif_ap           = {0};    ///< Pointer to the Access Point network interface.
 static wifi_config_t ap_config             = {0};    ///< Configuration structure for the Access Point.
 static wifi_config_t sta_config            = {0};    ///< Configuration structure for the Station.
 static credentials_st cred                 = {0};    ///< Credentials structure for storing Wi-Fi credentials.
@@ -87,12 +87,12 @@ static SemaphoreHandle_t wifi_status_mutex = NULL;   ///<
 static kernel_error_st set_access_point_mode(void) {
     esp_err_t result = ESP_OK;
 
-    size_t ssid_len = snprintf((char *)ap_config.ap.ssid, sizeof(ap_config.ap.ssid), "%s", AP_SSID);
+    size_t ssid_len = snprintf((char*)ap_config.ap.ssid, sizeof(ap_config.ap.ssid), "%s", AP_SSID);
     if (ssid_len >= sizeof(ap_config.ap.ssid)) {
         logger_print(WARN, TAG, "SSID truncated: original length %zu", ssid_len);
         return KERNEL_ERROR_AP_SSID_TOO_LONG;
     }
-    size_t password_len = snprintf((char *)ap_config.ap.password, sizeof(ap_config.ap.password), "%s", AP_PASSWORD);
+    size_t password_len = snprintf((char*)ap_config.ap.password, sizeof(ap_config.ap.password), "%s", AP_PASSWORD);
     if (password_len >= sizeof(ap_config.ap.password)) {
         logger_print(WARN, TAG, "Password truncated: original length %zu", password_len);
         return KERNEL_ERROR_AP_PASSWORD_TOO_LONG;
@@ -283,7 +283,7 @@ static kernel_error_st set_station_mode(void) {
  *  - KERNEL_ERROR_STA_PASSWORD_TOO_LONG if password string exceeds buffer size.
  *  - KERNEL_ERROR_STA_CREDENTIALS if applying station mode configuration fails.
  */
-kernel_error_st wifi_manager_set_credentials(const char *ssid, const char *password) {
+kernel_error_st wifi_manager_set_credentials(const char* ssid, const char* password) {
     if (ssid == NULL || password == NULL) {
         logger_print(ERR, TAG, "Invalid credentials: SSID or password is NULL");
         return KERNEL_ERROR_NULL;
@@ -312,8 +312,11 @@ kernel_error_st wifi_manager_set_credentials(const char *ssid, const char *passw
     connection_retry_counter = 0;
 
     if (set_station_mode() != KERNEL_SUCCESS) {
+        logger_print(ERR, TAG, "Failed to set station mode with new credentials");
         return KERNEL_ERROR_STA_CREDENTIALS;
     }
+
+    logger_print(DEBUG, TAG, "Wi-Fi credentials set: SSID='%s'", ssid_buf);
 
     return KERNEL_SUCCESS;
 }
@@ -415,7 +418,7 @@ kernel_error_st wifi_manager_initialize() {
  * @param[in] event_id    Identifier for the Wi-Fi event.
  * @param[in] event_data  Pointer to event-specific data (must be cast according to event_id).
  */
-void wifi_manager_wifi_event_handler(int32_t event_id, void *event_data) {
+void wifi_manager_wifi_event_handler(int32_t event_id, void* event_data) {
     if (event_data == NULL) {
         logger_print(WARN, TAG, "Received event %d with NULL data", event_id);
         return;
@@ -423,14 +426,14 @@ void wifi_manager_wifi_event_handler(int32_t event_id, void *event_data) {
 
     switch (event_id) {
         case WIFI_EVENT_AP_STACONNECTED: {
-            wifi_event_ap_staconnected_t *evt = (wifi_event_ap_staconnected_t *)event_data;
+            wifi_event_ap_staconnected_t* evt = (wifi_event_ap_staconnected_t*)event_data;
             logger_print(INFO, TAG, "AP Client Connected - MAC: %02x:%02x:%02x:%02x:%02x:%02x, AID=%d",
                          evt->mac[0], evt->mac[1], evt->mac[2], evt->mac[3], evt->mac[4], evt->mac[5], evt->aid);
             wifi_status_set_ap(true);
             break;
         }
         case WIFI_EVENT_AP_STADISCONNECTED: {
-            wifi_event_ap_stadisconnected_t *evt = (wifi_event_ap_stadisconnected_t *)event_data;
+            wifi_event_ap_stadisconnected_t* evt = (wifi_event_ap_stadisconnected_t*)event_data;
             logger_print(INFO, TAG, "AP Client Disconnected - MAC: %02x:%02x:%02x:%02x:%02x:%02x, AID=%d",
                          evt->mac[0], evt->mac[1], evt->mac[2], evt->mac[3], evt->mac[4], evt->mac[5], evt->aid);
             wifi_status_set_ap(false);
@@ -440,17 +443,17 @@ void wifi_manager_wifi_event_handler(int32_t event_id, void *event_data) {
             logger_print(INFO, TAG, "Station Mode Started");
             break;
         case WIFI_EVENT_STA_CONNECTED: {
-            wifi_event_sta_connected_t *evt = (wifi_event_sta_connected_t *)event_data;
+            wifi_event_sta_connected_t* evt = (wifi_event_sta_connected_t*)event_data;
             logger_print(INFO, TAG, "Station Connected to SSID '%s', BSSID %02x:%02x:%02x:%02x:%02x:%02x, Channel %d",
-                         (char *)evt->ssid,
+                         (char*)evt->ssid,
                          evt->bssid[0], evt->bssid[1], evt->bssid[2], evt->bssid[3], evt->bssid[4], evt->bssid[5],
                          evt->channel);
             break;
         }
         case WIFI_EVENT_STA_DISCONNECTED: {
-            wifi_event_sta_disconnected_t *evt = (wifi_event_sta_disconnected_t *)event_data;
+            wifi_event_sta_disconnected_t* evt = (wifi_event_sta_disconnected_t*)event_data;
             logger_print(WARN, TAG, "Station Disconnected from SSID '%s', Reason: %d",
-                         (char *)evt->ssid, evt->reason);
+                         (char*)evt->ssid, evt->reason);
             wifi_status_set_sta(false);
             break;
         }
@@ -470,7 +473,7 @@ void wifi_manager_wifi_event_handler(int32_t event_id, void *event_data) {
  * @param[in] event_id    Expected to be IP_EVENT_STA_GOT_IP.
  * @param[in] event_data  Pointer to ip_event_got_ip_t containing IP info.
  */
-void wifi_manager_sta_got_ip(int32_t event_id, void *event_data) {
+void wifi_manager_sta_got_ip(int32_t event_id, void* event_data) {
     if (event_id != IP_EVENT_STA_GOT_IP) {
         return;
     }
@@ -480,7 +483,7 @@ void wifi_manager_sta_got_ip(int32_t event_id, void *event_data) {
         return;
     }
 
-    ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
+    ip_event_got_ip_t* event = (ip_event_got_ip_t*)event_data;
     logger_print(INFO, TAG, "Station acquired IP address: " IPSTR, IP2STR(&event->ip_info.ip));
 
     char stored_ssid[32]     = {0};
@@ -507,7 +510,7 @@ void wifi_manager_sta_got_ip(int32_t event_id, void *event_data) {
 
     kernel_error_st result = KERNEL_SUCCESS;
     if (ssid_changed) {
-        result = nvs_util_save_str("wifi", "ssid", (char *)sta_config.sta.ssid);
+        result = nvs_util_save_str("wifi", "ssid", (char*)sta_config.sta.ssid);
         if (result != KERNEL_SUCCESS) {
             logger_print(WARN, TAG, "Failed to save SSID to NVS: %d", result);
         } else {
@@ -516,7 +519,7 @@ void wifi_manager_sta_got_ip(int32_t event_id, void *event_data) {
     }
 
     if (pwd_changed) {
-        result = nvs_util_save_str("wifi", "pwd", (char *)sta_config.sta.password);
+        result = nvs_util_save_str("wifi", "pwd", (char*)sta_config.sta.password);
         if (result != KERNEL_SUCCESS) {
             logger_print(WARN, TAG, "Failed to save password to NVS: %d", result);
         } else {

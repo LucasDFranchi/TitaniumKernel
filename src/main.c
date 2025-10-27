@@ -12,7 +12,7 @@
 static global_structures_st global_structures = {0};
 
 void app_main() {
-    kernel_initialize(RELEASE_MODE_DEBUG, SERIAL, &global_structures);
+    kernel_initialize(RELEASE_MODE_PRODUCTION, SERIAL, &global_structures);
     kernel_enable_network(&global_structures);
     kernel_enable_http_server(&global_structures);
     kernel_enable_mqtt(&global_structures);

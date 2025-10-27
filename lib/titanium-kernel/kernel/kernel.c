@@ -106,11 +106,6 @@ kernel_error_st kernel_global_queues_initialize() {
         return KERNEL_ERROR_GLOBAL_QUEUES_INIT;
     }
 
-    err = queue_manager_register(NETWORK_BRIDGE_QUEUE_ID, 2, sizeof(network_bridge_st));
-    if (err != KERNEL_SUCCESS) {
-        logger_print(ERR, TAG, "Failed to register network bridge queue - %d", err);
-        return err;
-    }
     err = queue_manager_register(MQTT_BRIDGE_QUEUE_ID, 10, sizeof(mqtt_bridge_st));
     if (err != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to register network bridge queue - %d", err);

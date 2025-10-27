@@ -23,16 +23,14 @@ extern "C" {
  * @enum
  * @brief Kernel and bridge queue identifiers.
  *
- * @var NETWORK_BRIDGE_QUEUE_ID Queue for the network bridge.
  * @var MQTT_BRIDGE_QUEUE_ID Queue for the MQTT bridge.
  * @var CREDENTIALS_QUEUE_ID Queue for credentials handling.
  * @var LAST_KERNEL_QUEUE_ID Last reserved kernel queue ID (app queues start after this).
  */
 enum {
-    NETWORK_BRIDGE_QUEUE_ID = 0,
-    MQTT_BRIDGE_QUEUE_ID    = 1,
-    CREDENTIALS_QUEUE_ID    = 2,
-    LAST_KERNEL_QUEUE_ID    = 10
+    MQTT_BRIDGE_QUEUE_ID = 0,
+    CREDENTIALS_QUEUE_ID = 1,
+    LAST_KERNEL_QUEUE_ID = 10
 };
 
 /**

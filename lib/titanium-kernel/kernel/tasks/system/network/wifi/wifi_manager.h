@@ -63,7 +63,7 @@ kernel_error_st wifi_manager_initialize();
  *  - KERNEL_ERROR_STA_PASSWORD_TOO_LONG if password string exceeds buffer size.
  *  - KERNEL_ERROR_STA_CREDENTIALS if applying station mode configuration fails.
  */
-kernel_error_st wifi_manager_set_credentials(const char *ssid, const char *password);
+kernel_error_st wifi_manager_set_credentials(const char* ssid, const char* password);
 
 /**
  * @brief Handle Wi-Fi-related system events.
@@ -74,7 +74,7 @@ kernel_error_st wifi_manager_set_credentials(const char *ssid, const char *passw
  * @param[in] event_id    Identifier for the Wi-Fi event.
  * @param[in] event_data  Pointer to event-specific data (must be cast according to event_id).
  */
-void wifi_manager_wifi_event_handler(int32_t event_id, void *event_data);
+void wifi_manager_wifi_event_handler(int32_t event_id, void* event_data);
 
 /**
  * @brief Handle the IP_EVENT_STA_GOT_IP event.
@@ -86,7 +86,7 @@ void wifi_manager_wifi_event_handler(int32_t event_id, void *event_data);
  * @param[in] event_id    Expected to be IP_EVENT_STA_GOT_IP.
  * @param[in] event_data  Pointer to ip_event_got_ip_t containing IP info.
  */
-void wifi_manager_sta_got_ip(int32_t event_id, void *event_data);
+void wifi_manager_sta_got_ip(int32_t event_id, void* event_data);
 
 /**
  * @brief Maintain and supervise Wi-Fi Station connection.
@@ -102,4 +102,14 @@ void wifi_manager_sta_got_ip(int32_t event_id, void *event_data);
  */
 void wifi_manager_manage_connection(void);
 
+/**
+ * @brief Get the current connection status of the specified Wi-Fi interface.
+ *
+ * This function returns the connection status for either the Access Point (AP)
+ * or Station (STA) interface, based on the specified enum.
+ *
+ * @param[in] wifi_manager_interface The interface to query: WIFI_MANAGER_IF_AP or WIFI_MANAGER_IF_STA.
+ *
+ * @return true if the interface is connected, false otherwise.
+ */
 bool wifi_manager_get_connection_status(wifi_manager_interface_et wifi_manager_interface);
