@@ -44,7 +44,7 @@
 static const mqtt_topic_info_st mqtt_topic_infos[] = {
     [SENSOR_REPORT] = {
         .topic               = "sensor/report",
-        .qos                 = QOS_1,
+        .qos                 = QOS_0,
         .mqtt_data_direction = PUBLISH,
         .queue_length        = 10,
         .queue_item_size     = sizeof(device_report_st),
@@ -53,7 +53,7 @@ static const mqtt_topic_info_st mqtt_topic_infos[] = {
     },
     [BROADCAST_COMMAND] = {
         .topic               = "all/command",
-        .qos                 = QOS_1,
+        .qos                 = QOS_0,
         .mqtt_data_direction = SUBSCRIBE,
         .queue_length        = 10,
         .queue_item_size     = sizeof(command_st),
@@ -62,7 +62,7 @@ static const mqtt_topic_info_st mqtt_topic_infos[] = {
     },
     [TARGET_COMMAND] = {
         .topic               = "command",
-        .qos                 = QOS_1,
+        .qos                 = QOS_0,
         .mqtt_data_direction = SUBSCRIBE,
         .queue_length        = 10,
         .queue_item_size     = sizeof(command_st),
@@ -71,7 +71,7 @@ static const mqtt_topic_info_st mqtt_topic_infos[] = {
     },
     [RESPONSE_COMMAND] = {
         .topic               = "command",
-        .qos                 = QOS_1,
+        .qos                 = QOS_0,
         .mqtt_data_direction = PUBLISH,
         .queue_length        = 10,
         .queue_item_size     = sizeof(command_response_st),
@@ -80,7 +80,7 @@ static const mqtt_topic_info_st mqtt_topic_infos[] = {
     },
     [HEALTH_REPORT] = {
         .topic               = "health/report",
-        .qos                 = QOS_1,
+        .qos                 = QOS_0,
         .mqtt_data_direction = PUBLISH,
         .queue_length        = 10,
         .queue_item_size     = sizeof(health_report_st),

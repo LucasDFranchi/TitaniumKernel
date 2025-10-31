@@ -22,6 +22,7 @@ static esp_mqtt_client_handle_t mqtt_client     = {0};          ///< MQTT client
 static const char* TAG                          = "MQTT Task";  ///< Log tag for MQTT task.
 static bool is_mqtt_connected                   = false;        ///< MQTT connection status.
 static bool is_waiting_for_connection           = false;        ///<
+static bool need_resubscribe                    = false;        ///<
 static mqtt_bridge_st mqtt_bridge               = {0};          ///< Pointer to the MQTT bridge structure.
 
 static char publish_payload[MQTT_MAXIMUM_PAYLOAD_LENGTH] = {0};
@@ -67,7 +68,7 @@ static void mqtt_event_handler(void* arg, esp_event_base_t base, int32_t event_i
             logger_print(INFO, TAG, "MQTT_EVENT_CONNECTED");
             is_mqtt_connected         = true;
             is_waiting_for_connection = false;
-            subscribe();
+            need_resubscribe          = true;
             break;
 
         case MQTT_EVENT_DISCONNECTED:
@@ -106,6 +107,7 @@ static void start_mqtt_client(void) {
             logger_print(ERR, TAG, "Failed to start MQTT client: %s", esp_err_to_name(err));
         } else {
             logger_print(INFO, TAG, "MQTT client started");
+            is_waiting_for_connection = true;
         }
     } else {
         logger_print(ERR, TAG, "MQTT client not initialized");
@@ -121,6 +123,9 @@ static void stop_mqtt_client(void) {
     if (mqtt_client) {
         esp_mqtt_client_stop(mqtt_client);
         logger_print(INFO, TAG, "MQTT client stopped");
+
+        is_mqtt_connected         = false;
+        is_waiting_for_connection = false;
     }
 }
 
@@ -193,6 +198,8 @@ static kernel_error_st subscribe(void) {
     };
 
     for (size_t i = 0; i < mqtt_bridge.get_topics_count(); i++) {
+        memset(subscribe_topic, 0, sizeof(subscribe_topic));
+
         kernel_error_st err = mqtt_bridge.get_topic(i, &mqtt_buffer_topic, &qos);
 
         if ((err != KERNEL_SUCCESS) && (err != KERNEL_ERROR_EMPTY_QUEUE)) {
@@ -330,20 +337,31 @@ void mqtt_client_task_execute(void* pvParameters) {
         bool is_time_synced    = firmware_event_bits & TIME_SYNCED;
         TickType_t now         = xTaskGetTickCount();
 
+        if (is_mqtt_connected && need_resubscribe) {
+            if (subscribe() == KERNEL_SUCCESS) {
+                logger_print(INFO, TAG, "Resubscribed to MQTT topics after reconnect");
+                need_resubscribe = false;
+            } else {
+                logger_print(WARN, TAG, "Failed to resubscribe, will retry...");
+            }
+        }
+
         if (!is_mqtt_connected && !is_waiting_for_connection) {
             if (is_wifi_connected && (now - last_connect_attempt > pdMS_TO_TICKS(5000))) {
                 logger_print(DEBUG, TAG, "Trying to start MQTT client...");
                 start_mqtt_client();
-                last_connect_attempt      = now;
-                waiting_since             = now;
-                is_waiting_for_connection = true;
+                waiting_since = now;
             }
         }
 
         if (is_waiting_for_connection && (now - waiting_since > pdMS_TO_TICKS(15000))) {
-            logger_print(WARN, TAG, "MQTT connect timeout, restarting client...");
-            stop_mqtt_client();
-            is_waiting_for_connection = false;
+            if (!is_mqtt_connected) {
+                logger_print(WARN, TAG, "MQTT connect timeout, restarting client...");
+                stop_mqtt_client();
+            } else {
+                logger_print(DEBUG, TAG, "Connect timeout expired but client already connected, ignoring timeout");
+            }
+            last_connect_attempt = now;
         }
 
         if (is_mqtt_connected && !is_wifi_connected) {

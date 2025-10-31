@@ -26,6 +26,7 @@ def pytest_configure(config):
 
 
 _DEVICE_ID = "1C69209DB778"
+# _DEVICE_ID = "1C69209DFC08"
 _THIS_PATH = os.path.dirname(os.path.abspath(__file__))
 
 def send_and_validate_calibration(mqtt_client, sensor_id: int, gain: float, offset: float):
