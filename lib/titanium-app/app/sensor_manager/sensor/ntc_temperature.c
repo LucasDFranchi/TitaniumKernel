@@ -221,8 +221,10 @@ kernel_error_st temperature_sensor_read(sensor_interface_st *ctx, sensor_report_
 
     pga_gain_et fine_pga_gain = ctx->adc_controller->get_pga_gain(voltage_sensor);
 
+    logger_print(DEBUG, TAG, "Voltage sensor: %f mV, Current PGA: %d, Fine PGA: %d", voltage_sensor, ctx->hw->adc_sensor_branch.pga_gain, fine_pga_gain);
+
     if (fine_pga_gain != ctx->hw->adc_sensor_branch.pga_gain) {
-        ctx->hw->adc_sensor_branch.pga_gain = fine_pga_gain;
+        // ctx->hw->adc_sensor_branch.pga_gain = fine_pga_gain;
 
         err = ctx->adc_controller->configure(&ctx->hw->adc_sensor_branch);
         if (err != KERNEL_SUCCESS) {
