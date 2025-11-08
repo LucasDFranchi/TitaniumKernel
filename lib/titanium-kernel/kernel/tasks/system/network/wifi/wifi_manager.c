@@ -50,7 +50,6 @@ static esp_netif_t* esp_netif_sta          = {0};    ///< Pointer to the Station
 static esp_netif_t* esp_netif_ap           = {0};    ///< Pointer to the Access Point network interface.
 static wifi_config_t ap_config             = {0};    ///< Configuration structure for the Access Point.
 static wifi_config_t sta_config            = {0};    ///< Configuration structure for the Station.
-static credentials_st cred                 = {0};    ///< Credentials structure for storing Wi-Fi credentials.
 static uint8_t connection_retry_counter    = 0;      ///< Counter for tracking connection retries.
 static uint8_t is_retry_limit_exceeded     = 0;      ///< Flag to indicate that the limit was exceeded.
 static bool is_credential_set              = false;  ///< Flag to indicate if credentials are set.
@@ -389,19 +388,19 @@ kernel_error_st wifi_manager_initialize() {
     kernel_error_st err_ssid = KERNEL_SUCCESS;
     kernel_error_st err_pwd  = KERNEL_SUCCESS;
 
-    err_ssid = nvs_util_load_str("wifi", "ssid", cred.ssid, sizeof(cred.ssid));
+    err_ssid = nvs_util_load_str("wifi", "ssid", (char*)sta_config.sta.ssid, sizeof(sta_config.sta.ssid));
     if (err_ssid != KERNEL_SUCCESS) {
         logger_print(WARN, TAG, "Failed to load SSID from NVS: %d", err_ssid);
     }
 
-    err_pwd = nvs_util_load_str("wifi", "pwd", cred.password, sizeof(cred.password));
+    err_pwd = nvs_util_load_str("wifi", "pwd", (char*)sta_config.sta.password, sizeof(sta_config.sta.password));
     if (err_pwd != KERNEL_SUCCESS) {
         logger_print(WARN, TAG, "Failed to load password from NVS: %d", err_pwd);
     }
 
     if (err_ssid == KERNEL_SUCCESS && err_pwd == KERNEL_SUCCESS) {
-        logger_print(INFO, TAG, "Loaded credentials from NVS: SSID='%s'", cred.ssid);
-        wifi_manager_set_credentials(cred.ssid, cred.password);
+        logger_print(INFO, TAG, "Loaded credentials from NVS: SSID='%s'", sta_config.sta.ssid);
+        wifi_manager_set_credentials((char*)sta_config.sta.ssid, (char*)sta_config.sta.password);
     } else {
         logger_print(INFO, TAG, "Credentials not fully available in NVS. Skipping set.");
     }
@@ -496,7 +495,7 @@ void wifi_manager_sta_got_ip(int32_t event_id, void* event_data) {
         logger_print(WARN, TAG, "Failed to load SSID from NVS for comparison");
     }
     stored_ssid[sizeof(stored_ssid) - 1] = '\0';
-    if (strcmp(stored_ssid, cred.ssid) == 0 && stored_ssid[0] != '\0') {
+    if (strcmp(stored_ssid, (char*)sta_config.sta.ssid) == 0 && stored_ssid[0] != '\0') {
         ssid_changed = false;
     }
 
@@ -504,7 +503,7 @@ void wifi_manager_sta_got_ip(int32_t event_id, void* event_data) {
         logger_print(WARN, TAG, "Failed to load password from NVS for comparison");
     }
     stored_password[sizeof(stored_password) - 1] = '\0';
-    if (strcmp(stored_password, cred.password) == 0 && stored_password[0] != '\0') {
+    if (strcmp(stored_password, (char*)sta_config.sta.password) == 0 && stored_password[0] != '\0') {
         pwd_changed = false;
     }
 
