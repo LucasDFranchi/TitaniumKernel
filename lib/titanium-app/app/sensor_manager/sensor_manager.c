@@ -31,7 +31,7 @@
 #include "app/sensor_manager/sensor_interface/sensor_interface.h"
 
 /* Global Variables */
-static const char *TAG                  = "Sensor Manager"; /*!< Tag used for logging */
+static const char* TAG                  = "Sensor Manager"; /*!< Tag used for logging */
 static mux_controller_st mux_controller = {0};
 static adc_controller_st adc_controller = {0};
 
@@ -434,7 +434,7 @@ static sensor_interface_st sensor_interface[NUM_OF_SENSORS] = {
  * @note Initializes global/static controllers and should be called only once
  *       at system startup.
  */
-static kernel_error_st sensor_manager_initialize(void *args) {
+static kernel_error_st sensor_manager_initialize(void* args) {
     if (adc_controller_init(&adc_controller) != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to initialize ADC manager");
         return KERNEL_ERROR_MUX_INIT_ERROR;
@@ -495,7 +495,7 @@ sensor_type_et sensor_get_type(uint8_t sensor_index) {
         return SENSOR_TYPE_UNDEFINED;
     }
 
-    sensor_interface_st *sensor = &sensor_interface[sensor_index];
+    sensor_interface_st* sensor = &sensor_interface[sensor_index];
     sensor_type_et type         = SENSOR_TYPE_UNDEFINED;
 
     if (xSemaphoreTake(sensor->mutex, pdMS_TO_TICKS(10)) == pdTRUE) {
@@ -522,7 +522,7 @@ float sensor_get_gain(uint8_t sensor_index) {
         return 1.0f;
     }
 
-    sensor_interface_st *sensor = &sensor_interface[sensor_index];
+    sensor_interface_st* sensor = &sensor_interface[sensor_index];
     float gain                  = 1.0f;
 
     if (xSemaphoreTake(sensor->mutex, pdMS_TO_TICKS(10)) == pdTRUE) {
@@ -549,7 +549,7 @@ float sensor_get_offset(uint8_t sensor_index) {
         return 0.0f;
     }
 
-    sensor_interface_st *sensor = &sensor_interface[sensor_index];
+    sensor_interface_st* sensor = &sensor_interface[sensor_index];
     float offset                = 0.0f;
 
     if (xSemaphoreTake(sensor->mutex, pdMS_TO_TICKS(10)) == pdTRUE) {
@@ -576,7 +576,7 @@ sensor_state_et sensor_get_state(uint8_t sensor_index) {
         return SENSOR_DISABLED;
     }
 
-    sensor_interface_st *sensor = &sensor_interface[sensor_index];
+    sensor_interface_st* sensor = &sensor_interface[sensor_index];
     sensor_state_et state       = SENSOR_DISABLED;
 
     if (xSemaphoreTake(sensor->mutex, pdMS_TO_TICKS(10)) == pdTRUE) {
@@ -613,7 +613,7 @@ kernel_error_st sensor_calibrate(uint8_t sensor_index, float offset, float gain)
         return KERNEL_ERROR_INVALID_ARG;
     }
 
-    sensor_interface_st *sensor = &sensor_interface[sensor_index];
+    sensor_interface_st* sensor = &sensor_interface[sensor_index];
 
     if (xSemaphoreTake(sensor->mutex, pdMS_TO_TICKS(100)) == pdTRUE) {
         sensor_interface[sensor_index].offset          = offset;
@@ -636,7 +636,7 @@ kernel_error_st sensor_calibrate(uint8_t sensor_index, float offset, float gain)
  * @note Runs indefinitely as an RTOS task. This function should be registered
  *       with the RTOS task scheduler at startup.
  */
-void sensor_manager_loop(void *args) {
+void sensor_manager_loop(void* args) {
     kernel_error_st err = sensor_manager_initialize(args);
     if (err != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to initialize the sensor manager! - %d", err);

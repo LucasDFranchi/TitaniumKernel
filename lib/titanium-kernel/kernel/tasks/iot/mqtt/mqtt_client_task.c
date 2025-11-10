@@ -291,7 +291,7 @@ static kernel_error_st mqtt_client_task_initialize(void) {
         return KERNEL_ERROR_MQTT_REGISTER_FAIL;
     }
 
-    if (esp_mqtt_client_set_uri(mqtt_client, "mqtt://broker.hivemq.com") != ESP_OK) {
+    if (esp_mqtt_client_set_uri(mqtt_client, "mqtt://10.10.10.6/broker") != ESP_OK) {
         logger_print(ERR, TAG, "Failed to set MQTT URI");
         return KERNEL_ERROR_MQTT_URI_FAIL;
     }

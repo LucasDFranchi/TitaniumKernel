@@ -2,8 +2,8 @@
 
 #include "kernel/logger/logger.h"
 
-static const char *TAG = "NTC Sensor";
-static const uint32_t FIXED_RESISTOR = (100 * 1000); //100k Ohms
+static const char* TAG               = "NTC Sensor";
+static const uint32_t FIXED_RESISTOR = (100 * 1000);  // 100k Ohms
 
 /**
  * @brief Structure representing a single entry in the NTC thermistor lookup table.
@@ -65,6 +65,71 @@ static const ntc_entry_st ntc_table[] = {
 // clang-format on
 
 /**
+ * @brief Apply 5-region polynomial correction to match measured resistance.
+ *
+ * Regions defined descending (high -> low) and contiguous to avoid gaps.
+ *
+ * @param r_in Calculated resistance (kΩ) from voltage divider.
+ * @return Calibrated resistance (kΩ) corrected to match measured values.
+ */
+static float correct_resistance_kohm(float r_in) {
+    typedef struct {
+        float r_high;  // inclusive upper bound (kΩ)
+        float r_low;   // exclusive lower bound (kΩ) except last region
+        float a, b, c; // quadratic coefficients
+    } region_fit_t;
+
+    static const region_fit_t regions[] = {
+        /* Region 1: 3361.887 -> 329.300 kΩ */
+        {3361.887f, 329.300f, 3.050603e-06f, 9.680608e-01f, 1.101766e+01f},
+
+        /* Region 2: 329.300 -> 87.474 kΩ */
+        {329.300f, 87.474f, 3.750742e-04f, 8.410913e-01f, 1.230265e+01f},
+
+        /* Region 3: 87.474 -> 22.259 kΩ */
+        {87.474f, 22.259f, -4.009059e-05f, 9.984124e-01f, -2.474721e-01f},
+
+        /* Region 4: 22.259 -> 6.731 kΩ */
+        {22.259f, 6.731f, -3.474550e-04f, 1.032403e+00f, -1.619189e-01f},
+
+        /* Region 5: 6.731 -> 2.232 kΩ (lowest region: include lower bound) */
+        {6.731f, 2.232f, -2.576672e-03f, 1.038778e+00f, -1.142167e-01f},
+    };
+
+    const size_t region_count = sizeof(regions) / sizeof(regions[0]);
+    const size_t last_index = region_count - 1;
+
+    for (size_t i = 0; i < region_count; ++i) {
+        float high = regions[i].r_high;
+        float low  = regions[i].r_low;
+
+        if ((r_in <= high) && (r_in > low)) {
+            float a = regions[i].a;
+            float b = regions[i].b;
+            float c = regions[i].c;
+            return (a * r_in * r_in) + (b * r_in) + c;
+        }
+        else if ((r_in > high) && (i == 0)) {
+            // Above highest region
+            float a = regions[i].a;
+            float b = regions[i].b;
+            float c = regions[i].c;
+            return (a * r_in * r_in) + (b * r_in) + c;
+        }
+        else if (r_in <= low && i == last_index) {
+            // Below lowest region
+            float a = regions[i].a;
+            float b = regions[i].b;
+            float c = regions[i].c;
+            return (a * r_in * r_in) + (b * r_in) + c;
+        }
+    }
+    
+    return r_in;
+}
+
+
+/**
  * @brief Calculate thermistor resistance in kΩ based on voltage divider output.
  *
  * This function estimates the thermistor resistance by applying the voltage divider formula,
@@ -84,7 +149,7 @@ static float calculate_resistance_kohm(float v_ref, float v_ntc, uint16_t sensor
     uint32_t resistance_ohm = (FIXED_RESISTOR * v_gain) / (1 - v_gain);
 
     logger_print(DEBUG, TAG, "Calculated resistance %d: %d Ohm (%.3f kOhm)", sensor_index, resistance_ohm, resistance_ohm / 1000.0f);
-    return resistance_ohm / 1000.0f;
+    return correct_resistance_kohm(resistance_ohm / 1000.0f);
 }
 
 /**
@@ -169,7 +234,7 @@ static float voltage_to_temperature(float v_ref, float v_ntc, int sensor_index) 
  * @param[out] out_value Pointer to store the resulting temperature in Celsius.
  * @return kernel_error_st Error code indicating success or failure.
  */
-kernel_error_st temperature_sensor_read(sensor_interface_st *ctx, sensor_report_st *sensor_report) {
+kernel_error_st temperature_sensor_read(sensor_interface_st* ctx, sensor_report_st* sensor_report) {
     kernel_error_st err       = KERNEL_SUCCESS;
     int16_t reference_raw_adc = 0;
     int16_t sensor_raw_adc    = 0;
@@ -180,8 +245,8 @@ kernel_error_st temperature_sensor_read(sensor_interface_st *ctx, sensor_report_
 
     uint8_t sensor_index = ctx->index;
 
-    sensor_report[sensor_index].value       = 0;
-    sensor_report[sensor_index].active      = false;
+    sensor_report[sensor_index].value  = 0;
+    sensor_report[sensor_index].active = false;
 
     err = ctx->mux_controller->select_channel(&ctx->hw->mux_hw_config);
     if (err != KERNEL_SUCCESS) {
@@ -246,8 +311,8 @@ kernel_error_st temperature_sensor_read(sensor_interface_st *ctx, sensor_report_
 
     float temperature_c = voltage_to_temperature(voltage_reference, voltage_sensor, sensor_index);
 
-    sensor_report[sensor_index].value       = (temperature_c * ctx->conversion_gain) + ctx->offset;
-    sensor_report[sensor_index].active      = true;
+    sensor_report[sensor_index].value  = (temperature_c * ctx->conversion_gain) + ctx->offset;
+    sensor_report[sensor_index].active = true;
 
     return KERNEL_SUCCESS;
 }
