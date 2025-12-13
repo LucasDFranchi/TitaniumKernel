@@ -11,8 +11,11 @@
 /** @brief Maximum allowed Modbus slave ID (1..247) */
 #define MODBUS_MAX_SLAVES 247
 
+/** @brief Modbus function code for "Read Holding Registers" */
+#define MODBUS_READ_HOLDING_REGISTERS   0x03
+
 /** @brief Modbus function code for "Read Input Registers" */
-#define MODBUS_READ_INPUT_REG 0x04
+#define MODBUS_READ_INPUT_REGISTERS     0x04
 
 /** @brief Modbus broadcast slave ID (0) */
 #define BROADCAST_SLAVE_ID 0
