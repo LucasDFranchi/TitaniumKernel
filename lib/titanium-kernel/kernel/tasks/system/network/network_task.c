@@ -57,7 +57,7 @@ static global_structures_st* _global_structures = NULL;  ///< Pointer to the glo
 static void network_task_event_handler(void* arg, esp_event_base_t event_base,
                                        int32_t event_id, void* event_data) {
     if (event_base == WIFI_EVENT) {
-        wifi_manager_wifi_event_handler(event_id, event_data);
+        // wifi_manager_wifi_event_handler(event_id, event_data);
     } else if (event_base == IP_EVENT) {
         if (event_id == IP_EVENT_STA_GOT_IP) {
             wifi_manager_sta_got_ip(event_id, event_data);
@@ -77,17 +77,18 @@ static void network_task_event_handler(void* arg, esp_event_base_t event_base,
 
     EventGroupHandle_t firmware_event_group = _global_structures->global_events.firmware_event_group;
 
-    bool wifi_ap_connected  = wifi_manager_get_connection_status(WIFI_MANAGER_IF_AP);
-    bool wifi_sta_connected = wifi_manager_get_connection_status(WIFI_MANAGER_IF_STA);
+    // bool wifi_ap_connected  = wifi_manager_get_connection_status(WIFI_MANAGER_IF_AP);
+    // bool wifi_sta_connected = wifi_manager_get_connection_status(WIFI_MANAGER_IF_STA);
     bool ethernet_connected = ethernet_manager_get_connection_status();
 
-    if (wifi_ap_connected) {
-        xEventGroupSetBits(firmware_event_group, WIFI_CONNECTED_AP);
-    } else {
-        xEventGroupClearBits(firmware_event_group, WIFI_CONNECTED_AP);
-    }
+    // if (wifi_ap_connected) {
+    //     xEventGroupSetBits(firmware_event_group, WIFI_CONNECTED_AP);
+    // } else {
+    //     xEventGroupClearBits(firmware_event_group, WIFI_CONNECTED_AP);
+    // }
 
-    if (ethernet_connected || wifi_sta_connected) {
+    // if (ethernet_connected || wifi_sta_connected) {
+    if (ethernet_connected) {
         xEventGroupSetBits(firmware_event_group, STA_GOT_IP);
     } else {
         xEventGroupClearBits(firmware_event_group, STA_GOT_IP);
@@ -116,24 +117,24 @@ static kernel_error_st network_task_initialize(void) {
         return KERNEL_ERROR_WIFI_EVENT_REGISTER;
     }
 
-    result = esp_event_handler_register(WIFI_EVENT,
-                                        ESP_EVENT_ANY_ID,
-                                        &network_task_event_handler,
-                                        NULL);
-    if (result != ESP_OK) {
-        logger_print(ERR, TAG, "Failed to register WIFI event handler: %s", esp_err_to_name(result));
-        return KERNEL_ERROR_WIFI_EVENT_REGISTER;
-    }
+    // result = esp_event_handler_register(WIFI_EVENT,
+    //                                     ESP_EVENT_ANY_ID,
+    //                                     &network_task_event_handler,
+    //                                     NULL);
+    // if (result != ESP_OK) {
+    //     logger_print(ERR, TAG, "Failed to register WIFI event handler: %s", esp_err_to_name(result));
+    //     return KERNEL_ERROR_WIFI_EVENT_REGISTER;
+    // }
 
-    result = esp_event_handler_register(IP_EVENT,
-                                        IP_EVENT_STA_GOT_IP,
-                                        &network_task_event_handler,
-                                        NULL);
+    // result = esp_event_handler_register(IP_EVENT,
+    //                                     IP_EVENT_STA_GOT_IP,
+    //                                     &network_task_event_handler,
+    //                                     NULL);
 
-    if (result != ESP_OK) {
-        logger_print(ERR, TAG, "Failed to register STA IP event handler: %s", esp_err_to_name(result));
-        return KERNEL_ERROR_IP_EVENT_REGISTER;
-    }
+    // if (result != ESP_OK) {
+    //     logger_print(ERR, TAG, "Failed to register STA IP event handler: %s", esp_err_to_name(result));
+    //     return KERNEL_ERROR_IP_EVENT_REGISTER;
+    // }
 
     result = esp_event_handler_register(IP_EVENT,
                                         IP_EVENT_ETH_GOT_IP,
@@ -164,13 +165,13 @@ static kernel_error_st network_task_initialize(void) {
         return KERNEL_ERROR_ETH_EVENT_REGISTER;
     }
 
-    kernel_error_st err = wifi_manager_initialize();
-    if (err != KERNEL_SUCCESS) {
-        logger_print(ERR, TAG, "Failed to initalized the WiFi Manager");
-        return err;
-    }
+    // kernel_error_st err = wifi_manager_initialize();
+    // if (err != KERNEL_SUCCESS) {
+    //     logger_print(ERR, TAG, "Failed to initalized the WiFi Manager");
+    //     return err;
+    // }
 
-    err = ethernet_manager_initialize();
+    kernel_error_st err = ethernet_manager_initialize();
     if (err != KERNEL_SUCCESS) {
         logger_print(ERR, TAG, "Failed to initalized the Ethernet Manager");
         return err;
@@ -196,7 +197,7 @@ void network_task_execute(void* pvParameters) {
         vTaskDelete(NULL);
     }
 
-    credentials_st cred      = {0};
+    // credentials_st cred      = {0};
     QueueHandle_t cred_queue = queue_manager_get(CREDENTIALS_QUEUE_ID);
     if (cred_queue == NULL) {
         logger_print(ERR, TAG, "Credentials queue is NULL");
@@ -205,12 +206,12 @@ void network_task_execute(void* pvParameters) {
     }
 
     while (1) {
-        if (xQueueReceive(cred_queue, &cred, pdMS_TO_TICKS(100)) == pdPASS) {
-            logger_print(DEBUG, TAG, "SSID: %s, Password: %s", cred.ssid, cred.password);
-            wifi_manager_set_credentials(cred.ssid, cred.password);
-        }
+        // if (xQueueReceive(cred_queue, &cred, pdMS_TO_TICKS(100)) == pdPASS) {
+        //     logger_print(DEBUG, TAG, "SSID: %s, Password: %s", cred.ssid, cred.password);
+        //     wifi_manager_set_credentials(cred.ssid, cred.password);
+        // }
 
-        wifi_manager_manage_connection();
+        // wifi_manager_manage_connection();
 
         vTaskDelay(pdMS_TO_TICKS(NETWORK_TASK_DELAY));
     }
