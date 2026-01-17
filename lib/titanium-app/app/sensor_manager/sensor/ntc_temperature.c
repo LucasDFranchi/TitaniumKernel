@@ -1,6 +1,7 @@
 #include "ntc_temperature.h"
 
 #include "kernel/logger/logger.h"
+#include "kernel/device/device_info.h"
 
 static const char* TAG               = "NTC Sensor";
 static const uint32_t FIXED_RESISTOR = (100 * 1000);  // 100k Ohms
@@ -73,30 +74,9 @@ static const ntc_entry_st ntc_table[] = {
  * @return Calibrated resistance (kΩ) corrected to match measured values.
  */
 static float correct_resistance_kohm(float r_in) {
-    typedef struct {
-        float r_high;  // inclusive upper bound (kΩ)
-        float r_low;   // exclusive lower bound (kΩ) except last region
-        float a, b, c; // quadratic coefficients
-    } region_fit_t;
+    const region_fit_t* regions = device_info_get_region_cal();
 
-    static const region_fit_t regions[] = {
-        /* Region 1: 3361.887 -> 329.300 kΩ */
-        {3361.887f, 329.300f, 3.050603e-06f, 9.680608e-01f, 1.101766e+01f},
-
-        /* Region 2: 329.300 -> 87.474 kΩ */
-        {329.300f, 87.474f, 3.750742e-04f, 8.410913e-01f, 1.230265e+01f},
-
-        /* Region 3: 87.474 -> 22.259 kΩ */
-        {87.474f, 22.259f, -4.009059e-05f, 9.984124e-01f, -2.474721e-01f},
-
-        /* Region 4: 22.259 -> 6.731 kΩ */
-        {22.259f, 6.731f, -3.474550e-04f, 1.032403e+00f, -1.619189e-01f},
-
-        /* Region 5: 6.731 -> 2.232 kΩ (lowest region: include lower bound) */
-        {6.731f, 2.232f, -2.576672e-03f, 1.038778e+00f, -1.142167e-01f},
-    };
-
-    const size_t region_count = sizeof(regions) / sizeof(regions[0]);
+    const size_t region_count = 5;
     const size_t last_index = region_count - 1;
 
     for (size_t i = 0; i < region_count; ++i) {
@@ -149,6 +129,7 @@ static float calculate_resistance_kohm(float v_ref, float v_ntc, uint16_t sensor
     uint32_t resistance_ohm = (FIXED_RESISTOR * v_gain) / (1 - v_gain);
 
     logger_print(DEBUG, TAG, "Calculated resistance %d: %d Ohm (%.3f kOhm)", sensor_index, resistance_ohm, resistance_ohm / 1000.0f);
+    printf("Calculated Resistance %d: %f kOhm\n", sensor_index, resistance_ohm / 1000.0f);
     return correct_resistance_kohm(resistance_ohm / 1000.0f);
 }
 
@@ -218,6 +199,7 @@ static float resistance_to_temperature(float resistance_kohm, int sensor_index) 
  */
 static float voltage_to_temperature(float v_ref, float v_ntc, int sensor_index) {
     float r_kohm = calculate_resistance_kohm(v_ref, v_ntc, sensor_index);
+    printf("Calculated Adjusted Resistance %d: %f kOhm\n", sensor_index, r_kohm);
     return resistance_to_temperature(r_kohm, sensor_index);
 }
 

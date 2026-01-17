@@ -4,7 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import r2_score, mean_squared_error
 
-df = pd.read_csv("resistance_data.csv")
+filename = "resistance_data_C0CDD6CD7814.csv"
+df = pd.read_csv(filename)
+device_id = filename.split("_")[-1].replace(".csv", "")
 
 measured = df["Measured Resistance (kΩ)"].astype(str).str.replace(",", ".").astype(float)
 calculated = df["Calculated Resistance (kΩ)"].astype(str).str.replace(",", ".").astype(float)
@@ -57,3 +59,24 @@ plt.title("5-Region Quadratic Calibration Fit")
 plt.legend()
 plt.grid(True)
 plt.show()
+
+print(f"\n/* Device-specific calibration {device_id} */")
+print(f"static const region_fit_t regions_device_{device_id}[REGION_COUNT] = {{")
+
+for i, idx in enumerate(region_indices):
+    x = calculated[idx]
+    coeffs = fits[i]
+
+    r_high = x.max()
+    r_low = x.min()
+
+    a, b, c = coeffs
+
+    comment = f"/* Region {i+1}: {r_high:.3f} -> {r_low:.3f} kΩ */"
+    entry = f"    {{{r_high:.3f}f, {r_low:.3f}f, {a:.6e}f, {b:.6e}f, {c:.6e}f}},"
+
+    print(comment)
+    print(entry)
+    print()
+
+print("};")

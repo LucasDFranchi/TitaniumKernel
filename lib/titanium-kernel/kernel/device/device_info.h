@@ -10,6 +10,13 @@
 
 #define DEVICE_ID_LENGTH 13   // 12 hex digits + '\0'
 #define IP_ADDRESS_LENGTH 16  // enough for "255.255.255.255\0"
+#define REGION_COUNT 5
+
+typedef struct {
+    float r_high;   // inclusive upper bound (kΩ)
+    float r_low;    // exclusive lower bound (kΩ) except last region
+    float a, b, c;  // quadratic coefficients
+} region_fit_t;
 
 /**
  * @brief Initialize the device info module.
@@ -81,3 +88,5 @@ kernel_error_st device_info_set_ip_address(const esp_ip4_addr_t ip);
  *         The pointer remains valid until the next call to device_info_set_ip_address().
  */
 const char* device_info_get_ip_address(void);
+
+const region_fit_t* device_info_get_region_cal(void);
