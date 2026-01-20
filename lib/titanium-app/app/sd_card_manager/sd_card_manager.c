@@ -223,9 +223,9 @@ static kernel_error_st sd_card_manager_initialize(void) {
         .max_transfer_sz = 4000,
     };
 
-    esp_err_t ret = spi_bus_initialize(host.slot, &bus_cfg, SDSPI_DEFAULT_DMA);
+    esp_err_t ret = spi_bus_initialize(host.slot, &bus_cfg, SPI_DMA_CH_AUTO);
     if (ret != ESP_OK) {
-        logger_print(ERR, TAG, "Failed to initialize SPI bus");
+        logger_print(ERR, TAG, "Failed to initialize SPI bus: %d", ret);
         return KERNEL_FAILED_INITIALIZE_SPI_BUS;
     }
 
