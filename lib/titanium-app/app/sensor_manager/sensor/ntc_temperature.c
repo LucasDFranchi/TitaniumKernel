@@ -1,7 +1,7 @@
 #include "ntc_temperature.h"
 
-#include "kernel/logger/logger.h"
 #include "kernel/device/device_info.h"
+#include "kernel/logger/logger.h"
 
 static const char* TAG               = "NTC Sensor";
 static const uint32_t FIXED_RESISTOR = (100 * 1000);  // 100k Ohms
@@ -77,7 +77,7 @@ static float correct_resistance_kohm(float r_in) {
     const region_fit_t* regions = device_info_get_region_cal();
 
     const size_t region_count = 5;
-    const size_t last_index = region_count - 1;
+    const size_t last_index   = region_count - 1;
 
     for (size_t i = 0; i < region_count; ++i) {
         float high = regions[i].r_high;
@@ -88,15 +88,13 @@ static float correct_resistance_kohm(float r_in) {
             float b = regions[i].b;
             float c = regions[i].c;
             return (a * r_in * r_in) + (b * r_in) + c;
-        }
-        else if ((r_in > high) && (i == 0)) {
+        } else if ((r_in > high) && (i == 0)) {
             // Above highest region
             float a = regions[i].a;
             float b = regions[i].b;
             float c = regions[i].c;
             return (a * r_in * r_in) + (b * r_in) + c;
-        }
-        else if (r_in <= low && i == last_index) {
+        } else if (r_in <= low && i == last_index) {
             // Below lowest region
             float a = regions[i].a;
             float b = regions[i].b;
@@ -104,10 +102,9 @@ static float correct_resistance_kohm(float r_in) {
             return (a * r_in * r_in) + (b * r_in) + c;
         }
     }
-    
+
     return r_in;
 }
-
 
 /**
  * @brief Calculate thermistor resistance in kΩ based on voltage divider output.
@@ -199,7 +196,6 @@ static float resistance_to_temperature(float resistance_kohm, int sensor_index) 
  */
 static float voltage_to_temperature(float v_ref, float v_ntc, int sensor_index) {
     float r_kohm = calculate_resistance_kohm(v_ref, v_ntc, sensor_index);
-    printf("Calculated Adjusted Resistance %d: %f kOhm\n", sensor_index, r_kohm);
     return resistance_to_temperature(r_kohm, sensor_index);
 }
 

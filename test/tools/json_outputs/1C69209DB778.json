@@ -1,0 +1,109 @@
+{
+    "timestamp": 1768773879,
+    "sensors": [
+        {
+            "value": 134.13,
+            "active": true
+        },
+        {
+            "value": 127.48,
+            "active": true
+        },
+        {
+            "value": 120.14,
+            "active": true
+        },
+        {
+            "value": 107.85,
+            "active": true
+        },
+        {
+            "value": 96.44,
+            "active": true
+        },
+        {
+            "value": 91.07,
+            "active": true
+        },
+        {
+            "value": 79.77,
+            "active": true
+        },
+        {
+            "value": 62.72,
+            "active": true
+        },
+        {
+            "value": 68.28,
+            "active": true
+        },
+        {
+            "value": 48.49,
+            "active": true
+        },
+        {
+            "value": 39.21,
+            "active": true
+        },
+        {
+            "value": 28.97,
+            "active": true
+        },
+        {
+            "value": 25.09,
+            "active": true
+        },
+        {
+            "value": 21.04,
+            "active": true
+        },
+        {
+            "value": 7.55,
+            "active": true
+        },
+        {
+            "value": -0.65,
+            "active": true
+        },
+        {
+            "value": -10.4,
+            "active": true
+        },
+        {
+            "value": -18.32,
+            "active": true
+        },
+        {
+            "value": -29,
+            "active": true
+        },
+        {
+            "value": -41.8,
+            "active": true
+        },
+        {
+            "value": 0,
+            "active": true
+        },
+        {
+            "value": 0,
+            "active": true
+        },
+        {
+            "value": 0,
+            "active": false
+        },
+        {
+            "value": 0,
+            "active": false
+        },
+        {
+            "value": 0,
+            "active": false
+        },
+        {
+            "value": 0,
+            "active": false
+        }
+    ]
+}
