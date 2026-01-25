@@ -60,7 +60,7 @@ static void network_task_event_handler(void* arg, esp_event_base_t event_base,
         // wifi_manager_wifi_event_handler(event_id, event_data);
     } else if (event_base == IP_EVENT) {
         if (event_id == IP_EVENT_STA_GOT_IP) {
-            wifi_manager_sta_got_ip(event_id, event_data);
+            // wifi_manager_sta_got_ip(event_id, event_data);
         } else if (event_id == IP_EVENT_ETH_GOT_IP) {
             ethernet_manager_sta_got_ip(event_data);
         } else if (event_id == IP_EVENT_ETH_LOST_IP) {
