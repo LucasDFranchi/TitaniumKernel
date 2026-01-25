@@ -65,6 +65,7 @@
         "uart.h": "c",
         "deque": "cpp",
         "unordered_map": "cpp",
-        "vector": "cpp"
+        "vector": "cpp",
+        "math.h": "c"
     }
 }

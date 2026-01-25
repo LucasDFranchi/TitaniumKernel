@@ -15,7 +15,7 @@
 
 #include "driver/gpio.h"
 
-#define UART_DEFAULT_BAUDRATE 115200 /**< Default UART baudrate in bps. */
+#define UART_DEFAULT_BAUDRATE 9600 /**< Default UART baudrate in bps. */
 
 /**
  * @struct uart_hw_config_t
@@ -258,7 +258,7 @@ static esp_err_t uart_init_once(uart_port_t port) {
         .baud_rate  = UART_DEFAULT_BAUDRATE,
         .data_bits  = UART_DATA_8_BITS,
         .parity     = UART_PARITY_DISABLE,
-        .stop_bits  = UART_STOP_BITS_2,
+        .stop_bits  = UART_STOP_BITS_1,
         .flow_ctrl  = UART_HW_FLOWCTRL_DISABLE,
         .source_clk = UART_SCLK_APB,
     };

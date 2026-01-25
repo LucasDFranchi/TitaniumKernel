@@ -141,3 +141,130 @@ kernel_error_st device_info_set_ip_address(const esp_ip4_addr_t ip) {
 const char* device_info_get_ip_address(void) {
     return ip_address;
 }
+
+const region_fit_t* device_info_get_region_cal(void) {
+    /* Device-specific calibration C0CDD6CD7850 */
+    static const region_fit_t regions_device_C0CDD6CD7850[REGION_COUNT] = {
+        /* Region 1: 3040.989 -> 545.240 kΩ */
+        {3040.989f, 545.240f, 2.350486e-05f, 1.019432e+00f, -1.714848e+01f},
+
+        /* Region 2: 329.687 -> 99.591 kΩ */
+        {329.687f, 99.591f, 1.007525e-04f, 9.582229e-01f, 3.119940e+00f},
+
+        /* Region 3: 84.216 -> 21.908 kΩ */
+        {84.216f, 21.908f, 1.307295e-03f, 9.012440e-01f, 1.600302e+00f},
+
+        /* Region 4: 17.529 -> 6.509 kΩ */
+        {17.529f, 6.509f, 1.645538e-03f, 9.561404e-01f, 4.922607e-01f},
+
+        /* Region 5: 4.337 -> 1.904 kΩ */
+        {4.337f, 1.904f, -8.442785e-05f, 1.006548e+00f, 2.758313e-01f},
+
+    };
+
+    /* Device-specific calibration C0CDD6CD7814 */
+    static const region_fit_t regions_device_C0CDD6CD7814[REGION_COUNT] = {
+        /* Region 1: 2820.351 -> 540.543 kΩ */
+        {2820.351f, 540.543f, 6.638856e-05f, 9.846284e-01f, -4.825885e+00f},
+
+        /* Region 2: 327.598 -> 99.560 kΩ */
+        {327.598f, 99.560f, 1.390894e-04f, 9.510418e-01f, 3.496762e+00f},
+
+        /* Region 3: 84.190 -> 22.072 kΩ */
+        {84.190f, 22.072f, 1.468559e-03f, 8.867961e-01f, 1.696872e+00f},
+
+        /* Region 4: 17.719 -> 6.727 kΩ */
+        {17.719f, 6.727f, 2.470669e-03f, 9.362600e-01f, 3.908942e-01f},
+
+        /* Region 5: 4.533 -> 2.086 kΩ (lowest region: include lower bound) */
+        {4.533f, 2.086f, 2.783823e-03f, 9.787391e-01f, 1.446947e-01f},
+    };
+
+    /* Device-specific calibration C0CDD6CD7838 */
+    static const region_fit_t regions_device_C0CDD6CD7838[REGION_COUNT] = {
+        /* Region 1: 2715.999 -> 536.450 kΩ */
+        {2715.999f, 536.450f, 1.072390e-04f, 9.124639e-01f, 3.060192e+01f},
+
+        /* Region 2: 326.252 -> 99.425 kΩ */
+        {326.252f, 99.425f, 1.665779e-04f, 9.448937e-01f, 3.978026e+00f},
+
+        /* Region 3: 84.478 -> 22.193 kΩ */
+        {84.478f, 22.193f, 1.253300e-03f, 9.071354e-01f, 1.202304e+00f},
+
+        /* Region 4: 17.849 -> 6.806 kΩ */
+        {17.849f, 6.806f, 1.769103e-03f, 9.509780e-01f, 2.216239e-01f},
+
+        /* Region 5: 4.629 -> 2.183 kΩ */
+        {4.629f, 2.183f, 2.241988e-02f, 8.501281e-01f, 2.248621e-01f},
+
+    };
+
+    /* Device-specific calibration C0CDD6CD7828 */
+    static const region_fit_t regions_device_C0CDD6CD7828[REGION_COUNT] = {
+        /* Region 1: 2726.550 -> 536.221 kΩ */
+        {2726.550f, 536.221f, 1.044690e-04f, 9.131303e-01f, 3.341548e+01f},
+
+        /* Region 2: 326.183 -> 99.500 kΩ */
+        {326.183f, 99.500f, 1.499634e-04f, 9.529006e-01f, 3.212940e+00f},
+
+        /* Region 3: 84.459 -> 22.216 kΩ */
+        {84.459f, 22.216f, 1.298549e-03f, 9.025950e-01f, 1.276950e+00f},
+
+        /* Region 4: 17.893 -> 6.835 kΩ */
+        {17.893f, 6.835f, 1.712785e-03f, 9.500972e-01f, 2.098185e-01f},
+
+        /* Region 5: 4.689 -> 2.240 kΩ */
+        {4.689f, 2.240f, 2.614138e-03f, 9.807618e-01f, -1.684331e-02f},
+
+    };
+
+    /* Device-specific calibration 1C69209DB778*/
+    static const region_fit_t regions_device_1C69209DB778[REGION_COUNT] = {
+        /* Region 1: 2671.655 -> 533.244 kΩ */
+        {2671.655f, 533.244f, 1.182307e-04f, 9.069289e-01f, 3.307210e+01f},
+
+        /* Region 2: 325.154 -> 99.456 kΩ */
+        {325.154f, 99.456f, 1.688087e-04f, 9.494021e-01f, 3.437045e+00f},
+
+        /* Region 3: 84.261 -> 22.239 kΩ */
+        {84.261f, 22.239f, 1.410034e-03f, 8.948450e-01f, 1.363572e+00f},
+
+        /* Region 4: 17.938 -> 6.912 kΩ */
+        {17.938f, 6.912f, 4.981085e-04f, 9.819512e-01f, -1.735783e-02f},
+
+        /* Region 5: 4.736 -> 2.266 kΩ */
+        {4.736f, 2.266f, 1.379979e-02f, 8.946382e-01f, 9.321247e-02f},
+    };
+
+    /* Default calibration */
+    static const region_fit_t regions_default[REGION_COUNT] = {
+        /* Region 1: 3361.887 -> 329.300 kΩ */
+        {3361.887f, 329.300f, 3.050603e-06f, 9.680608e-01f, 1.101766e+01f},
+
+        /* Region 2: 329.300 -> 87.474 kΩ */
+        {329.300f, 87.474f, 3.750742e-04f, 8.410913e-01f, 1.230265e+01f},
+
+        /* Region 3: 87.474 -> 22.259 kΩ */
+        {87.474f, 22.259f, -4.009059e-05f, 9.984124e-01f, -2.474721e-01f},
+
+        /* Region 4: 22.259 -> 6.731 kΩ */
+        {22.259f, 6.731f, -3.474550e-04f, 1.032403e+00f, -1.619189e-01f},
+
+        /* Region 5: 6.731 -> 2.232 kΩ */
+        {6.731f, 2.232f, -2.576672e-03f, 1.038778e+00f, -1.142167e-01f},
+    };
+
+    if (strcmp(device_id, "C0CDD6CD7850") == 0) {
+        return regions_device_C0CDD6CD7850;
+    } else if (strcmp(device_id, "C0CDD6CD7814") == 0) {
+        return regions_device_C0CDD6CD7814;
+    } else if (strcmp(device_id, "C0CDD6CD7838") == 0) {
+        return regions_device_C0CDD6CD7838;
+    } else if (strcmp(device_id, "C0CDD6CD7828") == 0) {
+        return regions_device_C0CDD6CD7828;
+    } else if (strcmp(device_id, "1C69209DB778") == 0) {
+        return regions_device_1C69209DB778;
+    }
+
+    return regions_default;
+}

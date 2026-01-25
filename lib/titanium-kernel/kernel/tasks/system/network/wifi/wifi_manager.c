@@ -373,11 +373,11 @@ kernel_error_st wifi_manager_initialize() {
         return KERNEL_ERROR_WIFI_SET_MODE;
     }
 
-    kernel_error_st ap_result = set_access_point_mode();
-    if (ap_result != KERNEL_SUCCESS) {
-        logger_print(ERR, TAG, "Failed to configure access point mode: %d", ap_result);
-        return ap_result;
-    }
+    // kernel_error_st ap_result = set_access_point_mode();
+    // if (ap_result != KERNEL_SUCCESS) {
+    //     logger_print(ERR, TAG, "Failed to configure access point mode: %d", ap_result);
+    //     return ap_result;
+    // }
 
     result = esp_wifi_start();
     if (result != ESP_OK) {
