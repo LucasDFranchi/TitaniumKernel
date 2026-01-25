@@ -320,12 +320,12 @@ void http_server_task_execute(void* pvParameters) {
         EventBits_t firmware_event_bits = xEventGroupGetBits(_global_structures->global_events.firmware_event_group);
 
         if (is_server_connected) {
-            if (!(firmware_event_bits & WIFI_CONNECTED_AP)) {
+            if (!(firmware_event_bits & STA_GOT_IP)) {
                 logger_print(INFO, TAG, "STOP SERVER");
                 stop_http_server();
             }
         } else {
-            if (firmware_event_bits & WIFI_CONNECTED_AP) {
+            if (firmware_event_bits & STA_GOT_IP) {
                 logger_print(INFO, TAG, "START SERVER");
                 start_http_server();
             }
